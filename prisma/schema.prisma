@@ -1,0 +1,366 @@
+// Plataforma multiagente — vocabulario agente (no PRIA / no runs)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// WORKSPACE & USERS
+// ============================================
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users         User[]
+  agentConfigs  AgentConfig[]
+  missions      Mission[]
+  pieces        ContentPiece[]
+  clusters      ContentCluster[]
+  approvals     Approval[]
+  publications  Publication[]
+  activities    AgentActivity[]
+  integrations  Integration[]
+  metrics       MetricSnapshot[]
+
+  @@map("workspaces")
+}
+
+enum UserRole {
+  admin
+  editor
+  viewer
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String?
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(editor)
+  workspaceId  String   @map("workspace_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id])
+  approvals Approval[] @relation("ReviewedBy")
+
+  @@index([workspaceId])
+  @@map("users")
+}
+
+// ============================================
+// AGENTS
+// ============================================
+
+model Agent {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  configs    AgentConfig[]
+  missions   Mission[]
+  activities AgentActivity[]
+
+  @@map("agents")
+}
+
+model AgentConfig {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  agentId     String   @map("agent_id")
+  tone        String?  @db.Text
+  topics      Json?    // temas prioritarios
+  frequency   String?  // ej: "2/semana"
+  autoPublish Boolean  @default(false) @map("auto_publish")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  agent     Agent     @relation(fields: [agentId], references: [id])
+
+  @@unique([workspaceId, agentId])
+  @@map("agent_configs")
+}
+
+// ============================================
+// MISSIONS (no "runs")
+// ============================================
+
+enum MissionStatus {
+  pending
+  in_progress
+  completed
+  failed
+  cancelled
+}
+
+enum MissionTrigger {
+  manual
+  scheduled
+  refresh_scan
+}
+
+model Mission {
+  id          String         @id @default(uuid())
+  workspaceId String         @map("workspace_id")
+  agentId     String         @map("agent_id")
+  title       String
+  objective   String?        @db.Text
+  status      MissionStatus  @default(pending)
+  trigger     MissionTrigger @default(manual)
+  startedAt   DateTime?      @map("started_at")
+  completedAt DateTime?      @map("completed_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  workspace  Workspace     @relation(fields: [workspaceId], references: [id])
+  agent      Agent         @relation(fields: [agentId], references: [id])
+  steps      MissionStep[]
+  pieces     ContentPiece[]
+  activities AgentActivity[]
+
+  @@index([workspaceId, status])
+  @@index([agentId])
+  @@map("missions")
+}
+
+enum MissionStepRole {
+  strategist
+  researcher
+  journalist
+  writer
+  seo_builder
+  publisher
+  refresher
+  contactor
+}
+
+enum MissionStepStatus {
+  pending
+  in_progress
+  completed
+  failed
+  skipped
+}
+
+model MissionStep {
+  id        String            @id @default(uuid())
+  missionId String            @map("mission_id")
+  role      MissionStepRole
+  status    MissionStepStatus @default(pending)
+  input     Json?
+  output    Json?
+  message   String?           @db.Text
+  startedAt DateTime?         @map("started_at")
+  endedAt   DateTime?         @map("ended_at")
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@index([missionId])
+  @@map("mission_steps")
+}
+
+// ============================================
+// CONTENT
+// ============================================
+
+enum ContentPieceType {
+  faq
+  definition
+  glossary
+  checklist
+  comparison
+  how_to
+  pillar
+  case_study
+  calculator
+  landing
+  other
+}
+
+enum ContentPieceStatus {
+  idea
+  draft
+  pending_approval
+  approved
+  published
+  refresh_needed
+  archived
+}
+
+model ContentCluster {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  name        String
+  pillarTopic String?  @map("pillar_topic") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace      @relation(fields: [workspaceId], references: [id])
+  pieces    ContentPiece[]
+
+  @@index([workspaceId])
+  @@map("content_clusters")
+}
+
+model ContentPiece {
+  id          String             @id @default(uuid())
+  workspaceId String             @map("workspace_id")
+  missionId   String?            @map("mission_id")
+  clusterId   String?            @map("cluster_id")
+  type        ContentPieceType
+  title       String
+  slug        String?
+  keyword     String?
+  status      ContentPieceStatus @default(idea)
+  content     Json?              // HTML/MD + metadata SEO
+  seoMeta     Json?              @map("seo_meta")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id])
+  mission     Mission?        @relation(fields: [missionId], references: [id])
+  cluster     ContentCluster? @relation(fields: [clusterId], references: [id])
+  approval    Approval?
+  publication Publication?
+
+  @@index([workspaceId, status])
+  @@index([missionId])
+  @@map("content_pieces")
+}
+
+// ============================================
+// APPROVALS & PUBLICATIONS
+// ============================================
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+  changes_requested
+}
+
+model Approval {
+  id           String         @id @default(uuid())
+  workspaceId  String         @map("workspace_id")
+  pieceId      String         @unique @map("piece_id")
+  status       ApprovalStatus @default(pending)
+  notes        String?        @db.Text
+  reviewedById String?        @map("reviewed_by_id")
+  reviewedAt   DateTime?      @map("reviewed_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  workspace  Workspace    @relation(fields: [workspaceId], references: [id])
+  piece      ContentPiece @relation(fields: [pieceId], references: [id])
+  reviewedBy User?        @relation("ReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([workspaceId, status])
+  @@map("approvals")
+}
+
+model Publication {
+  id            String    @id @default(uuid())
+  workspaceId   String    @map("workspace_id")
+  pieceId       String    @unique @map("piece_id")
+  externalId    String?   @map("external_id") // WP post ID
+  url           String?
+  publishedAt   DateTime? @map("published_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  workspace Workspace    @relation(fields: [workspaceId], references: [id])
+  piece     ContentPiece @relation(fields: [pieceId], references: [id])
+
+  @@index([workspaceId])
+  @@map("publications")
+}
+
+// ============================================
+// AGENT ACTIVITY (feed en tiempo real)
+// ============================================
+
+enum ActivityLevel {
+  info
+  success
+  warning
+  error
+}
+
+model AgentActivity {
+  id          String        @id @default(uuid())
+  workspaceId String        @map("workspace_id")
+  agentId     String        @map("agent_id")
+  missionId   String?       @map("mission_id")
+  role        MissionStepRole?
+  level       ActivityLevel @default(info)
+  message     String        @db.Text
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  agent     Agent     @relation(fields: [agentId], references: [id])
+  mission   Mission?  @relation(fields: [missionId], references: [id])
+
+  @@index([workspaceId, createdAt])
+  @@index([agentId])
+  @@map("agent_activities")
+}
+
+// ============================================
+// INTEGRATIONS & METRICS
+// ============================================
+
+enum IntegrationType {
+  wordpress
+  google_analytics
+  google_search_console
+}
+
+enum IntegrationStatus {
+  connected
+  disconnected
+  error
+}
+
+model Integration {
+  id          String            @id @default(uuid())
+  workspaceId String            @map("workspace_id")
+  type        IntegrationType
+  status      IntegrationStatus @default(disconnected)
+  config      Json?
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, type])
+  @@map("integrations")
+}
+
+model MetricSnapshot {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  url         String
+  impressions Int?
+  clicks      Int?
+  ctr         Float?
+  sessions    Int?
+  source      String   // "gsc" | "ga4"
+  capturedAt  DateTime @map("captured_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId, url, capturedAt])
+  @@map("metric_snapshots")
+}

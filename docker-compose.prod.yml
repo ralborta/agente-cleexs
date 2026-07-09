@@ -1,0 +1,61 @@
+# Stack completo para Easypanel / VPS
+# En Easypanel podés crear cada servicio por separado usando los Dockerfiles.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: agente_cleexs
+    volumes:
+      - agente_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/agente_cleexs?schema=public
+      API_PORT: 4000
+      JWT_SECRET: ${JWT_SECRET}
+      CRON_SECRET: ${CRON_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      FRONTEND_URLS: ${FRONTEND_URLS:-http://localhost:3000}
+      DISABLE_AUTONOMOUS: ${DISABLE_AUTONOMOUS:-true}
+      AUTONOMOUS_TICK_MS: ${AUTONOMOUS_TICK_MS:-3600000}
+      RUN_DB_SEED: ${RUN_DB_SEED:-true}
+      WORDPRESS_URL: ${WORDPRESS_URL}
+      WORDPRESS_USERNAME: ${WORDPRESS_USERNAME}
+      WORDPRESS_APP_PASSWORD: ${WORDPRESS_APP_PASSWORD}
+      WORDPRESS_APPROVAL_STATUS: ${WORDPRESS_APPROVAL_STATUS:-draft}
+      WORDPRESS_CATEGORY_ID: ${WORDPRESS_CATEGORY_ID:-18}
+    ports:
+      - '4000:4000'
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      PORT: 3000
+    ports:
+      - '3000:3000'
+
+volumes:
+  agente_pg_data:

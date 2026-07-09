@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.next
+**/.next
+.turbo
+.env
+.env.local
+.env.*.local
+!.env.example
+*.log
+.DS_Store
+docs/*.docx

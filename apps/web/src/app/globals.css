@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --cleexs-blue: 37 99 235;
+    --cleexs-orange: 249 115 22;
+    --hub-bg: 15 23 42;
+    --hub-card: 30 41 59;
+    --hub-border: 51 65 85;
+  }
+
+  body {
+    @apply bg-hub-bg text-hub-text antialiased;
+  }
+}

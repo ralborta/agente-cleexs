@@ -1,0 +1,141 @@
+# Deploy en Easypanel — Agente Cleexs
+
+Stack: **PostgreSQL** + **API (Fastify)** + **Web (Next.js)**
+
+Dominios sugeridos:
+- Backoffice: `https://agents.cleexs.net`
+- API: `https://api-agents.cleexs.net`
+
+---
+
+## 1. Subir el código a Git
+
+Easypanel despliega desde un repositorio Git. Asegurate de que el repo incluya:
+
+- `apps/api/Dockerfile`
+- `apps/web/Dockerfile`
+- `prisma/migrations/`
+- `docker-compose.prod.yml` (referencia)
+
+---
+
+## 2. Crear PostgreSQL en Easypanel
+
+1. **Nuevo servicio** → **PostgreSQL 16**
+2. Anotá la URL interna, ej:
+   ```
+   postgresql://postgres:TU_PASSWORD@agente-pg:5432/agente_cleexs
+   ```
+3. Creá la base `agente_cleexs` si el template no la crea sola.
+
+---
+
+## 3. Servicio API
+
+| Campo | Valor |
+|-------|-------|
+| Tipo | App → Docker |
+| Repo | tu repo Git |
+| Dockerfile | `apps/api/Dockerfile` |
+| Context | `/` (raíz del repo) |
+| Puerto | `4000` |
+| Dominio | `api-agents.cleexs.net` |
+
+### Variables de entorno (API)
+
+```env
+DATABASE_URL=postgresql://postgres:PASSWORD@NOMBRE_SERVICIO_PG:5432/agente_cleexs?schema=public
+API_PORT=4000
+JWT_SECRET=generar-secreto-largo
+CRON_SECRET=generar-secreto-cron
+FRONTEND_URL=https://agents.cleexs.net
+FRONTEND_URLS=https://agents.cleexs.net
+DISABLE_AUTONOMOUS=true
+RUN_DB_SEED=true
+WORDPRESS_URL=https://cleexs.net
+WORDPRESS_USERNAME=...
+WORDPRESS_APP_PASSWORD=...
+WORDPRESS_APPROVAL_STATUS=draft
+WORDPRESS_CATEGORY_ID=18
+```
+
+> **Primera vez:** `RUN_DB_SEED=true` crea workspace Cleexs, agente Teo y usuario `admin@cleexs.net` / `demo1234`. Cambiá la contraseña después.
+
+Al arrancar, la API ejecuta `prisma migrate deploy` automáticamente.
+
+---
+
+## 4. Servicio Web (backoffice)
+
+| Campo | Valor |
+|-------|-------|
+| Tipo | App → Docker |
+| Dockerfile | `apps/web/Dockerfile` |
+| Context | `/` |
+| Puerto | `3000` |
+| Dominio | `agents.cleexs.net` |
+
+### Build args (importante)
+
+```env
+NEXT_PUBLIC_API_URL=https://api-agents.cleexs.net
+```
+
+En Easypanel, agregalo como **Build Argument** o variable de build. Next.js lo necesita en tiempo de compilación.
+
+---
+
+## 5. Verificar deploy
+
+```bash
+# Health API
+curl https://api-agents.cleexs.net/health
+
+# Backoffice
+open https://agents.cleexs.net/cleexs
+```
+
+Respuesta esperada de `/health`:
+```json
+{"status":"ok","service":"agente-api",...}
+```
+
+---
+
+## 6. Cron de misiones autónomas (opcional)
+
+Cuando quieras activar Teo autónomo:
+
+1. En API: `DISABLE_AUTONOMOUS=false`
+2. En Easypanel, creá un **Cron Job** que llame cada hora:
+
+```bash
+curl -X POST https://api-agents.cleexs.net/api/cron/autonomous-tick \
+  -H "x-cron-secret: TU_CRON_SECRET"
+```
+
+---
+
+## 7. Deploy local con Docker (alternativa)
+
+```bash
+cp .env.example .env
+# Editá .env con tus valores
+
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+- API: http://localhost:4000/health
+- Web: http://localhost:3000/cleexs
+
+---
+
+## Troubleshooting
+
+| Problema | Solución |
+|----------|----------|
+| API no conecta a Postgres | Verificá `DATABASE_URL` con hostname interno de Easypanel |
+| Web no carga datos | Revisá `NEXT_PUBLIC_API_URL` (debe ser la URL pública de la API) |
+| CORS error | Agregá el dominio del backoffice en `FRONTEND_URLS` |
+| Migraciones fallan | Revisá logs de API al arrancar; Postgres debe estar healthy |
+| WP publish falla | Verificá credenciales `WORDPRESS_*` en el servicio API |

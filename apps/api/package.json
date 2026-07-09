@@ -1,0 +1,31 @@
+{
+  "name": "@agente/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "prebuild": "npm --workspace=@agente/shared run build && prisma generate --schema=../../prisma/schema.prisma",
+    "build": "tsc",
+    "migrate:deploy": "prisma migrate deploy --schema=../../prisma/schema.prisma",
+    "start": "npm run migrate:deploy && node dist/index.js",
+    "lint": "echo 'ok'"
+  },
+  "dependencies": {
+    "@agente/shared": "*",
+    "@fastify/cors": "^8.4.0",
+    "@fastify/helmet": "^11.1.1",
+    "@prisma/client": "^5.7.0",
+    "bcryptjs": "^2.4.3",
+    "fastify": "^4.24.3",
+    "jsonwebtoken": "^9.0.2",
+    "prisma": "^5.7.0",
+    "tsx": "^4.7.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}
