@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { CentroShell } from '@/components/shell/centro-shell';
-import { createMission, fetchResults } from '@/lib/api-client';
+import { createMission, fetchResults, pieceAuthorName } from '@/lib/api-client';
+import { TEO_AUTHOR_NAME } from '@/lib/branding';
 
 export default function ResultadosPage() {
   const [data, setData] = useState<Awaited<ReturnType<typeof fetchResults>> | null>(null);
@@ -89,7 +90,15 @@ export default function ResultadosPage() {
               <ul className="mt-4 space-y-3">
                 {data.recentPublications.map((pub) => (
                   <li key={pub.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-hub-border/50 pb-3">
-                    <span className="text-sm text-white">{pub.piece.title}</span>
+                    <div>
+                      <span className="text-sm text-white">{pub.piece.title}</span>
+                      <p className="mt-0.5 text-xs text-hub-muted">
+                        Por {pieceAuthorName(pub.piece, TEO_AUTHOR_NAME)}
+                        {pub.publishedAt
+                          ? ` · ${new Date(pub.publishedAt).toLocaleDateString('es-AR')}`
+                          : ''}
+                      </p>
+                    </div>
                     {pub.url ? (
                       <a href={pub.url} target="_blank" rel="noopener" className="text-sm text-cleexs-blue hover:underline">
                         Ver en WP

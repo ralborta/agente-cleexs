@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { CentroShell } from '@/components/shell/centro-shell';
-import { approvePiece, fetchApprovals, rejectPiece, type Approval } from '@/lib/api-client';
+import { approvePiece, fetchApprovals, pieceAuthorName, rejectPiece, type Approval } from '@/lib/api-client';
+import { TEO_AUTHOR_NAME } from '@/lib/branding';
 
 export default function AprobacionesPage() {
   const [items, setItems] = useState<Approval[]>([]);
@@ -94,6 +95,9 @@ export default function AprobacionesPage() {
                     {item.piece.type}
                   </span>
                   <h3 className="mt-1 text-lg font-semibold text-white">{item.piece.title}</h3>
+                  <p className="mt-1 text-xs text-hub-muted">
+                    Por {pieceAuthorName(item.piece, TEO_AUTHOR_NAME)}
+                  </p>
                   <p className="mt-2 text-sm text-hub-muted">
                     {item.piece.content?.excerpt || 'Sin extracto'}
                   </p>

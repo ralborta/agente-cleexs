@@ -62,6 +62,7 @@ export function getWordPressStatus(workspaceSlug: string) {
     configured: isWordPressConfigured(config),
     baseUrl: config?.baseUrl ?? null,
     approvalPostStatus: config?.approvalPostStatus ?? null,
+    authorDisplayName: config?.authorDisplayName ?? 'Teo',
   };
 }
 

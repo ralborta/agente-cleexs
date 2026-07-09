@@ -86,6 +86,6 @@ export function renderArticleHtml(data: ArticleData): string {
   <p class="cleexs-article__lead">${data.lead}</p>
   ${sectionsHtml}
   ${ctaBlock(data)}
-  <p class="cleexs-meta">Actualizado por Teo · Agente de contenido Cleexs</p>
+  <p class="cleexs-meta">Por Teo · Agente de contenido Cleexs</p>
 </article>`;
 }

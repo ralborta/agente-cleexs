@@ -26,6 +26,7 @@ export type Approval = {
     type: string;
     slug: string | null;
     content: { excerpt?: string; html?: string } | null;
+    mission?: { agent?: { name: string; slug: string } | null } | null;
   };
 };
 
@@ -67,13 +68,33 @@ export async function fetchResults(workspace: string) {
       id: string;
       url: string | null;
       publishedAt: string | null;
-      piece: { title: string; type: string };
+      piece: {
+        title: string;
+        type: string;
+        mission?: { agent?: { name: string } | null } | null;
+      };
     }>;
   }>(`/api/results/${workspace}`);
 }
 
 export async function fetchPieces(workspace: string) {
-  return api<{ pieces: Array<{ id: string; title: string; type: string; status: string; slug: string | null }> }>(
-    `/api/content/pieces?workspace=${workspace}`,
-  );
+  return api<{
+    pieces: Array<{
+      id: string;
+      title: string;
+      type: string;
+      status: string;
+      slug: string | null;
+      updatedAt: string;
+      publication?: { url: string | null; publishedAt: string | null } | null;
+      mission?: { agent?: { name: string; slug: string } | null } | null;
+    }>;
+  }>(`/api/content/pieces?workspace=${workspace}`);
+}
+
+export function pieceAuthorName(
+  piece: { mission?: { agent?: { name: string } | null } | null },
+  fallback = 'Teo',
+) {
+  return piece.mission?.agent?.name ?? fallback;
 }

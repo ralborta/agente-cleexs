@@ -18,7 +18,14 @@ const contentRoutes: FastifyPluginAsync = async (server) => {
       include: {
         approval: true,
         publication: true,
-        mission: { select: { id: true, title: true, trigger: true } },
+        mission: {
+          select: {
+            id: true,
+            title: true,
+            trigger: true,
+            agent: { select: { slug: true, name: true } },
+          },
+        },
       },
     });
 

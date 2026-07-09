@@ -21,7 +21,16 @@ const resultsRoutes: FastifyPluginAsync = async (server) => {
         where: { workspaceId: workspace.id },
         orderBy: { publishedAt: 'desc' },
         take: 20,
-        include: { piece: { select: { title: true, slug: true, type: true } } },
+        include: {
+          piece: {
+            select: {
+              title: true,
+              slug: true,
+              type: true,
+              mission: { select: { agent: { select: { name: true } } } },
+            },
+          },
+        },
       }),
       prisma.contentPiece.groupBy({
         by: ['status'],

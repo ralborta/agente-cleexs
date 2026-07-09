@@ -5,7 +5,11 @@ export type WordPressConfig = {
   defaultCategoryId?: number;
   /** draft | publish | pending */
   approvalPostStatus?: 'draft' | 'publish' | 'pending';
+  /** Nombre visible del autor en WordPress (usuario WP debe coincidir) */
+  authorDisplayName?: string;
 };
+
+const DEFAULT_WP_AUTHOR_NAME = 'Teo';
 
 export type WordPressPostPayload = {
   title: string;
@@ -55,6 +59,11 @@ export function resolveWordPressConfig(workspaceSlug: string): WordPressConfig |
     process.env.WORDPRESS_APPROVAL_STATUS ||
     'draft') as WordPressConfig['approvalPostStatus'];
 
+  const authorDisplayName =
+    process.env[`WP_${prefix}_AUTHOR_NAME`] ||
+    (workspaceSlug === 'cleexs' ? process.env.WORDPRESS_AUTHOR_NAME : undefined) ||
+    DEFAULT_WP_AUTHOR_NAME;
+
   return {
     baseUrl: baseUrl.replace(/\/$/, ''),
     username,
@@ -63,6 +72,7 @@ export function resolveWordPressConfig(workspaceSlug: string): WordPressConfig |
       ? defaultCategoryId
       : undefined,
     approvalPostStatus: approvalPostStatus ?? 'draft',
+    authorDisplayName,
   };
 }
 

@@ -24,7 +24,11 @@ const approvalRoutes: FastifyPluginAsync = async (server) => {
       },
       orderBy: { createdAt: 'desc' },
       include: {
-        piece: true,
+        piece: {
+          include: {
+            mission: { select: { agent: { select: { name: true, slug: true } } } },
+          },
+        },
         reviewedBy: { select: { id: true, name: true, email: true } },
       },
     });
