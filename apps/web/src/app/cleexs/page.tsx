@@ -27,6 +27,13 @@ const FALLBACK: CentroData = {
       createdAt: new Date().toISOString(),
     },
   ],
+  contentRadar: {
+    agentName: 'Teo',
+    agentActive: true,
+    agentWorking: false,
+    pieces: [],
+    stats: { active: 0, published: 0, approval: 0, working: 0, refresh: 0 },
+  },
 };
 
 export default async function CleexsCentroPage() {
@@ -57,7 +64,7 @@ export default async function CleexsCentroPage() {
       <KpiGrid items={data.kpis} />
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
-        <ContentEcosystemPanel />
+        <ContentEcosystemPanel data={data.contentRadar} />
         <ActivityFeed items={data.activity} />
       </div>
     </CentroShell>

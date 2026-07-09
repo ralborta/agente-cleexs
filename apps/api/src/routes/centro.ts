@@ -1,6 +1,48 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { prisma } from '../lib/prisma';
 
+type RadarStatus = 'published' | 'approval' | 'working' | 'refresh';
+type RadarImpact = 'alto' | 'medio' | 'bajo';
+
+function mapPieceToRadarStatus(status: string): RadarStatus {
+  switch (status) {
+    case 'published':
+      return 'published';
+    case 'pending_approval':
+    case 'approved':
+      return 'approval';
+    case 'refresh_needed':
+      return 'refresh';
+    default:
+      return 'working';
+  }
+}
+
+function mapTypeToImpact(type: string): RadarImpact {
+  switch (type) {
+    case 'pillar':
+    case 'comparison':
+    case 'landing':
+      return 'alto';
+    case 'faq':
+    case 'checklist':
+    case 'how_to':
+    case 'case_study':
+      return 'medio';
+    default:
+      return 'bajo';
+  }
+}
+
+const RADAR_DISPLAY_ORDER: Record<string, number> = {
+  pending_approval: 0,
+  approved: 1,
+  draft: 2,
+  idea: 3,
+  refresh_needed: 4,
+  published: 5,
+};
+
 const centroRoutes: FastifyPluginAsync = async (server) => {
   server.get('/:workspaceSlug', async (request, reply) => {
     const { workspaceSlug } = request.params as { workspaceSlug: string };
@@ -25,6 +67,7 @@ const centroRoutes: FastifyPluginAsync = async (server) => {
       activeMissions,
       recentActivity,
       impressions,
+      contentPieces,
     ] = await Promise.all([
       prisma.publication.count({ where: { workspaceId: workspace.id } }),
       prisma.approval.count({
@@ -46,7 +89,40 @@ const centroRoutes: FastifyPluginAsync = async (server) => {
         where: { workspaceId: workspace.id, source: 'gsc' },
         _sum: { impressions: true },
       }),
+      prisma.contentPiece.findMany({
+        where: { workspaceId: workspace.id, status: { not: 'archived' } },
+        orderBy: { updatedAt: 'desc' },
+        select: { id: true, title: true, type: true, status: true, updatedAt: true },
+      }),
     ]);
+
+    const teoConfig = workspace.agentConfigs.find((c) => c.agent.slug === 'teo');
+    const teoAgent = teoConfig?.agent;
+    const agentWorking = activeMissions > 0;
+
+    const radarPiecesSorted = [...contentPieces].sort(
+      (a, b) =>
+        (RADAR_DISPLAY_ORDER[a.status] ?? 99) - (RADAR_DISPLAY_ORDER[b.status] ?? 99) ||
+        b.updatedAt.getTime() - a.updatedAt.getTime(),
+    );
+
+    const radarPieces = radarPiecesSorted.slice(0, 6).map((piece) => ({
+      id: piece.id,
+      title: piece.title,
+      type: piece.type,
+      status: mapPieceToRadarStatus(piece.status),
+      impact: mapTypeToImpact(piece.type),
+    }));
+
+    const radarStats = {
+      active: contentPieces.length,
+      published: contentPieces.filter((p) => p.status === 'published').length,
+      approval: contentPieces.filter((p) =>
+        ['pending_approval', 'approved'].includes(p.status),
+      ).length,
+      working: contentPieces.filter((p) => ['draft', 'idea'].includes(p.status)).length,
+      refresh: contentPieces.filter((p) => p.status === 'refresh_needed').length,
+    };
 
     const agentsOnline = workspace.agentConfigs.map((config) => ({
       slug: config.agent.slug,
@@ -97,6 +173,13 @@ const centroRoutes: FastifyPluginAsync = async (server) => {
         level: item.level,
         createdAt: item.createdAt.toISOString(),
       })),
+      contentRadar: {
+        agentName: teoAgent?.name ?? 'Teo',
+        agentActive: Boolean(teoAgent),
+        agentWorking,
+        pieces: radarPieces,
+        stats: radarStats,
+      },
     };
   });
 };

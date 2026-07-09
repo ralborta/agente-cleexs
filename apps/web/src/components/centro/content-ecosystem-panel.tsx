@@ -4,25 +4,43 @@ import {
   BookOpen,
   CheckCircle2,
   Cog,
+  FileText,
+  HelpCircle,
   Hourglass,
   Layers,
   ListChecks,
-  HelpCircle,
   RefreshCw,
   TrendingUp,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-type PieceStatus = 'published' | 'approval' | 'working' | 'refresh';
-type ImpactLevel = 'alto' | 'medio' | 'bajo';
-
-type RadarPiece = {
+export type RadarPieceData = {
   id: string;
-  label: string;
-  status: PieceStatus;
-  impact: ImpactLevel;
+  title: string;
+  type: string;
+  status: 'published' | 'approval' | 'working' | 'refresh';
+  impact: 'alto' | 'medio' | 'bajo';
+};
+
+export type ContentRadarData = {
+  agentName: string;
+  agentActive: boolean;
+  agentWorking: boolean;
+  pieces: RadarPieceData[];
+  stats: {
+    active: number;
+    published: number;
+    approval: number;
+    working: number;
+    refresh: number;
+  };
+};
+
+type PieceStatus = RadarPieceData['status'];
+type ImpactLevel = RadarPieceData['impact'];
+
+type LayoutPiece = RadarPieceData & {
   icon: LucideIcon;
-  /** Posición en % del área radar */
   x: number;
   y: number;
 };
@@ -60,23 +78,46 @@ const IMPACT_LABEL: Record<ImpactLevel, string> = {
   bajo: 'Impacto bajo',
 };
 
-const pieces: RadarPiece[] = [
-  { id: 'guide', label: 'Guía AEO', status: 'published', impact: 'alto', icon: BookOpen, x: 50, y: 8 },
-  { id: 'cmp', label: 'Comparativa', status: 'working', impact: 'alto', icon: BarChart3, x: 88, y: 28 },
-  { id: 'gls', label: 'Glosario', status: 'refresh', impact: 'bajo', icon: BookOpen, x: 82, y: 78 },
-  { id: 'chk', label: 'Checklist', status: 'published', impact: 'medio', icon: ListChecks, x: 18, y: 78 },
-  { id: 'faq', label: 'FAQ visibilidad IA', status: 'approval', impact: 'medio', icon: HelpCircle, x: 12, y: 28 },
-];
+const TYPE_ICONS: Record<string, LucideIcon> = {
+  faq: HelpCircle,
+  checklist: ListChecks,
+  comparison: BarChart3,
+  pillar: BookOpen,
+  glossary: BookOpen,
+  definition: BookOpen,
+  how_to: ListChecks,
+  case_study: FileText,
+  landing: FileText,
+  calculator: BarChart3,
+  other: FileText,
+};
 
-const stats = [
-  { label: 'piezas activas', value: pieces.length, icon: Layers, color: 'text-white' },
-  { label: 'publicadas', value: pieces.filter((p) => p.status === 'published').length, icon: CheckCircle2, color: 'text-emerald-400' },
-  { label: 'en aprobación', value: pieces.filter((p) => p.status === 'approval').length, icon: Hourglass, color: 'text-orange-400' },
-  { label: 'en producción', value: pieces.filter((p) => p.status === 'working').length, icon: Cog, color: 'text-blue-400' },
-  { label: 'a refrescar', value: pieces.filter((p) => p.status === 'refresh').length, icon: RefreshCw, color: 'text-slate-400' },
-];
+function iconForType(type: string): LucideIcon {
+  return TYPE_ICONS[type] ?? FileText;
+}
 
-function RadarNode({ piece }: { piece: RadarPiece }) {
+function layoutPositions(count: number): Array<{ x: number; y: number }> {
+  if (count === 0) return [];
+  return Array.from({ length: count }, (_, i) => {
+    const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
+    return {
+      x: 50 + Math.cos(angle) * 38,
+      y: 52 + Math.sin(angle) * 34,
+    };
+  });
+}
+
+function toLayoutPieces(pieces: RadarPieceData[]): LayoutPiece[] {
+  const positions = layoutPositions(pieces.length);
+  return pieces.map((piece, i) => ({
+    ...piece,
+    icon: iconForType(piece.type),
+    x: positions[i]?.x ?? 50,
+    y: positions[i]?.y ?? 20,
+  }));
+}
+
+function RadarNode({ piece }: { piece: LayoutPiece }) {
   const cfg = STATUS[piece.status];
   const Icon = piece.icon;
 
@@ -101,7 +142,7 @@ function RadarNode({ piece }: { piece: RadarPiece }) {
           {cfg.label}
         </span>
       </div>
-      <p className="text-sm font-semibold leading-tight text-white">{piece.label}</p>
+      <p className="line-clamp-2 text-sm font-semibold leading-tight text-white">{piece.title}</p>
       <p className="mt-1.5 flex items-center gap-1 text-[11px]" style={{ color: cfg.color }}>
         <TrendingUp className="h-3 w-3" />
         {IMPACT_LABEL[piece.impact]}
@@ -110,13 +151,32 @@ function RadarNode({ piece }: { piece: RadarPiece }) {
   );
 }
 
-export function ContentEcosystemPanel() {
+const EMPTY_RADAR: ContentRadarData = {
+  agentName: 'Teo',
+  agentActive: true,
+  agentWorking: false,
+  pieces: [],
+  stats: { active: 0, published: 0, approval: 0, working: 0, refresh: 0 },
+};
+
+export function ContentEcosystemPanel({ data = EMPTY_RADAR }: { data?: ContentRadarData }) {
+  const pieces = toLayoutPieces(data.pieces);
   const cx = 50;
   const cy = 52;
 
+  const stats = [
+    { label: 'piezas activas', value: data.stats.active, icon: Layers, color: 'text-white' },
+    { label: 'publicadas', value: data.stats.published, icon: CheckCircle2, color: 'text-emerald-400' },
+    { label: 'en aprobación', value: data.stats.approval, icon: Hourglass, color: 'text-orange-400' },
+    { label: 'en producción', value: data.stats.working, icon: Cog, color: 'text-blue-400' },
+    { label: 'a refrescar', value: data.stats.refresh, icon: RefreshCw, color: 'text-slate-400' },
+  ];
+
+  const hubLabel = data.agentWorking ? 'Trabajando' : data.agentActive ? 'Agente activo' : 'Inactivo';
+  const hubColor = data.agentWorking ? '#2563EB' : data.agentActive ? '#22C55E' : '#94A3B8';
+
   return (
     <section className="overflow-hidden rounded-2xl border border-hub-border bg-hub-card shadow-hub">
-      {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-hub-border px-5 py-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-hub-muted">
@@ -137,20 +197,10 @@ export function ContentEcosystemPanel() {
         </div>
       </div>
 
-      {/* Radar */}
       <div className="relative mx-5 mt-4 aspect-[16/10] min-h-[320px] overflow-hidden rounded-xl border border-hub-border bg-[#0a101c]">
-        {/* Anillos concéntricos */}
         <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
           {[18, 32, 46].map((r) => (
-            <circle
-              key={r}
-              cx={cx}
-              cy={cy}
-              r={r}
-              fill="none"
-              stroke="rgba(51, 65, 85, 0.45)"
-              strokeWidth="0.25"
-            />
+            <circle key={r} cx={cx} cy={cy} r={r} fill="none" stroke="rgba(51, 65, 85, 0.45)" strokeWidth="0.25" />
           ))}
           {pieces.map((piece) => (
             <line
@@ -166,22 +216,32 @@ export function ContentEcosystemPanel() {
           ))}
         </svg>
 
-        {/* Hub central — Teo */}
         <div
-          className="absolute left-1/2 top-[52%] z-20 flex h-[108px] w-[108px] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-2 border-emerald-400/60 bg-[#0f172a]/95 text-center backdrop-blur-sm"
-          style={{ boxShadow: '0 0 40px rgba(34, 197, 94, 0.35), inset 0 0 20px rgba(34, 197, 94, 0.08)' }}
+          className="absolute left-1/2 top-[52%] z-20 flex h-[108px] w-[108px] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-2 bg-[#0f172a]/95 text-center backdrop-blur-sm"
+          style={{
+            borderColor: `${hubColor}99`,
+            boxShadow: `0 0 40px ${hubColor}55, inset 0 0 20px ${hubColor}14`,
+          }}
         >
-          <span className="text-lg font-bold text-white">Teo</span>
-          <span className="text-[11px] font-medium text-emerald-400">Agente activo</span>
-          <Activity className="mt-1 h-4 w-4 text-emerald-400" strokeWidth={2.5} />
+          <span className="text-lg font-bold text-white">{data.agentName}</span>
+          <span className="text-[11px] font-medium" style={{ color: hubColor }}>
+            {hubLabel}
+          </span>
+          <Activity className="mt-1 h-4 w-4" style={{ color: hubColor }} strokeWidth={2.5} />
         </div>
 
-        {pieces.map((piece) => (
-          <RadarNode key={piece.id} piece={piece} />
-        ))}
+        {pieces.length === 0 ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center px-8 text-center">
+            <p className="max-w-xs text-sm text-hub-muted">
+              Sin piezas todavía. Lanzá una misión desde{' '}
+              <span className="text-white">Resultados</span> para que Teo genere contenido.
+            </p>
+          </div>
+        ) : (
+          pieces.map((piece) => <RadarNode key={piece.id} piece={piece} />)
+        )}
       </div>
 
-      {/* Footer stats */}
       <div className="mx-5 mb-5 mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-hub-border bg-[#111827]/80 px-4 py-3">
         {stats.map((stat) => {
           const Icon = stat.icon;

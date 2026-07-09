@@ -37,5 +37,24 @@ export async function fetchCentroDashboard(workspaceSlug: string) {
       level: string;
       createdAt: string;
     }>;
+    contentRadar: {
+      agentName: string;
+      agentActive: boolean;
+      agentWorking: boolean;
+      pieces: Array<{
+        id: string;
+        title: string;
+        type: string;
+        status: 'published' | 'approval' | 'working' | 'refresh';
+        impact: 'alto' | 'medio' | 'bajo';
+      }>;
+      stats: {
+        active: number;
+        published: number;
+        approval: number;
+        working: number;
+        refresh: number;
+      };
+    };
   }>;
 }
