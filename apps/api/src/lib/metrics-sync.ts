@@ -3,6 +3,7 @@ import { fetchGa4PageSessions, testGa4Connection } from './integrations/google-g
 import { fetchGscPageMetrics, testGscConnection } from './integrations/google-gsc';
 import {
   getGoogleMetricsStatus,
+  hasGa4Configured,
   isGoogleMetricsConfigured,
   resolveGoogleMetricsConfig,
 } from './integrations/google-config';
@@ -53,7 +54,9 @@ export async function syncWorkspaceMetrics(workspaceSlug: string) {
 
   const [gscRows, ga4Rows] = await Promise.all([
     fetchGscPageMetrics(config, { days: 28, pageFilter: '/articulos/' }),
-    fetchGa4PageSessions(config, { days: 28, pathPrefix: '/articulos/' }),
+    hasGa4Configured(config)
+      ? fetchGa4PageSessions(config, { days: 28, pathPrefix: '/articulos/' })
+      : Promise.resolve([]),
   ]);
 
   const capturedAt = new Date();
@@ -114,20 +117,21 @@ export async function syncWorkspaceMetrics(workspaceSlug: string) {
     await prisma.metricSnapshot.createMany({ data: snapshots });
   }
 
-  await prisma.$transaction([
-    prisma.integration.upsert({
-      where: {
-        workspaceId_type: { workspaceId: workspace.id, type: 'google_search_console' },
-      },
-      create: {
-        workspaceId: workspace.id,
-        type: 'google_search_console',
-        status: 'connected',
-        config: { siteUrl: config.gscSiteUrl },
-      },
-      update: { status: 'connected', config: { siteUrl: config.gscSiteUrl } },
-    }),
-    prisma.integration.upsert({
+  await prisma.integration.upsert({
+    where: {
+      workspaceId_type: { workspaceId: workspace.id, type: 'google_search_console' },
+    },
+    create: {
+      workspaceId: workspace.id,
+      type: 'google_search_console',
+      status: 'connected',
+      config: { siteUrl: config.gscSiteUrl },
+    },
+    update: { status: 'connected', config: { siteUrl: config.gscSiteUrl } },
+  });
+
+  if (hasGa4Configured(config)) {
+    await prisma.integration.upsert({
       where: {
         workspaceId_type: { workspaceId: workspace.id, type: 'google_analytics' },
       },
@@ -138,8 +142,8 @@ export async function syncWorkspaceMetrics(workspaceSlug: string) {
         config: { propertyId: config.ga4PropertyId },
       },
       update: { status: 'connected', config: { propertyId: config.ga4PropertyId } },
-    }),
-  ]);
+    });
+  }
 
   const teo = await prisma.agent.findUnique({ where: { slug: 'teo' } });
   if (teo) {
@@ -184,7 +188,11 @@ export async function testGoogleMetrics(workspaceSlug: string) {
   }
 
   try {
-    results.ga4 = await testGa4Connection(config);
+    if (hasGa4Configured(config)) {
+      results.ga4 = await testGa4Connection(config);
+    } else {
+      results.ga4 = { ok: false, skipped: true, error: 'GA4_PROPERTY_ID no configurado' };
+    }
   } catch (err) {
     results.ga4 = {
       ok: false,
@@ -192,9 +200,10 @@ export async function testGoogleMetrics(workspaceSlug: string) {
     };
   }
 
-  results.connected = Boolean(
-    (results.gsc as { ok?: boolean })?.ok && (results.ga4 as { ok?: boolean })?.ok,
-  );
+  results.connected = Boolean((results.gsc as { ok?: boolean })?.ok);
+  if (hasGa4Configured(config)) {
+    results.connected = results.connected && Boolean((results.ga4 as { ok?: boolean })?.ok);
+  }
 
   return results;
 }

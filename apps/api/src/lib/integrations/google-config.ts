@@ -27,7 +27,7 @@ export function resolveGoogleMetricsConfig(workspaceSlug: string): GoogleMetrics
     process.env[`GA4_${prefix}_PROPERTY_ID`] ||
     (workspaceSlug === 'cleexs' ? process.env.GA4_PROPERTY_ID : undefined);
 
-  if (!jsonRaw || !gscSiteUrl || !ga4PropertyId) {
+  if (!jsonRaw || !gscSiteUrl) {
     return null;
   }
 
@@ -35,7 +35,7 @@ export function resolveGoogleMetricsConfig(workspaceSlug: string): GoogleMetrics
     return {
       serviceAccount: parseServiceAccountJson(jsonRaw),
       gscSiteUrl,
-      ga4PropertyId: ga4PropertyId.replace(/^properties\//, ''),
+      ga4PropertyId: ga4PropertyId?.replace(/^properties\//, '') ?? '',
     };
   } catch {
     return null;
@@ -43,7 +43,11 @@ export function resolveGoogleMetricsConfig(workspaceSlug: string): GoogleMetrics
 }
 
 export function isGoogleMetricsConfigured(config: GoogleMetricsConfig | null): config is GoogleMetricsConfig {
-  return Boolean(config?.gscSiteUrl && config?.ga4PropertyId && config?.serviceAccount);
+  return Boolean(config?.gscSiteUrl && config?.serviceAccount);
+}
+
+export function hasGa4Configured(config: GoogleMetricsConfig | null): boolean {
+  return Boolean(config?.ga4PropertyId);
 }
 
 export function getGoogleMetricsStatus(workspaceSlug: string) {
