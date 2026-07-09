@@ -139,3 +139,41 @@ docker compose -f docker-compose.prod.yml up -d --build
 | CORS error | Agregá el dominio del backoffice en `FRONTEND_URLS` |
 | Migraciones fallan | Revisá logs de API al arrancar; Postgres debe estar healthy |
 | WP publish falla | Verificá credenciales `WORDPRESS_*` en el servicio API |
+| GSC/GA4 sin datos | Service account agregada en GSC + GA4; `GA4_PROPERTY_ID` configurado |
+
+---
+
+## 8. Google Search Console + GA4
+
+### Service account (proyecto GCP **Cleexs**)
+
+Email: `agente-teo-metrics@gen-lang-client-0925506379.iam.gserviceaccount.com`
+
+1. **Search Console** → Configuración → Usuarios → agregar email con permiso **Completo** (o mínimo ver datos)
+2. **GA4** → Admin → Acceso a la propiedad → agregar email como **Lector**
+3. Anotar **Property ID** de GA4 (Admin → Detalles de la propiedad)
+
+### Variables API
+
+```env
+GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
+GSC_SITE_URL=https://cleexs.net/
+GA4_PROPERTY_ID=123456789
+```
+
+### Probar conexión
+
+```bash
+curl -X POST https://agente-cleexs-api.wd75db.easypanel.host/api/integrations/cleexs/google/test
+```
+
+### Sync diario (cron Easypanel)
+
+```bash
+curl -X POST https://agente-cleexs-api.wd75db.easypanel.host/api/cron/metrics-sync \
+  -H "x-cron-secret: TU_CRON_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"workspace":"cleexs"}'
+```
+
+Programar 1 vez por día (ej. 6:00 AM).
