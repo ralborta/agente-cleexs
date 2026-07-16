@@ -364,3 +364,25 @@ model MetricSnapshot {
   @@index([workspaceId, url, capturedAt])
   @@map("metric_snapshots")
 }
+
+// ============================================
+// WHATSAPP (Baileys / BuilderBot bridge)
+// ============================================
+
+model WhatsAppMessage {
+  id           String   @id @default(uuid())
+  chatId       String   @map("chat_id")
+  phoneDigits  String?  @map("phone_digits")
+  direction    String
+  message      String   @db.Text
+  mediaUrl     String?  @map("media_url")
+  status       String   @default("received")
+  source       String?
+  externalId   String?  @map("external_id")
+  errorMessage String?  @map("error_message") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([chatId, createdAt])
+  @@index([phoneDigits])
+  @@map("whatsapp_messages")
+}

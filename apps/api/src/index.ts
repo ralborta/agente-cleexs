@@ -10,6 +10,8 @@ import resultsRoutes from './routes/results';
 import contentRoutes from './routes/content';
 import cronRoutes from './routes/cron';
 import integrationRoutes from './routes/integrations';
+import webhookRoutes from './routes/webhooks';
+import whatsappRoutes from './routes/whatsapp';
 import { startAutonomousScheduler } from './lib/job-scheduler';
 
 async function bootstrap() {
@@ -42,6 +44,8 @@ async function bootstrap() {
   await server.register(contentRoutes, { prefix: '/api/content' });
   await server.register(cronRoutes, { prefix: '/api/cron' });
   await server.register(integrationRoutes, { prefix: '/api/integrations' });
+  await server.register(webhookRoutes, { prefix: '/api/webhooks' });
+  await server.register(whatsappRoutes, { prefix: '/api/whatsapp' });
 
   const port = Number(process.env.API_PORT || 4000);
   const host = '0.0.0.0';

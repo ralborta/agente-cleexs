@@ -40,6 +40,9 @@ services:
       WORDPRESS_APP_PASSWORD: ${WORDPRESS_APP_PASSWORD}
       WORDPRESS_APPROVAL_STATUS: ${WORDPRESS_APPROVAL_STATUS:-draft}
       WORDPRESS_CATEGORY_ID: ${WORDPRESS_CATEGORY_ID:-18}
+      BAILEYS_BOT_URL: ${BAILEYS_BOT_URL:-http://cleexs-wa-bot:3008}
+      CLEEXS_API_URL: ${CLEEXS_API_URL:-}
+      WHATSAPP_CHANNEL_API_KEY: ${WHATSAPP_CHANNEL_API_KEY:-}
     ports:
       - '4000:4000'
 
@@ -57,5 +60,27 @@ services:
     ports:
       - '3000:3000'
 
+  cleexs-wa-bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      PORT: 3008
+      AGENTE_API_URL: http://api:4000
+      BOT_PUBLIC_URL: http://cleexs-wa-bot:3008
+      BOT_SESSION_NAME: cleexs
+      MEDIA_DIR: /app/assets/inbound
+      BOT_DB_PATH: /app/data/db.json
+    volumes:
+      - cleexs_wa_sessions:/app/cleexs_sessions
+      - cleexs_wa_data:/app/data
+    ports:
+      - '3008:3008'
+
 volumes:
   agente_pg_data:
+  cleexs_wa_sessions:
+  cleexs_wa_data:

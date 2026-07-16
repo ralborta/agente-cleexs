@@ -177,3 +177,68 @@ curl -X POST https://agente-cleexs-api.wd75db.easypanel.host/api/cron/metrics-sy
 ```
 
 Programar 1 vez por día (ej. 6:00 AM).
+
+---
+
+## 9. Bot WhatsApp (Baileys self-hosted)
+
+Servicio aparte en EasyPanel, patrón Andreu.
+
+| Campo | Valor |
+|-------|-------|
+| Tipo | App → Docker |
+| Dockerfile | `bot/Dockerfile` |
+| Context | `/bot` |
+| Puerto | `3008` |
+| Dominio (opcional) | `wa-bot.cleexs.net` o solo interno |
+
+### Variables bot (`cleexs-wa-bot`)
+
+```env
+PORT=3008
+AGENTE_API_URL=http://agente-cleexs-api:4000
+BOT_PUBLIC_URL=http://cleexs-wa-bot:3008
+BOT_SESSION_NAME=cleexs
+MEDIA_DIR=/app/assets/inbound
+BOT_DB_PATH=/app/data/db.json
+```
+
+Volúmenes:
+- `/app/cleexs_sessions` — sesión WhatsApp (no perder al redeploy)
+- `/app/data` — `db.json` del bot
+
+### Variables API agentes (agregar al servicio API)
+
+```env
+BAILEYS_BOT_URL=http://cleexs-wa-bot:3008
+CLEEXS_API_URL=https://api.cleexs.net
+WHATSAPP_CHANNEL_API_KEY=...mismo que Railway Cleexs...
+```
+
+### Vincular WhatsApp
+
+1. Abrí `https://TU-DOMINIO-BOT/` o el puerto 3008 → escaneá QR.
+2. Verificá: `curl http://cleexs-wa-bot:3008/health`
+3. API agentes: `curl https://api-agents.cleexs.net/api/whatsapp/status`
+
+### Flujo de mensajes
+
+```
+Cliente WA → cleexs-wa-bot → POST /api/webhooks/builderbot (API agentes)
+                                    ↓ si hay URL
+                              Cleexs API /diagnostic/whatsapp/url
+                                    ↓ reply
+                              Bot envía respuesta al cliente
+```
+
+### Cleexs Railway (envíos salientes desde diagnóstico)
+
+En la API de Cleexs (Railway), agregá:
+
+```env
+BAILEYS_BOT_URL=https://wa-bot.cleexs.net
+```
+
+(o URL interna si comparten red; en prod suele ser el dominio público del bot en EasyPanel)
+
+Podés mantener `BUILDERBOT_*` como fallback hasta cortar BBC.

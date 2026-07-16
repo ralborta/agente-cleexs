@@ -1,0 +1,20 @@
+{
+  "name": "cleexs-wa-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp Baileys self-hosted para Cleexs + agentes",
+  "main": "src/app.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --signal SIGKILL ./src/app.js",
+    "start": "node ./src/app.js"
+  },
+  "dependencies": {
+    "@builderbot/bot": "1.4.2",
+    "@builderbot/provider-baileys": "1.4.2",
+    "@builderbot/database-json": "1.4.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  },
+  "license": "ISC"
+}
