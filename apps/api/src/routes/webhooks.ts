@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { askCleexsWhatsAppAssistant, CLEEXS_BBC_GREETING, isCleexsGreeting } from '../lib/whatsapp/cleexs-assistant';
+import { sendWhatsAppMessage } from '../lib/whatsapp/builderbot-send';
 import { logWhatsAppMessage } from '../lib/whatsapp/message-log';
 import { normalizeBuilderBotPayload, extractUrlFromMessage } from '../lib/whatsapp/normalize-payload';
 
@@ -39,13 +40,32 @@ async function forwardDiagnosticUrlToCleexs(params: {
   }
 }
 
+/** Como Andreu: la API entrega el texto al bot Baileys (return message no alcanza). */
+async function deliverReply(params: {
+  phone: string;
+  message: string;
+  flow: string;
+  source: string;
+  log: { error: (obj: unknown, msg?: string) => void };
+}): Promise<{ sent: boolean; error?: string }> {
+  try {
+    await sendWhatsAppMessage({
+      number: params.phone,
+      message: params.message,
+      logSource: params.source,
+    });
+    return { sent: true };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    params.log.error({ err, phone: params.phone, flow: params.flow }, 'WA send falló');
+    return { sent: false, error };
+  }
+}
+
 const webhookRoutes: FastifyPluginAsync = async (server) => {
   /**
-   * Mismo contrato que Andreu → BBC Cloud, pero con Baileys (BBC Open).
-   * Routing espejo del proyecto Cleexs / Cleexs Open:
-   *   URL → diagnóstico Cleexs
-   *   saludo → texto BBC Saludo
-   *   resto → Consultas IA (prompt exacto vía Cleexs /whatsapp/assistant)
+   * Mismo contrato que Andreu Baileys:
+   * bot reenvía → API decide → API manda por POST /v1/messages
    */
   server.post('/builderbot', async (request, reply) => {
     const body = (request.body ?? {}) as Record<string, unknown>;
@@ -73,28 +93,40 @@ const webhookRoutes: FastifyPluginAsync = async (server) => {
 
       const replyText = `${cleexs?.reply ?? ''}`.trim();
       if (replyText) {
-        void logWhatsAppMessage({
-          chatId: inbound.chatId,
+        const delivery = await deliverReply({
+          phone: inbound.phone,
           message: replyText,
-          direction: 'outbound',
+          flow: 'diagnostic_url',
           source: 'cleexs_diagnostic',
-          status: 'pending_bot_send',
+          log: server.log,
         });
-        return reply.send({ received: true, flow: 'diagnostic_url', message: replyText });
+        return reply.send({
+          received: true,
+          flow: 'diagnostic_url',
+          message: replyText,
+          sent: delivery.sent,
+          sendError: delivery.error,
+        });
       }
 
       return reply.send({ received: true, flow: 'diagnostic_url', code: cleexs?.code ?? 'no_reply' });
     }
 
     if (isCleexsGreeting(inbound.body)) {
-      void logWhatsAppMessage({
-        chatId: inbound.chatId,
+      const delivery = await deliverReply({
+        phone: inbound.phone,
         message: CLEEXS_BBC_GREETING,
-        direction: 'outbound',
+        flow: 'saludo',
         source: 'bbc_saludo',
-        status: 'pending_bot_send',
+        log: server.log,
       });
-      return reply.send({ received: true, flow: 'saludo', message: CLEEXS_BBC_GREETING });
+      return reply.send({
+        received: true,
+        flow: 'saludo',
+        message: CLEEXS_BBC_GREETING,
+        sent: delivery.sent,
+        sendError: delivery.error,
+      });
     }
 
     try {
@@ -103,17 +135,19 @@ const webhookRoutes: FastifyPluginAsync = async (server) => {
         message: inbound.body,
       });
       if (assistant?.message) {
-        void logWhatsAppMessage({
-          chatId: inbound.chatId,
+        const delivery = await deliverReply({
+          phone: inbound.phone,
           message: assistant.message,
-          direction: 'outbound',
+          flow: assistant.flow || 'consultas_ia',
           source: 'bbc_consultas_ia',
-          status: 'pending_bot_send',
+          log: server.log,
         });
         return reply.send({
           received: true,
           flow: assistant.flow || 'consultas_ia',
           message: assistant.message,
+          sent: delivery.sent,
+          sendError: delivery.error,
         });
       }
     } catch (err) {

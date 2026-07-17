@@ -9,11 +9,21 @@ const SESSION_NAME = process.env.BOT_SESSION_NAME?.trim() || "cleexs";
 const PUBLIC_BASE =
   process.env.BOT_PUBLIC_URL?.trim() || `http://127.0.0.1:${PORT}`;
 
-const agenteHandler = async (ctx, { provider, fallBack }) => {
+/**
+ * Como Andreu: el bot solo reenvía. La API Agente responde con POST /v1/messages.
+ * (return de addAction NO envía texto en BuilderBot OSS)
+ */
+const agenteHandler = async (ctx, { provider, fallBack, flowDynamic }) => {
   try {
     const result = await forwardToAgente(ctx, provider, { publicBaseUrl: PUBLIC_BASE });
-    if (result?.message && typeof result.message === "string" && result.message.trim()) {
-      return result.message;
+    // Fallback si la API devolvió texto pero no pudo enviar (sent !== true)
+    if (
+      result?.sent !== true &&
+      result?.message &&
+      typeof result.message === "string" &&
+      result.message.trim()
+    ) {
+      await flowDynamic(result.message.trim());
     }
   } catch (err) {
     console.error("[cleexs-wa-bot] forward error:", err.message);
