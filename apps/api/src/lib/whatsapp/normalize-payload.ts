@@ -1,14 +1,21 @@
-const URL_REGEX =
-  /https?:\/\/[^\s<>"')\]]+/i;
+/** Igual que Cleexs: http(s), www y dominios tipo empresa.com */
+const URL_IN_TEXT =
+  /(?:https?:\/\/)?(?:www\.)?([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+)(?:\/[^\s]*)?/gi;
 
 export function sanitizeInboundText(raw: unknown): string {
   return `${raw ?? ''}`.replace(/\u0000/g, '').trim();
 }
 
 export function extractUrlFromMessage(text: string): string | null {
-  const match = sanitizeInboundText(text).match(URL_REGEX);
-  if (!match) return null;
-  return match[0].replace(/[.,;:!?)]+$/, '');
+  const cleaned = sanitizeInboundText(text);
+  if (!cleaned) return null;
+  for (const m of cleaned.matchAll(URL_IN_TEXT)) {
+    const host = (m[1] || '').toLowerCase();
+    if (host.length < 4 || host.endsWith('.png') || host.endsWith('.jpg')) continue;
+    const raw = m[0].trim().replace(/[.,;:!?)]+$/, '');
+    return raw.startsWith('http') ? raw : `https://${raw.replace(/^www\./i, '')}`;
+  }
+  return null;
 }
 
 export interface NormalizedInbound {

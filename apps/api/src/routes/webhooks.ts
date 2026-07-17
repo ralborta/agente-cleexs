@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { askCleexsWhatsAppAssistant, CLEEXS_BBC_GREETING, isCleexsGreeting } from '../lib/whatsapp/cleexs-assistant';
 import { logWhatsAppMessage } from '../lib/whatsapp/message-log';
 import { normalizeBuilderBotPayload, extractUrlFromMessage } from '../lib/whatsapp/normalize-payload';
 
@@ -39,6 +40,13 @@ async function forwardDiagnosticUrlToCleexs(params: {
 }
 
 const webhookRoutes: FastifyPluginAsync = async (server) => {
+  /**
+   * Mismo contrato que Andreu → BBC Cloud, pero con Baileys (BBC Open).
+   * Routing espejo del proyecto Cleexs / Cleexs Open:
+   *   URL → diagnóstico Cleexs
+   *   saludo → texto BBC Saludo
+   *   resto → Consultas IA (prompt exacto vía Cleexs /whatsapp/assistant)
+   */
   server.post('/builderbot', async (request, reply) => {
     const body = (request.body ?? {}) as Record<string, unknown>;
     server.log.info({ eventName: body.eventName }, 'WA webhook recibido');
@@ -78,7 +86,41 @@ const webhookRoutes: FastifyPluginAsync = async (server) => {
       return reply.send({ received: true, flow: 'diagnostic_url', code: cleexs?.code ?? 'no_reply' });
     }
 
-    return reply.send({ received: true, flow: 'logged' });
+    if (isCleexsGreeting(inbound.body)) {
+      void logWhatsAppMessage({
+        chatId: inbound.chatId,
+        message: CLEEXS_BBC_GREETING,
+        direction: 'outbound',
+        source: 'bbc_saludo',
+        status: 'pending_bot_send',
+      });
+      return reply.send({ received: true, flow: 'saludo', message: CLEEXS_BBC_GREETING });
+    }
+
+    try {
+      const assistant = await askCleexsWhatsAppAssistant({
+        phone: inbound.phone,
+        message: inbound.body,
+      });
+      if (assistant?.message) {
+        void logWhatsAppMessage({
+          chatId: inbound.chatId,
+          message: assistant.message,
+          direction: 'outbound',
+          source: 'bbc_consultas_ia',
+          status: 'pending_bot_send',
+        });
+        return reply.send({
+          received: true,
+          flow: assistant.flow || 'consultas_ia',
+          message: assistant.message,
+        });
+      }
+    } catch (err) {
+      server.log.error({ err }, 'WA assistant Cleexs falló');
+    }
+
+    return reply.send({ received: true, flow: 'logged', code: 'assistant_unavailable' });
   });
 };
 
