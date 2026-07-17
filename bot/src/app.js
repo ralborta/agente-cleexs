@@ -143,12 +143,10 @@ const main = async () => {
   });
 
   /**
-   * Página HTML con QR que se auto-actualiza.
-   * Importante: Baileys rota el QR ~cada 60s. Si la pantalla queda con un PNG viejo
-   * y el usuario escanea tarde, WhatsApp vincula mal / genera conflicto.
+   * Página HTML con QR auto-actualizable.
+   * NO usar "/" — Baileys Provider pisa "/" con el PNG crudo (QR estático / viejo).
    */
-  adapterProvider.server.get("/", (_req, res) => {
-    const snap = getSessionSnapshot(adapterProvider);
+  const sendQrPage = (_req, res) => {
     res.writeHead(200, {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store, no-cache, must-revalidate",
@@ -166,7 +164,6 @@ const main = async () => {
     .warn { color: #a15c00; font-weight: 600; }
     .bad { color: #b00020; font-weight: 600; }
     img { width: 280px; height: 280px; display: block; margin: 1rem 0; border: 1px solid #ddd; }
-    code { background: #f3f3f3; padding: .1rem .35rem; border-radius: 4px; }
     ul { padding-left: 1.2rem; line-height: 1.45; }
   </style>
 </head>
@@ -178,6 +175,7 @@ const main = async () => {
     <li>Escaneá <strong>solo el QR que ves ahora</strong> (se renueva solo).</li>
     <li>Si tarda &gt; 40 s, <strong>esperá el QR nuevo</strong>; no uses uno viejo.</li>
     <li>Cuando diga conectado, <strong>no vuelvas a escanear</strong>.</li>
+    <li>No uses el PNG de la raíz <code>/</code> ni el QR del admin Cleexs.</li>
   </ul>
   <script>
     const statusEl = document.getElementById('status');
@@ -226,7 +224,9 @@ const main = async () => {
   </script>
 </body>
 </html>`);
-  });
+  };
+  adapterProvider.server.get("/vincular", sendQrPage);
+  adapterProvider.server.get("/qr", sendQrPage);
 
   httpServer(PORT);
   console.log(`[cleexs-wa-bot] WhatsApp Baileys escuchando en :${PORT}`);
