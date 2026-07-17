@@ -1,6 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { askCleexsWhatsAppAssistant, CLEEXS_BBC_GREETING, isCleexsGreeting } from '../lib/whatsapp/cleexs-assistant';
-import { sendWhatsAppMessage } from '../lib/whatsapp/builderbot-send';
 import { logWhatsAppMessage } from '../lib/whatsapp/message-log';
 import { normalizeBuilderBotPayload, extractUrlFromMessage } from '../lib/whatsapp/normalize-payload';
 
@@ -40,32 +39,14 @@ async function forwardDiagnosticUrlToCleexs(params: {
   }
 }
 
-/** Como Andreu: la API entrega el texto al bot Baileys (return message no alcanza). */
-async function deliverReply(params: {
-  phone: string;
-  message: string;
-  flow: string;
-  source: string;
-  log: { error: (obj: unknown, msg?: string) => void };
-}): Promise<{ sent: boolean; error?: string }> {
-  try {
-    await sendWhatsAppMessage({
-      number: params.phone,
-      message: params.message,
-      logSource: params.source,
-    });
-    return { sent: true };
-  } catch (err) {
-    const error = err instanceof Error ? err.message : String(err);
-    params.log.error({ err, phone: params.phone, flow: params.flow }, 'WA send falló');
-    return { sent: false, error };
-  }
-}
-
 const webhookRoutes: FastifyPluginAsync = async (server) => {
   /**
-   * Mismo contrato que Andreu Baileys:
-   * bot reenvía → API decide → API manda por POST /v1/messages
+   * Patrón Andreu Baileys (inbound sync):
+   * - bot reenvía mensaje
+   * - API decide y responde { message }
+   * - bot entrega con flowDynamic (no POST /v1/messages en el inbound)
+   *
+   * /v1/messages queda para envíos async (score listo, etc.).
    */
   server.post('/builderbot', async (request, reply) => {
     const body = (request.body ?? {}) as Record<string, unknown>;
@@ -93,40 +74,28 @@ const webhookRoutes: FastifyPluginAsync = async (server) => {
 
       const replyText = `${cleexs?.reply ?? ''}`.trim();
       if (replyText) {
-        const delivery = await deliverReply({
-          phone: inbound.phone,
+        void logWhatsAppMessage({
+          chatId: inbound.chatId,
           message: replyText,
-          flow: 'diagnostic_url',
+          direction: 'outbound',
           source: 'cleexs_diagnostic',
-          log: server.log,
+          status: 'pending_bot_send',
         });
-        return reply.send({
-          received: true,
-          flow: 'diagnostic_url',
-          message: replyText,
-          sent: delivery.sent,
-          sendError: delivery.error,
-        });
+        return reply.send({ received: true, flow: 'diagnostic_url', message: replyText });
       }
 
       return reply.send({ received: true, flow: 'diagnostic_url', code: cleexs?.code ?? 'no_reply' });
     }
 
     if (isCleexsGreeting(inbound.body)) {
-      const delivery = await deliverReply({
-        phone: inbound.phone,
+      void logWhatsAppMessage({
+        chatId: inbound.chatId,
         message: CLEEXS_BBC_GREETING,
-        flow: 'saludo',
+        direction: 'outbound',
         source: 'bbc_saludo',
-        log: server.log,
+        status: 'pending_bot_send',
       });
-      return reply.send({
-        received: true,
-        flow: 'saludo',
-        message: CLEEXS_BBC_GREETING,
-        sent: delivery.sent,
-        sendError: delivery.error,
-      });
+      return reply.send({ received: true, flow: 'saludo', message: CLEEXS_BBC_GREETING });
     }
 
     try {
@@ -135,19 +104,17 @@ const webhookRoutes: FastifyPluginAsync = async (server) => {
         message: inbound.body,
       });
       if (assistant?.message) {
-        const delivery = await deliverReply({
-          phone: inbound.phone,
+        void logWhatsAppMessage({
+          chatId: inbound.chatId,
           message: assistant.message,
-          flow: assistant.flow || 'consultas_ia',
+          direction: 'outbound',
           source: 'bbc_consultas_ia',
-          log: server.log,
+          status: 'pending_bot_send',
         });
         return reply.send({
           received: true,
           flow: assistant.flow || 'consultas_ia',
           message: assistant.message,
-          sent: delivery.sent,
-          sendError: delivery.error,
         });
       }
     } catch (err) {

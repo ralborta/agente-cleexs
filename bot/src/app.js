@@ -10,20 +10,26 @@ const PUBLIC_BASE =
   process.env.BOT_PUBLIC_URL?.trim() || `http://127.0.0.1:${PORT}`;
 
 /**
- * Como Andreu: el bot solo reenvía. La API Agente responde con POST /v1/messages.
- * (return de addAction NO envía texto en BuilderBot OSS)
+ * Patrón Andreu Baileys:
+ * - bot reenvía al webhook de la API
+ * - la API decide y devuelve { message }
+ * - acá se entrega con flowDynamic (mismo socket que recibió el mensaje)
+ *
+ * Nota: POST /v1/messages queda para envíos async (scores, etc.).
  */
 const agenteHandler = async (ctx, { provider, fallBack, flowDynamic }) => {
   try {
     const result = await forwardToAgente(ctx, provider, { publicBaseUrl: PUBLIC_BASE });
-    // Fallback si la API devolvió texto pero no pudo enviar (sent !== true)
-    if (
-      result?.sent !== true &&
-      result?.message &&
-      typeof result.message === "string" &&
-      result.message.trim()
-    ) {
-      await flowDynamic(result.message.trim());
+    const text =
+      result?.message && typeof result.message === "string" ? result.message.trim() : "";
+    if (text) {
+      await flowDynamic(text);
+      return;
+    }
+    if (result?.code === "assistant_unavailable") {
+      await flowDynamic(
+        "🙂 Solo puedo ayudarte con Cleexs y tu visibilidad en IA. Pasame la URL de tu empresa (ej. empresa.com).",
+      );
     }
   } catch (err) {
     console.error("[cleexs-wa-bot] forward error:", err.message);
@@ -83,6 +89,7 @@ const main = async () => {
     }
   });
 
+  /** Envío async desde la API (mismo contrato Andreu). */
   adapterProvider.server.post(
     "/v1/messages",
     handleCtx(async (bot, req, res) => {
