@@ -2,6 +2,18 @@
 
 Copia exacta del agente conversacional desde BuilderBot Cloud (**Cleexs**) al canal self-hosted (patrón Andreu).
 
+## ⚠️ CRÍTICO — una sola sesión WhatsApp
+
+BBC Cloud (versión paga) a veces **reconecta y abre varias conexiones**; eso hace que WhatsApp **bloquee números**. En Baileys Open pasa lo mismo si hay 2 contenedores (p. ej. Zero Downtime ON) o redeploys en caliente.
+
+Procedimiento fijo:
+
+- `wa-bot`: **1 réplica**, **Zero Downtime OFF**
+- Deploy: Stop → Deploy → Start → un solo QR
+- Ante conflict/logout: Stop, no loop de reintentos
+
+Ver [deploy-easypanel.md](./deploy-easypanel.md) §9.
+
 ## Proyectos BBC
 
 | Proyecto | UUID | Rol |

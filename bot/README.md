@@ -2,6 +2,20 @@
 
 Bot self-hosted en EasyPanel. Reenvía mensajes a la API de agentes (`/api/webhooks/builderbot`) y envía respuestas cuando la API lo pide.
 
+## ⚠️ CRÍTICO — no multiplicar conexiones
+
+Misma falla que en BBC Cloud pago: **varias conexiones / reconexiones en loop → WhatsApp restringe el número**.
+
+En EasyPanel (`wa-bot`):
+
+1. **Réplicas = 1**
+2. **Zero Downtime = OFF**
+3. Redeploy: **Stop → Deploy → Start → un solo QR** (nunca deploy en caliente con sesión viva)
+4. Si hay `conflict` / logout en logs: **parar el bot**, no reintentar en bucle
+5. Tras un ban temporal: bot apagado hasta que pase; no escanees QR mientras tanto
+
+Detalle: [docs/deploy-easypanel.md](../docs/deploy-easypanel.md) §9.
+
 ## Desarrollo local
 
 ```bash

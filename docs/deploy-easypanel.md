@@ -184,6 +184,23 @@ Programar 1 vez por día (ej. 6:00 AM).
 
 Servicio aparte en EasyPanel, patrón Andreu.
 
+### ⚠️ CRÍTICO — una sola conexión WhatsApp (leer siempre)
+
+BBC Cloud (y Baileys mal operado) puede **abrir varias sesiones / reconectar en loop**. WhatsApp lo detecta y **restringe o bloquea el número** (a veces horas, a veces peor).
+
+**Reglas fijas del procedimiento `wa-bot`:**
+
+| Regla | Valor / acción |
+|-------|----------------|
+| Réplicas | **1** siempre |
+| Zero Downtime | **OFF** (si queda ON, al redeploy hay 2 contenedores → conflict 440 → sesión borrada → loop QR) |
+| Auto-deploy GitHub | Mejor **OFF** en `wa-bot` (deploy manual, bot parado) |
+| Redeploy en caliente | **Prohibido** con sesión viva. Procedimiento: Stop → Deploy → Start → **un solo** escaneo QR |
+| Desconectar / re-escanear | No lo hagas “por las dudas”. Solo si status = `awaiting_qr` y el bot está estable |
+| Tras un bloqueo WA | Dejá el bot **parado** hasta que pase la restricción; no spamees QR |
+
+Si ves en logs `Stream Errored (conflict)` / `Logged out, clearing session`: **Stop inmediato** del servicio. No reintentar en bucle.
+
 | Campo | Valor |
 |-------|-------|
 | Tipo | App → Docker |
@@ -191,6 +208,8 @@ Servicio aparte en EasyPanel, patrón Andreu.
 | Context | `/bot` |
 | Puerto | `3008` |
 | Dominio (opcional) | `wa-bot.cleexs.net` o solo interno |
+| Réplicas | `1` |
+| Zero Downtime | **desactivado** |
 
 ### Variables bot (`cleexs-wa-bot`)
 
@@ -215,11 +234,13 @@ CLEEXS_API_URL=https://api.cleexs.net
 WHATSAPP_CHANNEL_API_KEY=...mismo que Railway Cleexs...
 ```
 
-### Vincular WhatsApp
+### Vincular WhatsApp (una sola vez, con calma)
 
-1. Abrí `https://TU-DOMINIO-BOT/` o el puerto 3008 → escaneá QR.
-2. Verificá: `curl http://cleexs-wa-bot:3008/health`
-3. API agentes: `curl https://api-agents.cleexs.net/api/whatsapp/status`
+1. Confirmá Zero Downtime OFF y replicas = 1.
+2. Start del servicio (una instancia).
+3. Abrí `https://TU-DOMINIO-BOT/` → **un solo** escaneo QR.
+4. Verificá: `curl …/v1/whatsapp/status` → `whatsapp: connected` y `qr_available: false` (o QR viejo).
+5. No desvincules desde el celular salvo emergencia.
 
 ### Flujo de mensajes
 
