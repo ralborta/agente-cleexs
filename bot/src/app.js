@@ -122,6 +122,13 @@ const main = async () => {
   });
 
   adapterProvider.server.get("/v1/whatsapp/qr", (_req, res) => {
+    const snap = getSessionSnapshot(adapterProvider);
+    if (snap.whatsapp === "connected") {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      return res.end(
+        JSON.stringify({ ok: false, error: "Ya conectado — no hay QR (no re-escanees)." }),
+      );
+    }
     const buf = readQrPng();
     if (!buf?.length) {
       res.writeHead(404, { "Content-Type": "application/json" });
@@ -129,24 +136,96 @@ const main = async () => {
     }
     res.writeHead(200, {
       "Content-Type": "image/png",
-      "Cache-Control": "no-store",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      Pragma: "no-cache",
     });
     res.end(buf);
   });
 
+  /**
+   * Página HTML con QR que se auto-actualiza.
+   * Importante: Baileys rota el QR ~cada 60s. Si la pantalla queda con un PNG viejo
+   * y el usuario escanea tarde, WhatsApp vincula mal / genera conflicto.
+   */
   adapterProvider.server.get("/", (_req, res) => {
-    const buf = readQrPng();
-    if (!buf?.length) {
-      res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
-      return res.end(
-        "<html><body><p>QR no listo. Si WhatsApp está desconectado, esperá unos segundos y recargá.</p></body></html>",
-      );
-    }
+    const snap = getSessionSnapshot(adapterProvider);
     res.writeHead(200, {
-      "Content-Type": "image/png",
-      "Cache-Control": "no-store",
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
     });
-    res.end(buf);
+    res.end(`<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cleexs WhatsApp — QR</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 420px; margin: 2rem auto; padding: 0 1rem; color: #111; }
+    h1 { font-size: 1.25rem; margin: 0 0 .5rem; }
+    .ok { color: #0a7a2f; font-weight: 600; }
+    .warn { color: #a15c00; font-weight: 600; }
+    .bad { color: #b00020; font-weight: 600; }
+    img { width: 280px; height: 280px; display: block; margin: 1rem 0; border: 1px solid #ddd; }
+    code { background: #f3f3f3; padding: .1rem .35rem; border-radius: 4px; }
+    ul { padding-left: 1.2rem; line-height: 1.45; }
+  </style>
+</head>
+<body>
+  <h1>Cleexs WhatsApp</h1>
+  <p id="status">Cargando estado…</p>
+  <img id="qr" alt="QR WhatsApp" hidden />
+  <ul>
+    <li>Escaneá <strong>solo el QR que ves ahora</strong> (se renueva solo).</li>
+    <li>Si tarda &gt; 40 s, <strong>esperá el QR nuevo</strong>; no uses uno viejo.</li>
+    <li>Cuando diga conectado, <strong>no vuelvas a escanear</strong>.</li>
+  </ul>
+  <script>
+    const statusEl = document.getElementById('status');
+    const qrEl = document.getElementById('qr');
+    let lastQrAt = null;
+
+    async function tick() {
+      try {
+        const res = await fetch('/v1/whatsapp/status?t=' + Date.now(), { cache: 'no-store' });
+        const s = await res.json();
+        if (s.whatsapp === 'connected') {
+          statusEl.className = 'ok';
+          statusEl.textContent = 'Conectado: ' + (s.phone || 'OK') + ' — no escanees otro QR.';
+          qrEl.hidden = true;
+          qrEl.removeAttribute('src');
+          return;
+        }
+        if (s.qr_available) {
+          const ageSec = s.qr_updated_at
+            ? Math.max(0, Math.round((Date.now() - new Date(s.qr_updated_at).getTime()) / 1000))
+            : null;
+          if (ageSec != null && ageSec > 50) {
+            statusEl.className = 'bad';
+            statusEl.textContent = 'QR vencido (~' + ageSec + 's). Esperá el nuevo; no escanees este.';
+          } else {
+            statusEl.className = 'warn';
+            statusEl.textContent = 'Escaneá este QR ya' + (ageSec != null ? ' (edad ' + ageSec + 's)' : '') + '.';
+          }
+          if (s.qr_updated_at !== lastQrAt) {
+            lastQrAt = s.qr_updated_at;
+            qrEl.hidden = false;
+            qrEl.src = '/v1/whatsapp/qr?t=' + encodeURIComponent(s.qr_updated_at || Date.now());
+          }
+        } else {
+          statusEl.className = 'warn';
+          statusEl.textContent = 'Esperando QR…';
+          qrEl.hidden = true;
+        }
+      } catch (e) {
+        statusEl.className = 'bad';
+        statusEl.textContent = 'No pude leer el estado del bot.';
+      }
+    }
+    tick();
+    setInterval(tick, 2500);
+  </script>
+</body>
+</html>`);
   });
 
   httpServer(PORT);

@@ -11,11 +11,19 @@ function sessionsDir() {
   return join(process.cwd(), `${BOT_NAME}_sessions`);
 }
 
-/** Teléfono desde archivos de sesión Baileys (device-list-54911….json). */
+/** Teléfono desde creds.json (preferido) o device-list-54911….json. */
 function phoneFromSessionFiles() {
   const dir = sessionsDir();
   if (!existsSync(dir)) return null;
   try {
+    const credsPath = join(dir, "creds.json");
+    if (existsSync(credsPath)) {
+      const creds = JSON.parse(readFileSync(credsPath, "utf8"));
+      const id = creds?.me?.id ? String(creds.me.id).split(":")[0] : "";
+      const digits = id.replace(/\D/g, "");
+      if (digits.length >= 9) return digits;
+    }
+    // Fallback: primer device-list (puede haber residuos de contactos).
     const hit = readdirSync(dir).find((f) => /^device-list-\d+\.json$/i.test(f));
     if (!hit) return null;
     const digits = hit.replace(/^device-list-/i, "").replace(/\.json$/i, "");
