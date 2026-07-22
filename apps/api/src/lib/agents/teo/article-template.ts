@@ -123,7 +123,7 @@ function renderSection(section: ArticleSection, pieceType: string): string {
   }
   if (section.items?.length) {
     const listClass = pieceType === 'checklist' ? 'cleexs-checklist' : '';
-    html += `<ul class="${listClass}">${section.items.map((i) => `<li>${i}</li>`).join('')}</ul>`;
+    html += `<ul class="${listClass}">${section.items.map((i) => `<li>${renderInlineLinks(i)}</li>`).join('')}</ul>`;
   }
   if (section.table) {
     const { headers, rows } = section.table;

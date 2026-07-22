@@ -13,7 +13,7 @@ async function main() {
     0,
   );
   const research = runResearcher(plan);
-  const draft = runWriter(plan, research, 'profesional');
+  const draft = await runWriter(plan, research, 'profesional');
   const seo = runSeoBuilder(plan, draft);
 
   const categoryId = await findOrCreateCategory(config, 'Artículos');

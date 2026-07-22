@@ -5,7 +5,9 @@ import {
   isWordPressConfigured,
   pieceContentToHtml,
   resolveWordPressConfig,
+  resolveWordPressPublicUrl,
   testWordPressConnection,
+  updateWordPressPost,
 } from './wordpress';
 
 const DEFAULT_CATEGORY = 'Artículos';
@@ -29,7 +31,9 @@ export async function publishPieceToWordPress(
   }
 
   const content = piece.content as { markdown?: string; html?: string; excerpt?: string } | null;
-  const seoMeta = piece.seoMeta as { slug?: string; metaDescription?: string } | null;
+  const seoMeta = piece.seoMeta as { slug?: string; metaDescription?: string; canonical?: string } | null;
+  const slug = piece.slug ?? seoMeta?.slug;
+  const wpStatus = options?.status ?? config.approvalPostStatus ?? 'draft';
 
   let categoryId = config.defaultCategoryId;
   if (!categoryId) {
@@ -44,14 +48,47 @@ export async function publishPieceToWordPress(
     title: piece.title,
     content: pieceContentToHtml(content),
     excerpt: content?.excerpt ?? seoMeta?.metaDescription,
-    slug: piece.slug ?? seoMeta?.slug,
-    status: options?.status ?? config.approvalPostStatus ?? 'draft',
+    slug,
+    status: wpStatus,
     categories: categoryId ? [categoryId] : undefined,
+  });
+
+  const publicUrl = resolveWordPressPublicUrl(
+    config,
+    wpPost,
+    slug,
+    seoMeta?.canonical,
+  );
+
+  return {
+    externalId: String(wpPost.id),
+    url: publicUrl,
+    status: wpPost.status,
+  };
+}
+
+/** Republica un post ya creado (ej. quedó en draft) y devuelve URL pública. */
+export async function publishExistingWordPressPost(
+  workspaceSlug: string,
+  externalId: string,
+  piece: Pick<ContentPiece, 'slug' | 'seoMeta'>,
+): Promise<PublishResult> {
+  const config = resolveWordPressConfig(workspaceSlug);
+  if (!isWordPressConfigured(config)) {
+    throw new Error(`WordPress no configurado para workspace "${workspaceSlug}"`);
+  }
+
+  const seoMeta = piece.seoMeta as { slug?: string; canonical?: string } | null;
+  const slug = piece.slug ?? seoMeta?.slug;
+
+  const wpPost = await updateWordPressPost(config, Number(externalId), {
+    status: 'publish',
+    slug,
   });
 
   return {
     externalId: String(wpPost.id),
-    url: wpPost.link,
+    url: resolveWordPressPublicUrl(config, wpPost, slug, seoMeta?.canonical),
     status: wpPost.status,
   };
 }

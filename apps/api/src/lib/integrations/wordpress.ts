@@ -26,6 +26,7 @@ export type WordPressPostResponse = {
   status: string;
   slug: string;
   title: { rendered: string };
+  permalink_template?: string;
 };
 
 export function isWordPressConfigured(config: WordPressConfig | null): config is WordPressConfig {
@@ -175,6 +176,36 @@ export async function createWordPressPost(
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+/** URL pública legible (cleexs.net/articulos/slug/), no el preview ?p= de borradores. */
+export function resolveWordPressPublicUrl(
+  config: WordPressConfig,
+  wpPost: Pick<WordPressPostResponse, 'link' | 'slug' | 'permalink_template'>,
+  slugHint?: string | null,
+  canonicalHint?: string | null,
+): string {
+  const canonical = canonicalHint?.trim();
+  if (canonical && canonical.includes('/articulos/')) {
+    return canonical.endsWith('/') ? canonical : `${canonical}/`;
+  }
+
+  const link = wpPost.link?.trim() ?? '';
+  if (link.includes('/articulos/') && !link.includes('?p=')) {
+    return link.endsWith('/') ? link : `${link}/`;
+  }
+
+  const slug = (slugHint ?? wpPost.slug)?.replace(/^\/+|\/+$/g, '');
+  if (slug) {
+    const template = wpPost.permalink_template?.trim();
+    if (template && template.includes('%postname%')) {
+      const built = template.replace('%postname%', slug);
+      return built.endsWith('/') ? built : `${built}/`;
+    }
+    return `${config.baseUrl}/articulos/${slug}/`;
+  }
+
+  return link || config.baseUrl;
 }
 
 export async function updateWordPressPost(

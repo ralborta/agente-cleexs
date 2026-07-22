@@ -62,7 +62,7 @@ const approvalRoutes: FastifyPluginAsync = async (server) => {
       wpResult = await publishPieceToWordPress(
         approval.workspace.slug,
         approval.piece,
-        { status: parsed.data.wpStatus },
+        { status: parsed.data.wpStatus ?? 'publish' },
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al publicar en WordPress';
