@@ -4,6 +4,8 @@ export type StrategistPlan = {
   title: string;
   keyword: string;
   objective: string;
+  /** standard = plantilla rápida; pro = profundo (LLM o fallback enriquecido) */
+  depth?: 'standard' | 'pro';
 };
 
 export type ResearchResult = {

@@ -20,7 +20,29 @@ export const ARTICLE_CSS = `
 .cleexs-cta p{color:#dbeafe;margin:0 0 16px;font-size:15px}
 .cleexs-cta a{display:inline-block;background:#fff;color:#2563eb;font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none}
 .cleexs-meta{font-size:13px;color:#94a3b8;margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0}
+.cleexs-example{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px 20px;margin:20px 0}
+.cleexs-example strong{display:block;color:#92400e;margin-bottom:6px}
+.cleexs-callout{background:#eff6ff;border-left:4px solid #2563eb;border-radius:0 12px 12px 0;padding:14px 18px;margin:20px 0;color:#1e3a8a}
+.cleexs-references{margin:28px 0 0;padding:20px 0 0;border-top:1px solid #e2e8f0}
+.cleexs-references h2{font-size:18px;margin:0 0 12px}
+.cleexs-references ol{margin:0;padding-left:20px;color:#475569}
+.cleexs-references li{margin-bottom:10px}
+.cleexs-references a{color:#2563eb;text-decoration:none}
+.cleexs-references a:hover{text-decoration:underline}
+.cleexs-article a{color:#2563eb;text-decoration:none}
+.cleexs-article a:hover{text-decoration:underline}
 `.replace(/\s+/g, ' ').trim();
+
+export type ArticleReference = {
+  title: string;
+  url: string;
+  note?: string;
+};
+
+export type ArticleExample = {
+  title: string;
+  body: string;
+};
 
 export type ArticleSection = {
   heading?: string;
@@ -28,6 +50,8 @@ export type ArticleSection = {
   items?: string[];
   faqs?: Array<{ q: string; a: string }>;
   table?: { headers: string[]; rows: string[][] };
+  examples?: ArticleExample[];
+  callout?: string;
 };
 
 export type ArticleData = {
@@ -36,9 +60,28 @@ export type ArticleData = {
   lead: string;
   sections: ArticleSection[];
   pieceType: string;
+  references?: ArticleReference[];
   ctaUrl?: string;
   ctaLabel?: string;
 };
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Convierte markdown básico [texto](url) a enlaces HTML seguros. */
+export function renderInlineLinks(text: string): string {
+  const escaped = escapeHtml(text);
+  return escaped.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (_m, label: string, url: string) =>
+      `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`,
+  );
+}
 
 function ctaBlock(data: ArticleData) {
   const url = data.ctaUrl || 'https://app.cleexs.net/diagnostico/crear?url=';
@@ -57,7 +100,18 @@ function renderSection(section: ArticleSection, pieceType: string): string {
     html += `<h2>${section.heading}</h2>`;
   }
   if (section.body) {
-    html += `<p>${section.body}</p>`;
+    html += `<p>${renderInlineLinks(section.body)}</p>`;
+  }
+  if (section.callout) {
+    html += `<div class="cleexs-callout">${renderInlineLinks(section.callout)}</div>`;
+  }
+  if (section.examples?.length) {
+    html += section.examples
+      .map(
+        (ex) =>
+          `<div class="cleexs-example"><strong>${escapeHtml(ex.title)}</strong><p style="margin:0">${renderInlineLinks(ex.body)}</p></div>`,
+      )
+      .join('');
   }
   if (section.faqs?.length) {
     html += section.faqs
@@ -78,13 +132,26 @@ function renderSection(section: ArticleSection, pieceType: string): string {
   return html;
 }
 
+function renderReferences(refs: ArticleReference[]): string {
+  if (!refs.length) return '';
+  const items = refs
+    .map((ref) => {
+      const note = ref.note ? ` — ${escapeHtml(ref.note)}` : '';
+      return `<li><a href="${escapeHtml(ref.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(ref.title)}</a>${note}</li>`;
+    })
+    .join('');
+  return `<section class="cleexs-references"><h2>Referencias y lecturas recomendadas</h2><ol>${items}</ol></section>`;
+}
+
 export function renderArticleHtml(data: ArticleData): string {
   const sectionsHtml = data.sections.map((s) => renderSection(s, data.pieceType)).join('\n');
+  const referencesHtml = data.references?.length ? renderReferences(data.references) : '';
   return `<style>${ARTICLE_CSS}</style>
 <article class="cleexs-article">
-  <span class="cleexs-article__kicker">${data.kicker}</span>
-  <p class="cleexs-article__lead">${data.lead}</p>
+  <span class="cleexs-article__kicker">${escapeHtml(data.kicker)}</span>
+  <p class="cleexs-article__lead">${renderInlineLinks(data.lead)}</p>
   ${sectionsHtml}
+  ${referencesHtml}
   ${ctaBlock(data)}
   <p class="cleexs-meta">Por Teo · Agente de contenido Cleexs</p>
 </article>`;

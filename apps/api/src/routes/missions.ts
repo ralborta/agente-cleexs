@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { logAgentActivity } from '../lib/agent-helpers';
 import { queueMissionExecution } from '../lib/mission-executor';
+import { buildMissionObjective } from '../lib/agents/teo/mission-plan';
 
 const createMissionSchema = z.object({
   workspaceSlug: z.string().min(1),
@@ -10,6 +11,12 @@ const createMissionSchema = z.object({
   title: z.string().min(1).optional(),
   objective: z.string().optional(),
   autoExecute: z.boolean().default(true),
+  /** Tema principal (ej. "visibilidad en IA") */
+  topic: z.string().min(1).optional(),
+  /** pillar | faq | checklist | comparison | how_to */
+  pieceType: z.enum(['pillar', 'faq', 'checklist', 'comparison', 'how_to']).optional(),
+  /** pro = artículo profundo con ejemplos, referencias y links */
+  depth: z.enum(['standard', 'pro']).optional(),
 });
 
 const missionRoutes: FastifyPluginAsync = async (server) => {
@@ -45,7 +52,8 @@ const missionRoutes: FastifyPluginAsync = async (server) => {
       return reply.status(400).send({ error: parsed.error.flatten() });
     }
 
-    const { workspaceSlug, agentSlug, title, objective, autoExecute } = parsed.data;
+    const { workspaceSlug, agentSlug, title, objective, autoExecute, topic, pieceType, depth } =
+      parsed.data;
 
     const workspace = await prisma.workspace.findUnique({ where: { slug: workspaceSlug } });
     const agent = await prisma.agent.findUnique({ where: { slug: agentSlug } });
@@ -59,7 +67,7 @@ const missionRoutes: FastifyPluginAsync = async (server) => {
         workspaceId: workspace.id,
         agentId: agent.id,
         title: title ?? `Misión manual — ${new Date().toLocaleDateString('es-AR')}`,
-        objective,
+        objective: buildMissionObjective(objective, { topic, pieceType, depth }),
         status: 'pending',
         trigger: 'manual',
       },

@@ -11,6 +11,7 @@ import {
   runStrategist,
   runWriter,
 } from './agents/teo/pipeline';
+import { parseMissionPlanHints } from './agents/teo/mission-plan';
 
 const runningMissions = new Set<string>();
 
@@ -62,8 +63,14 @@ export async function executeMission(missionId: string) {
       where: { workspaceId: mission.workspaceId },
     });
 
+    const planHints = parseMissionPlanHints(mission);
+
     // --- Estratega ---
-    const plan = runStrategist(teoConfig, missionCount);
+    const plan = runStrategist(teoConfig, missionCount, {
+      ...planHints,
+      title: mission.title?.startsWith('Misión manual') ? undefined : mission.title ?? undefined,
+      objective: mission.objective ?? undefined,
+    });
     const stepStrategist = await createMissionStep({
       missionId,
       role: 'strategist',
@@ -97,12 +104,12 @@ export async function executeMission(missionId: string) {
     await completeMissionStep(stepResearch.id, research);
 
     // --- Escritor ---
-    const draft = runWriter(plan, research, teoConfig.tone);
+    const draft = await runWriter(plan, research, teoConfig.tone);
     const stepWriter = await createMissionStep({
       missionId,
       role: 'writer',
-      message: 'Borrador generado',
-      output: { excerpt: draft.excerpt },
+      message: `Borrador generado (${draft.writerMode ?? 'template'})`,
+      output: { excerpt: draft.excerpt, writerMode: draft.writerMode },
     });
     await logAgentActivity({
       workspaceId: mission.workspaceId,

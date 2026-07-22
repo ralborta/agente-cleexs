@@ -1,4 +1,6 @@
 import { renderArticleHtml, type ArticleData } from './article-template';
+import { generateArticleWithLlm, isLlmWriterEnabled } from './llm-writer';
+import { buildProArticleData } from './pro-content-fallback';
 import type { StrategistPlan } from './types';
 
 type Research = import('./types').ResearchResult;
@@ -125,15 +127,69 @@ export function buildArticleData(
   }
 }
 
-export function runWriterRich(plan: StrategistPlan, research: Research, tone?: string | null) {
-  const articleData = buildArticleData(plan, research, tone);
+function articleToMarkdown(data: ArticleData): string {
+  const lines = [`# ${data.title}`, '', data.lead, ''];
+  for (const section of data.sections) {
+    if (section.heading) lines.push(`## ${section.heading}`, '');
+    if (section.body) lines.push(section.body, '');
+    if (section.callout) lines.push(`> ${section.callout}`, '');
+    if (section.examples?.length) {
+      for (const ex of section.examples) {
+        lines.push(`### ${ex.title}`, '', ex.body, '');
+      }
+    }
+    if (section.items?.length) {
+      lines.push(...section.items.map((i) => `- ${i}`), '');
+    }
+    if (section.faqs?.length) {
+      for (const faq of section.faqs) {
+        lines.push(`**${faq.q}**`, '', faq.a, '');
+      }
+    }
+  }
+  if (data.references?.length) {
+    lines.push('## Referencias', '');
+    for (const ref of data.references) {
+      lines.push(`- [${ref.title}](${ref.url})${ref.note ? ` — ${ref.note}` : ''}`);
+    }
+  }
+  return lines.join('\n').trim();
+}
+
+export async function runWriterRich(plan: StrategistPlan, research: Research, tone?: string | null) {
+  const usePro = plan.depth === 'pro' || plan.pieceType === 'pillar';
+  let articleData: ArticleData;
+  let writerMode: 'llm' | 'pro_fallback' | 'template' = 'template';
+
+  if (usePro && isLlmWriterEnabled()) {
+    try {
+      articleData = await generateArticleWithLlm(plan, research, tone);
+      writerMode = 'llm';
+    } catch (err) {
+      console.warn(
+        '[teo-writer] LLM falló, usando fallback PRO:',
+        err instanceof Error ? err.message : err,
+      );
+      articleData = buildProArticleData(plan, tone);
+      writerMode = 'pro_fallback';
+    }
+  } else if (usePro) {
+    articleData = buildProArticleData(plan, tone);
+    writerMode = 'pro_fallback';
+  } else {
+    articleData = buildArticleData(plan, research, tone);
+    writerMode = 'template';
+  }
+
   const html = renderArticleHtml(articleData);
   const excerpt = articleData.lead.slice(0, 160);
+  const bodyMarkdown = articleToMarkdown(articleData);
 
   return {
     articleData,
     html,
     excerpt,
-    bodyMarkdown: `# ${plan.title}\n\n${articleData.lead}`,
+    bodyMarkdown,
+    writerMode,
   };
 }
