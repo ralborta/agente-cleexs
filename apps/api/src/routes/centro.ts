@@ -146,7 +146,6 @@ const centroRoutes: FastifyPluginAsync = async (server) => {
           label: 'Impresiones Google',
           value: impressions._sum.impressions ?? 0,
           hint: 'Search Console',
-          trend: '+18% vs mes anterior',
         },
         {
           label: 'En aprobación',

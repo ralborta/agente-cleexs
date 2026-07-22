@@ -36,7 +36,7 @@ export async function fetchApprovals(workspace: string) {
   );
 }
 
-export async function approvePiece(id: string, wpStatus: 'draft' | 'publish' = 'draft') {
+export async function approvePiece(id: string, wpStatus: 'draft' | 'publish' = 'publish') {
   return api<{ ok: boolean; wordpress: { externalId: string; url: string; status: string } }>(
     `/api/approvals/${id}/approve`,
     { method: 'POST', body: JSON.stringify({ wpStatus }) },
@@ -70,6 +70,7 @@ export async function fetchResults(workspace: string) {
       publishedAt: string | null;
       piece: {
         title: string;
+        slug: string | null;
         type: string;
         mission?: { agent?: { name: string } | null } | null;
       };
@@ -92,9 +93,17 @@ export async function fetchPieces(workspace: string) {
   }>(`/api/content/pieces?workspace=${workspace}`);
 }
 
+export async function fetchAnalytics(workspace: string, period: 7 | 30 | 90 = 30) {
+  return api<import('./analytics-types').AnalyticsDashboard>(
+    `/api/analytics/${workspace}?period=${period}`,
+  );
+}
+
 export function pieceAuthorName(
   piece: { mission?: { agent?: { name: string } | null } | null },
   fallback = 'Teo',
 ) {
   return piece.mission?.agent?.name ?? fallback;
 }
+
+export { resolvePublicationUrl } from './publication-url';

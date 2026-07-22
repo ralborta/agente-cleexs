@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { CentroShell } from '@/components/shell/centro-shell';
-import { fetchPieces, pieceAuthorName } from '@/lib/api-client';
+import { fetchPieces, pieceAuthorName, resolvePublicationUrl } from '@/lib/api-client';
 import { TEO_AUTHOR_NAME } from '@/lib/branding';
 
 export default function PublicacionesPage() {
@@ -45,7 +45,9 @@ export default function PublicacionesPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {pieces.map((piece) => (
+          {pieces.map((piece) => {
+            const publicUrl = resolvePublicationUrl(piece.publication?.url, piece.slug);
+            return (
             <article
               key={piece.id}
               className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-hub-border bg-hub-card p-5 shadow-hub"
@@ -62,9 +64,9 @@ export default function PublicacionesPage() {
                     : ''}
                 </p>
               </div>
-              {piece.publication?.url ? (
+              {publicUrl ? (
                 <a
-                  href={piece.publication.url}
+                  href={publicUrl}
                   target="_blank"
                   rel="noopener"
                   className="rounded-xl bg-cleexs-blue px-4 py-2 text-sm font-semibold text-white hover:bg-cleexs-blue-dark"
@@ -75,7 +77,8 @@ export default function PublicacionesPage() {
                 <span className="text-xs text-hub-muted">Sin URL</span>
               )}
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
     </CentroShell>
