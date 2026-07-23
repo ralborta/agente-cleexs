@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, Save, X } from 'lucide-react';
 import { AutomationPanel } from '@/components/config/automation-panel';
+import { BrandKitPanel } from '@/components/config/brand-kit-panel';
 import {
   FieldLabel,
   SettingsSection,
@@ -12,9 +13,11 @@ import {
 } from '@/components/config/settings-section';
 import { CentroShell } from '@/components/shell/centro-shell';
 import {
+  DEFAULT_BRAND_KIT,
   fetchTeoConfig,
   updateTeoConfig,
   type AutomationStatus,
+  type BrandKit,
   type TeoConfigResponse,
 } from '@/lib/api-client';
 import { TEO_AUTHOR_NAME } from '@/lib/branding';
@@ -26,6 +29,9 @@ export default function TeoConfigPage() {
   const [tone, setTone] = useState('');
   const [frequency, setFrequency] = useState('2/semana');
   const [requireApproval, setRequireApproval] = useState(true);
+  const [branding, setBranding] = useState<BrandKit>(DEFAULT_BRAND_KIT);
+  const [brandTemplates, setBrandTemplates] = useState<TeoConfigResponse['brandTemplates']>([]);
+  const [previewVersion, setPreviewVersion] = useState(0);
   const [automation, setAutomation] = useState<AutomationStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,6 +48,8 @@ export default function TeoConfigPage() {
       setTone(res.config?.tone ?? '');
       setFrequency(res.config?.frequency ?? '2/semana');
       setRequireApproval(!(res.config?.autoPublish ?? false));
+      setBranding(res.branding ?? DEFAULT_BRAND_KIT);
+      setBrandTemplates(res.brandTemplates ?? []);
       setAutomation(res.automation);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar');
@@ -80,9 +88,12 @@ export default function TeoConfigPage() {
         tone: tone.trim() || undefined,
         frequency,
         autoPublish: !requireApproval,
+        branding,
       });
       setAutomation(res.automation);
-      setMessage('Configuración guardada. Teo usará estas reglas en las próximas misiones.');
+      setBranding(res.branding);
+      setPreviewVersion((v) => v + 1);
+      setMessage('Configuración guardada. Teo usará estas reglas y marca en las próximas misiones.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al guardar');
     } finally {
@@ -207,6 +218,13 @@ export default function TeoConfigPage() {
               </label>
             </SettingsSection>
           </div>
+
+          <BrandKitPanel
+            branding={branding}
+            brandTemplates={brandTemplates}
+            onChange={setBranding}
+            previewVersion={previewVersion}
+          />
 
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={handleSave} disabled={saving} className={buttonPrimaryClassName}>

@@ -1,6 +1,7 @@
 import { renderArticleHtml, type ArticleData } from './article-template';
 import { generateArticleWithLlm, isLlmWriterEnabled } from './llm-writer';
 import { buildProArticleData } from './pro-content-fallback';
+import type { BrandKit } from '@agente/shared';
 import type { StrategistPlan } from './types';
 
 type Research = import('./types').ResearchResult;
@@ -156,14 +157,19 @@ function articleToMarkdown(data: ArticleData): string {
   return lines.join('\n').trim();
 }
 
-export async function runWriterRich(plan: StrategistPlan, research: Research, tone?: string | null) {
+export async function runWriterRich(
+  plan: StrategistPlan,
+  research: Research,
+  tone?: string | null,
+  branding?: BrandKit,
+) {
   const usePro = plan.depth === 'pro' || plan.pieceType === 'pillar';
   let articleData: ArticleData;
   let writerMode: 'llm' | 'pro_fallback' | 'template' = 'template';
 
   if (usePro && isLlmWriterEnabled()) {
     try {
-      articleData = await generateArticleWithLlm(plan, research, tone);
+      articleData = await generateArticleWithLlm(plan, research, tone, branding);
       writerMode = 'llm';
     } catch (err) {
       console.warn(
@@ -181,7 +187,7 @@ export async function runWriterRich(plan: StrategistPlan, research: Research, to
     writerMode = 'template';
   }
 
-  const html = renderArticleHtml(articleData);
+  const html = renderArticleHtml(articleData, branding);
   const excerpt = articleData.lead.slice(0, 160);
   const bodyMarkdown = articleToMarkdown(articleData);
 

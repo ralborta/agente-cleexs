@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { DEFAULT_BRAND_KIT } from '@agente/shared';
 
 const prisma = new PrismaClient();
 
@@ -30,7 +31,9 @@ async function main() {
         agentId: teo.id,
       },
     },
-    update: {},
+    update: {
+      branding: DEFAULT_BRAND_KIT,
+    },
     create: {
       workspaceId: workspace.id,
       agentId: teo.id,
@@ -38,6 +41,7 @@ async function main() {
       topics: ['visibilidad en IA', 'SEO', 'AEO', 'diagnóstico de marca'],
       frequency: '2/semana',
       autoPublish: false,
+      branding: DEFAULT_BRAND_KIT,
     },
   });
 

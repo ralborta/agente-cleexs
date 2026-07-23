@@ -177,8 +177,13 @@ export type AgentConfig = {
   topics: string[] | null;
   frequency: string | null;
   autoPublish: boolean;
+  branding?: import('@agente/shared').BrandKit | null;
   updatedAt?: string;
 };
+
+export type BrandKit = import('@agente/shared').BrandKit;
+export type BrandTemplateId = import('@agente/shared').BrandTemplateId;
+export { DEFAULT_BRAND_KIT } from '@agente/shared';
 
 export type AutomationStatus = {
   schedulerEnabled: boolean;
@@ -203,19 +208,29 @@ export type TeoConfigResponse = {
   workspace: { slug: string; name: string };
   agent: { slug: string; name: string };
   config: AgentConfig | null;
+  branding: BrandKit;
   automation: AutomationStatus | null;
   frequencyPresets: Array<{ value: string; label: string }>;
+  brandTemplates: Array<{ id: BrandTemplateId; label: string }>;
 };
 
 export async function fetchTeoConfig(workspace: string) {
   return api<TeoConfigResponse>(`/api/config/${workspace}/agents/teo`);
 }
 
+export async function fetchBrandPreview(workspace: string) {
+  return api<{ html: string; branding: BrandKit }>(
+    `/api/config/${workspace}/agents/teo/brand-preview`,
+  );
+}
+
 export async function updateTeoConfig(
   workspace: string,
-  data: Partial<Pick<AgentConfig, 'tone' | 'topics' | 'frequency' | 'autoPublish'>>,
+  data: Partial<Pick<AgentConfig, 'tone' | 'topics' | 'frequency' | 'autoPublish'>> & {
+    branding?: Partial<BrandKit>;
+  },
 ) {
-  return api<{ config: AgentConfig; automation: AutomationStatus }>(
+  return api<{ config: AgentConfig; branding: BrandKit; automation: AutomationStatus }>(
     `/api/config/${workspace}/agents/teo`,
     { method: 'PATCH', body: JSON.stringify(data) },
   );

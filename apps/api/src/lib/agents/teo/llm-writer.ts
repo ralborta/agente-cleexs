@@ -1,4 +1,5 @@
 import type { ArticleData } from './article-template';
+import type { BrandKit } from '@agente/shared';
 import type { ResearchResult, StrategistPlan } from './types';
 
 const DEFAULT_MODEL = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
@@ -31,8 +32,18 @@ const ARTICLE_JSON_SCHEMA = `{
   ]
 }`;
 
-function buildWriterPrompt(plan: StrategistPlan, research: ResearchResult, tone?: string | null): string {
-  return `Sos Teo, redactor senior SEO/AEO de Cleexs (visibilidad en Google e IA para PyMEs latinoamericanas).
+function buildWriterPrompt(
+  plan: StrategistPlan,
+  research: ResearchResult,
+  tone?: string | null,
+  branding?: BrandKit,
+): string {
+  const brandName = branding?.brandName?.trim() || 'Cleexs';
+  const ctaHint = branding?.cta?.url
+    ? `CTA natural hacia ${branding.cta.url} (sin ser spam).`
+    : `CTA natural hacia la propuesta de valor de ${brandName} (sin ser spam).`;
+
+  return `Sos Teo, redactor senior SEO/AEO para ${brandName} (visibilidad en Google e IA para PyMEs latinoamericanas).
 
 Escribí un artículo PRO en español rioplatense, profundo y accionable.
 
@@ -40,6 +51,7 @@ Título: ${plan.title}
 Tema: ${plan.topic}
 Tipo de pieza: ${plan.pieceType}
 Keyword principal: ${plan.keyword}
+Marca / cliente: ${brandName}
 Tono: ${tone || 'profesional, claro, sin hype vacío'}
 Objetivo: ${plan.objective}
 
@@ -53,21 +65,21 @@ Requisitos obligatorios:
 - En el cuerpo, usá enlaces markdown [texto](url) a fuentes autorizadas (Google Search Central, documentación oficial, estudios reconocidos). No inventes URLs: solo dominios creíbles (.google.com, .org, medios tech serios).
 - Sección final de "references": 4-6 fuentes reales con URL https válida.
 - Mencioná AEO, AI Overviews y visibilidad en asistentes (ChatGPT, Gemini) cuando aplique.
-- CTA natural hacia diagnóstico Cleexs (sin ser spam).
+- ${ctaHint}
 - NO uses emojis. NO digas "como modelo de lenguaje".
 
 Respondé SOLO con JSON válido (sin markdown fence) con esta forma:
 ${ARTICLE_JSON_SCHEMA}`;
 }
 
-function parseArticleJson(raw: string): ArticleData {
+function parseArticleJson(raw: string, branding?: BrandKit): ArticleData {
   const trimmed = raw.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
   const parsed = JSON.parse(trimmed) as Partial<ArticleData>;
   if (!parsed.lead || !Array.isArray(parsed.sections) || parsed.sections.length === 0) {
     throw new Error('JSON de artículo incompleto');
   }
   return {
-    kicker: parsed.kicker?.trim() || 'Cleexs Insights',
+    kicker: parsed.kicker?.trim() || `${branding?.brandName ?? 'Cleexs'} Insights`,
     title: '',
     lead: parsed.lead.trim(),
     sections: parsed.sections,
@@ -80,6 +92,7 @@ export async function generateArticleWithLlm(
   plan: StrategistPlan,
   research: ResearchResult,
   tone?: string | null,
+  branding?: BrandKit,
 ): Promise<ArticleData> {
   const apiKey = readOpenAiKey();
   if (!apiKey) {
@@ -102,7 +115,7 @@ export async function generateArticleWithLlm(
           content:
             'Sos un editor SEO/AEO experto. Respondés únicamente JSON válido según el esquema pedido.',
         },
-        { role: 'user', content: buildWriterPrompt(plan, research, tone) },
+        { role: 'user', content: buildWriterPrompt(plan, research, tone, branding) },
       ],
     }),
     signal: AbortSignal.timeout(120_000),
@@ -119,7 +132,7 @@ export async function generateArticleWithLlm(
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error('OpenAI sin contenido');
 
-  const article = parseArticleJson(content);
+  const article = parseArticleJson(content, branding);
   return {
     ...article,
     title: plan.title,

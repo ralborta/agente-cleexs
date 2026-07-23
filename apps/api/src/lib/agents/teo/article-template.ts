@@ -1,37 +1,5 @@
-/** Estilos embebidos para artículos en WordPress (no dependen del tema). */
-export const ARTICLE_CSS = `
-.cleexs-article{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#0f172a;line-height:1.65;max-width:720px;margin:0 auto}
-.cleexs-article__kicker{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#2563eb;background:#eff6ff;padding:4px 10px;border-radius:999px;margin-bottom:12px}
-.cleexs-article__lead{font-size:18px;color:#475569;margin:0 0 28px;line-height:1.6}
-.cleexs-article h2{font-size:22px;color:#1e293b;margin:32px 0 12px;padding-bottom:8px;border-bottom:2px solid #e2e8f0}
-.cleexs-article h3{font-size:17px;color:#334155;margin:24px 0 8px}
-.cleexs-article p{margin:0 0 16px;color:#334155}
-.cleexs-article ul,.cleexs-article ol{margin:0 0 20px;padding-left:24px;color:#334155}
-.cleexs-article li{margin-bottom:8px}
-.cleexs-faq-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin-bottom:12px}
-.cleexs-faq-item strong{display:block;color:#1e293b;margin-bottom:6px}
-.cleexs-checklist li{list-style:none;position:relative;padding-left:28px;margin-bottom:10px}
-.cleexs-checklist li:before{content:"✓";position:absolute;left:0;color:#2563eb;font-weight:700}
-.cleexs-compare-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:14px}
-.cleexs-compare-table th,.cleexs-compare-table td{border:1px solid #e2e8f0;padding:10px 14px;text-align:left}
-.cleexs-compare-table th{background:#eff6ff;color:#1e3a8a}
-.cleexs-cta{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border-radius:16px;padding:28px 32px;margin:40px 0;text-align:center}
-.cleexs-cta h3{color:#fff;margin:0 0 8px;font-size:20px}
-.cleexs-cta p{color:#dbeafe;margin:0 0 16px;font-size:15px}
-.cleexs-cta a{display:inline-block;background:#fff;color:#2563eb;font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none}
-.cleexs-meta{font-size:13px;color:#94a3b8;margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0}
-.cleexs-example{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px 20px;margin:20px 0}
-.cleexs-example strong{display:block;color:#92400e;margin-bottom:6px}
-.cleexs-callout{background:#eff6ff;border-left:4px solid #2563eb;border-radius:0 12px 12px 0;padding:14px 18px;margin:20px 0;color:#1e3a8a}
-.cleexs-references{margin:28px 0 0;padding:20px 0 0;border-top:1px solid #e2e8f0}
-.cleexs-references h2{font-size:18px;margin:0 0 12px}
-.cleexs-references ol{margin:0;padding-left:20px;color:#475569}
-.cleexs-references li{margin-bottom:10px}
-.cleexs-references a{color:#2563eb;text-decoration:none}
-.cleexs-references a:hover{text-decoration:underline}
-.cleexs-article a{color:#2563eb;text-decoration:none}
-.cleexs-article a:hover{text-decoration:underline}
-`.replace(/\s+/g, ' ').trim();
+import { brandCssTokens, formatAuthorLine, type BrandKit } from '../../branding/brand-kit';
+import { DEFAULT_BRAND_KIT } from '@agente/shared';
 
 export type ArticleReference = {
   title: string;
@@ -83,15 +51,67 @@ export function renderInlineLinks(text: string): string {
   );
 }
 
-function ctaBlock(data: ArticleData) {
-  const url = data.ctaUrl || 'https://app.cleexs.net/diagnostico/crear?url=';
-  const label = data.ctaLabel || 'Checkeá tu visibilidad gratis';
+export function buildArticleCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
+  const t = brandCssTokens(kit);
+  const ctaBg =
+    t.templateId === 'minimal'
+      ? t.primary
+      : `linear-gradient(135deg,${t.primary},${t.secondary})`;
+  const ctaTextSoft = t.templateId === 'minimal' ? '#f8fafc' : t.primaryText;
+
+  return `
+.cleexs-article{font-family:${t.fontFamily};color:#0f172a;line-height:1.65;max-width:720px;margin:0 auto}
+.cleexs-article__brand{margin-bottom:20px}
+.cleexs-article__brand img{max-height:48px;width:auto;display:block}
+.cleexs-article__kicker{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:${t.primary};background:${t.primarySoft};padding:4px 10px;border-radius:999px;margin-bottom:12px}
+.cleexs-article__lead{font-size:18px;color:#475569;margin:0 0 28px;line-height:1.6}
+.cleexs-article h2{font-size:22px;color:#1e293b;margin:32px 0 12px;padding-bottom:8px;border-bottom:2px solid #e2e8f0}
+.cleexs-article h3{font-size:17px;color:#334155;margin:24px 0 8px}
+.cleexs-article p{margin:0 0 16px;color:#334155}
+.cleexs-article ul,.cleexs-article ol{margin:0 0 20px;padding-left:24px;color:#334155}
+.cleexs-article li{margin-bottom:8px}
+.cleexs-faq-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin-bottom:12px}
+.cleexs-faq-item strong{display:block;color:#1e293b;margin-bottom:6px}
+.cleexs-checklist li{list-style:none;position:relative;padding-left:28px;margin-bottom:10px}
+.cleexs-checklist li:before{content:"✓";position:absolute;left:0;color:${t.primary};font-weight:700}
+.cleexs-compare-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:14px}
+.cleexs-compare-table th,.cleexs-compare-table td{border:1px solid #e2e8f0;padding:10px 14px;text-align:left}
+.cleexs-compare-table th{background:${t.primarySoft};color:${t.secondary}}
+.cleexs-cta{background:${ctaBg};color:#fff;border-radius:16px;padding:28px 32px;margin:40px 0;text-align:center}
+.cleexs-cta h3{color:#fff;margin:0 0 8px;font-size:20px}
+.cleexs-cta p{color:${ctaTextSoft};margin:0 0 16px;font-size:15px}
+.cleexs-cta a{display:inline-block;background:#fff;color:${t.primary};font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none}
+.cleexs-meta{font-size:13px;color:#94a3b8;margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0}
+.cleexs-example{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px 20px;margin:20px 0}
+.cleexs-example strong{display:block;color:#92400e;margin-bottom:6px}
+.cleexs-callout{background:${t.primarySoft};border-left:4px solid ${t.primary};border-radius:0 12px 12px 0;padding:14px 18px;margin:20px 0;color:${t.secondary}}
+.cleexs-references{margin:28px 0 0;padding:20px 0 0;border-top:1px solid #e2e8f0}
+.cleexs-references h2{font-size:18px;margin:0 0 12px}
+.cleexs-references ol{margin:0;padding-left:20px;color:#475569}
+.cleexs-references li{margin-bottom:10px}
+.cleexs-references a{color:${t.primary};text-decoration:none}
+.cleexs-references a:hover{text-decoration:underline}
+.cleexs-article a{color:${t.primary};text-decoration:none}
+.cleexs-article a:hover{text-decoration:underline}
+`.replace(/\s+/g, ' ').trim();
+}
+
+function ctaBlock(data: ArticleData, kit: BrandKit) {
+  const url = data.ctaUrl || kit.cta?.url || DEFAULT_BRAND_KIT.cta?.url || '#';
+  const label = data.ctaLabel || kit.cta?.label || DEFAULT_BRAND_KIT.cta?.label || 'Contactanos';
+  const headline = kit.cta?.headline || DEFAULT_BRAND_KIT.cta?.headline || '';
+  const body = kit.cta?.body || DEFAULT_BRAND_KIT.cta?.body || '';
   return `
 <aside class="cleexs-cta">
-  <h3>¿Querés medir tu visibilidad en Google e IA?</h3>
-  <p>Cleexs analiza cómo te ven ChatGPT, Google y tus competidores.</p>
-  <a href="${url}" target="_blank" rel="noopener">${label}</a>
+  <h3>${escapeHtml(headline)}</h3>
+  <p>${escapeHtml(body)}</p>
+  <a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>
 </aside>`;
+}
+
+function brandHeader(kit: BrandKit): string {
+  if (kit.templateId !== 'corporate' || !kit.logoUrl) return '';
+  return `<header class="cleexs-article__brand"><img src="${escapeHtml(kit.logoUrl)}" alt="${escapeHtml(kit.brandName ?? 'Logo')}" /></header>`;
 }
 
 function renderSection(section: ArticleSection, pieceType: string): string {
@@ -143,16 +163,43 @@ function renderReferences(refs: ArticleReference[]): string {
   return `<section class="cleexs-references"><h2>Referencias y lecturas recomendadas</h2><ol>${items}</ol></section>`;
 }
 
-export function renderArticleHtml(data: ArticleData): string {
+export function renderArticleHtml(data: ArticleData, kit: BrandKit = DEFAULT_BRAND_KIT): string {
   const sectionsHtml = data.sections.map((s) => renderSection(s, data.pieceType)).join('\n');
   const referencesHtml = data.references?.length ? renderReferences(data.references) : '';
-  return `<style>${ARTICLE_CSS}</style>
+  const css = buildArticleCss(kit);
+  return `<style>${css}</style>
 <article class="cleexs-article">
+  ${brandHeader(kit)}
   <span class="cleexs-article__kicker">${escapeHtml(data.kicker)}</span>
   <p class="cleexs-article__lead">${renderInlineLinks(data.lead)}</p>
   ${sectionsHtml}
   ${referencesHtml}
-  ${ctaBlock(data)}
-  <p class="cleexs-meta">Por Teo · Agente de contenido Cleexs</p>
+  ${ctaBlock(data, kit)}
+  <p class="cleexs-meta">${escapeHtml(formatAuthorLine(kit))}</p>
 </article>`;
 }
+
+/** Muestra estática para preview en el backoffice. */
+export function renderBrandPreviewHtml(kit: BrandKit): string {
+  const sample: ArticleData = {
+    kicker: kit.brandName ?? 'Tu marca',
+    title: 'Vista previa del artículo',
+    lead: 'Así se verán los artículos publicados en WordPress con la línea gráfica configurada.',
+    pieceType: 'how_to',
+    sections: [
+      {
+        heading: 'Sección de ejemplo',
+        body: 'Texto con [enlace de muestra](https://example.com) y un insight accionable.',
+        callout: 'Los callouts usan el color primario de tu marca.',
+      },
+      {
+        heading: 'Checklist',
+        items: ['Primer punto accionable', 'Segundo punto accionable'],
+      },
+    ],
+  };
+  return renderArticleHtml(sample, kit);
+}
+
+/** CSS legacy (Cleexs default) — usado en tests. */
+export const ARTICLE_CSS = buildArticleCss(DEFAULT_BRAND_KIT);

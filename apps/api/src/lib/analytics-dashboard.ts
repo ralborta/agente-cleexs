@@ -9,6 +9,7 @@ import {
   fetchGa4BlogSessionTotals,
   fetchGa4DailySessions,
   fetchGa4DailySessionsBySource,
+  fetchGa4PageSessions,
   fetchGa4SessionsBySource,
 } from './integrations/google-ga4';
 import { fetchGscAggregateMetrics, fetchGscPageMetrics } from './integrations/google-gsc';
@@ -118,6 +119,33 @@ function pathnameOf(url: string): string {
   } catch {
     return url.replace(/\/$/, '');
   }
+}
+
+function buildLatestSnapshotByUrl(
+  rows: Array<{
+    url: string;
+    clicks: number | null;
+    impressions: number | null;
+    sessions: number | null;
+    capturedAt: Date;
+  }>,
+) {
+  if (rows.length === 0) return {};
+
+  const latestTs = rows[0].capturedAt.getTime();
+  const batch = rows.filter((row) => Math.abs(row.capturedAt.getTime() - latestTs) < 5000);
+
+  return batch.reduce<
+    Record<string, { clicks: number; impressions: number; sessions: number }>
+  >((acc, row) => {
+    if (!acc[row.url]) {
+      acc[row.url] = { clicks: 0, impressions: 0, sessions: 0 };
+    }
+    acc[row.url].clicks += row.clicks ?? 0;
+    acc[row.url].impressions += row.impressions ?? 0;
+    acc[row.url].sessions += row.sessions ?? 0;
+    return acc;
+  }, {});
 }
 
 function aggregateSources(rows: Array<{ source: string; medium: string; sessions: number }>) {
@@ -272,35 +300,31 @@ export async function buildAnalyticsDashboard(
     }
   }
 
-  const snapshotByUrl = metricSnapshots.reduce<
-    Record<string, { clicks: number; impressions: number; sessions: number }>
-  >((acc, row) => {
-    if (!acc[row.url]) {
-      acc[row.url] = { clicks: 0, impressions: 0, sessions: 0 };
-    }
-    acc[row.url].clicks += row.clicks ?? 0;
-    acc[row.url].impressions += row.impressions ?? 0;
-    acc[row.url].sessions += row.sessions ?? 0;
-    return acc;
-  }, {});
+  const snapshotByUrl = buildLatestSnapshotByUrl(metricSnapshots);
 
-  const gscPages =
+  const [gscPages, ga4Pages] = await Promise.all([
     googleConfigured && config
-      ? await fetchGscPageMetrics(config, { days: period, pageFilter: '/articulos/' })
-      : [];
+      ? fetchGscPageMetrics(config, { days: period, pageFilter: '/articulos/' })
+      : Promise.resolve([]),
+    googleConfigured && ga4Configured && config
+      ? fetchGa4PageSessions(config, { days: period, pathPrefix: '/articulos/' })
+      : Promise.resolve([]),
+  ]);
 
   const topArticles = publications
     .map((pub) => {
       const url = pub.url ?? '';
+      const path = url ? pathnameOf(url) : '';
       const snap = url ? snapshotByUrl[url] : undefined;
-      const gsc = gscPages.find((row) => pathnameOf(row.url) === pathnameOf(url));
+      const gsc = gscPages.find((row) => pathnameOf(row.url) === path);
+      const ga4 = ga4Pages.find((row) => row.path.replace(/\/$/, '') === path);
       return {
         title: pub.piece.title,
         slug: pub.piece.slug,
         url: pub.url,
         clicks: gsc?.clicks ?? snap?.clicks ?? 0,
         impressions: gsc?.impressions ?? snap?.impressions ?? 0,
-        sessions: snap?.sessions ?? 0,
+        sessions: ga4?.sessions ?? snap?.sessions ?? 0,
       };
     })
     .sort((a, b) => b.clicks + b.sessions - (a.clicks + a.sessions))
@@ -317,7 +341,15 @@ export async function buildAnalyticsDashboard(
   const publicationCount = publications.length;
   const publicationPrevious = Math.max(publicationCount - publicationsInPeriod, 0);
 
-  const displaySources: AiSourceId[] = ['chatgpt', 'perplexity', 'google', 'claude', 'copilot', 'gemini'];
+  const displaySources: AiSourceId[] = [
+    'chatgpt',
+    'perplexity',
+    'google',
+    'claude',
+    'copilot',
+    'gemini',
+    ...(sourceTotalsCurrent.other > 0 ? (['other'] as const) : []),
+  ];
   const aiSources = displaySources
     .map((id) => {
       const current = sourceTotalsCurrent[id];
@@ -331,7 +363,11 @@ export async function buildAnalyticsDashboard(
         share: totalCurrent > 0 ? Math.round((current / totalCurrent) * 100) : 0,
       };
     })
-    .filter((row) => row.sessions > 0 || ['chatgpt', 'perplexity', 'google', 'claude'].includes(row.id))
+    .filter(
+      (row) =>
+        row.sessions > 0 ||
+        ['chatgpt', 'perplexity', 'google', 'claude'].includes(row.id),
+    )
     .sort((a, b) => b.sessions - a.sessions);
 
   const status = getGoogleMetricsStatus(workspaceSlug);

@@ -83,6 +83,7 @@ model AgentConfig {
   topics      Json?    // temas prioritarios
   frequency   String?  // ej: "2/semana"
   autoPublish Boolean  @default(false) @map("auto_publish")
+  branding    Json?    // brand kit: colores, CTA, logo, templateId
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

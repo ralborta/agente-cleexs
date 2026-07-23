@@ -12,6 +12,7 @@ import {
   runWriter,
 } from './agents/teo/pipeline';
 import { parseMissionPlanHints } from './agents/teo/mission-plan';
+import { resolveBrandKit } from './branding/brand-kit';
 
 const runningMissions = new Set<string>();
 
@@ -53,6 +54,7 @@ export async function executeMission(missionId: string) {
       frequency: config?.frequency,
       autoPublish: config?.autoPublish ?? false,
     };
+    const branding = resolveBrandKit(config?.branding, mission.workspace.name);
 
     await prisma.mission.update({
       where: { id: missionId },
@@ -104,7 +106,7 @@ export async function executeMission(missionId: string) {
     await completeMissionStep(stepResearch.id, research);
 
     // --- Escritor ---
-    const draft = await runWriter(plan, research, teoConfig.tone);
+    const draft = await runWriter(plan, research, teoConfig.tone, branding);
     const stepWriter = await createMissionStep({
       missionId,
       role: 'writer',
@@ -121,7 +123,7 @@ export async function executeMission(missionId: string) {
     await completeMissionStep(stepWriter.id, draft);
 
     // --- Albañil SEO ---
-    const seo = runSeoBuilder(plan, draft);
+    const seo = runSeoBuilder(plan, draft, branding);
     const stepSeo = await createMissionStep({
       missionId,
       role: 'seo_builder',

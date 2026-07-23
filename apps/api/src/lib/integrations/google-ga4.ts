@@ -43,11 +43,12 @@ function blogPathFilter(pathPrefix = '/articulos/') {
 }
 
 function dateRangeBody(days: number, offsetDays = 0) {
-  const endOffset = offsetDays;
-  const startOffset = offsetDays + days - 1;
+  if (offsetDays === 0) {
+    return { startDate: `${days}daysAgo`, endDate: 'today' };
+  }
   return {
-    startDate: `${startOffset + days}daysAgo`,
-    endDate: endOffset === 0 ? 'today' : `${endOffset}daysAgo`,
+    startDate: `${offsetDays + days}daysAgo`,
+    endDate: `${offsetDays + 1}daysAgo`,
   };
 }
 

@@ -1,4 +1,5 @@
 import { runWriterRich } from './content-builder';
+import type { BrandKit } from '@agente/shared';
 import type { StrategistPlan } from './types';
 
 export type { StrategistPlan } from './types';
@@ -83,13 +84,14 @@ export async function runWriter(
   plan: StrategistPlan,
   research: ReturnType<typeof runResearcher>,
   tone?: string | null,
+  branding?: BrandKit,
 ) {
-  return runWriterRich(plan, research, tone);
+  return runWriterRich(plan, research, tone, branding);
 }
 
 export type WriterDraft = Awaited<ReturnType<typeof runWriter>>;
 
-export function runSeoBuilder(plan: StrategistPlan, draft: WriterDraft) {
+export function runSeoBuilder(plan: StrategistPlan, draft: WriterDraft, branding?: BrandKit) {
   const slug = plan.title
     .toLowerCase()
     .normalize('NFD')
@@ -97,8 +99,10 @@ export function runSeoBuilder(plan: StrategistPlan, draft: WriterDraft) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
+  const brandName = branding?.brandName?.trim() || 'Cleexs';
+
   return {
-    metaTitle: `${plan.title} | Cleexs`,
+    metaTitle: `${plan.title} | ${brandName}`,
     metaDescription: draft.excerpt,
     canonical: `https://cleexs.net/articulos/${slug}`,
     schema: {
