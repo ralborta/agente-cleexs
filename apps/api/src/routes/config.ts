@@ -1,6 +1,8 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
+import { getAutomationStatus } from '../lib/automation-status';
+import { FREQUENCY_PRESETS } from '../lib/frequency';
 
 const updateConfigSchema = z.object({
   tone: z.string().optional(),
@@ -22,19 +24,24 @@ const configRoutes: FastifyPluginAsync = async (server) => {
       return reply.status(404).send({ error: 'Workspace o agente no encontrado' });
     }
 
-    const config = await prisma.agentConfig.findUnique({
-      where: {
-        workspaceId_agentId: {
-          workspaceId: workspace.id,
-          agentId: agent.id,
+    const [config, automation] = await Promise.all([
+      prisma.agentConfig.findUnique({
+        where: {
+          workspaceId_agentId: {
+            workspaceId: workspace.id,
+            agentId: agent.id,
+          },
         },
-      },
-    });
+      }),
+      getAutomationStatus(workspaceSlug).catch(() => null),
+    ]);
 
     return {
       workspace: { slug: workspace.slug, name: workspace.name },
       agent: { slug: agent.slug, name: agent.name },
       config: config ?? null,
+      automation,
+      frequencyPresets: FREQUENCY_PRESETS,
     };
   });
 
@@ -71,7 +78,9 @@ const configRoutes: FastifyPluginAsync = async (server) => {
       },
     });
 
-    return { config };
+    const automation = await getAutomationStatus(workspaceSlug);
+
+    return { config, automation };
   });
 };
 

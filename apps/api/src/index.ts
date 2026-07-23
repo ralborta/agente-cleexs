@@ -8,6 +8,7 @@ import centroRoutes from './routes/centro';
 import configRoutes from './routes/config';
 import resultsRoutes from './routes/results';
 import analyticsRoutes from './routes/analytics';
+import activityRoutes from './routes/activity';
 import contentRoutes from './routes/content';
 import cronRoutes from './routes/cron';
 import integrationRoutes from './routes/integrations';
@@ -43,6 +44,7 @@ async function bootstrap() {
   await server.register(configRoutes, { prefix: '/api/config' });
   await server.register(resultsRoutes, { prefix: '/api/results' });
   await server.register(analyticsRoutes, { prefix: '/api/analytics' });
+  await server.register(activityRoutes, { prefix: '/api/activity' });
   await server.register(contentRoutes, { prefix: '/api/content' });
   await server.register(cronRoutes, { prefix: '/api/cron' });
   await server.register(integrationRoutes, { prefix: '/api/integrations' });

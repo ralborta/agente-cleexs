@@ -99,6 +99,144 @@ export async function fetchAnalytics(workspace: string, period: 7 | 30 | 90 = 30
   );
 }
 
+export type AgentConfig = {
+  id: string;
+  tone: string | null;
+  topics: string[] | null;
+  frequency: string | null;
+  autoPublish: boolean;
+  updatedAt?: string;
+};
+
+export type AutomationStatus = {
+  schedulerEnabled: boolean;
+  tickIntervalMs: number;
+  intervalDays: number;
+  frequency: string | null;
+  autoPublish: boolean;
+  topicsConfigured: boolean;
+  activeMissions: number;
+  eligibleForNext: boolean;
+  lastMission: {
+    id: string;
+    title: string;
+    status: string;
+    trigger: string;
+    createdAt: string;
+  } | null;
+  lastMetricsSync: string | null;
+};
+
+export type TeoConfigResponse = {
+  workspace: { slug: string; name: string };
+  agent: { slug: string; name: string };
+  config: AgentConfig | null;
+  automation: AutomationStatus | null;
+  frequencyPresets: Array<{ value: string; label: string }>;
+};
+
+export async function fetchTeoConfig(workspace: string) {
+  return api<TeoConfigResponse>(`/api/config/${workspace}/agents/teo`);
+}
+
+export async function updateTeoConfig(
+  workspace: string,
+  data: Partial<Pick<AgentConfig, 'tone' | 'topics' | 'frequency' | 'autoPublish'>>,
+) {
+  return api<{ config: AgentConfig; automation: AutomationStatus }>(
+    `/api/config/${workspace}/agents/teo`,
+    { method: 'PATCH', body: JSON.stringify(data) },
+  );
+}
+
+export type IntegrationsOverview = {
+  workspace: { slug: string; name: string };
+  wordpress: {
+    configured: boolean;
+    connected?: boolean;
+    site?: string;
+    user?: string;
+  };
+  google: {
+    configured: boolean;
+    gscSiteUrl: string | null;
+    ga4PropertyId: string | null;
+    serviceAccountEmail: string | null;
+  };
+  integrations: {
+    wordpress: { status: string; updatedAt: string } | null;
+    gsc: { status: string; updatedAt: string; config: unknown } | null;
+    ga4: { status: string; updatedAt: string; config: unknown } | null;
+  };
+  automation: AutomationStatus;
+};
+
+export async function fetchIntegrationsOverview(workspace: string) {
+  return api<IntegrationsOverview>(`/api/integrations/${workspace}/overview`);
+}
+
+export async function testWordPressIntegration(workspace: string) {
+  return api<{ wordpress: { ok?: boolean; connected?: boolean; user?: string; error?: string } }>(
+    `/api/integrations/${workspace}/wordpress/test`,
+    { method: 'POST', body: JSON.stringify({}) },
+  );
+}
+
+export async function testGoogleIntegration(workspace: string) {
+  return api<{
+    google: {
+      connected?: boolean;
+      gsc?: { ok?: boolean };
+      ga4?: { ok?: boolean };
+      error?: string;
+    };
+  }>(`/api/integrations/${workspace}/google/test`, { method: 'POST', body: JSON.stringify({}) });
+}
+
+export async function syncMetrics(workspace: string) {
+  return api<{ ok?: boolean; snapshotsWritten?: number; message?: string; automation: AutomationStatus }>(
+    `/api/integrations/${workspace}/metrics-sync`,
+    { method: 'POST', body: JSON.stringify({}) },
+  );
+}
+
+export type Mission = {
+  id: string;
+  title: string;
+  objective: string;
+  status: string;
+  trigger: string;
+  createdAt: string;
+  updatedAt: string;
+  agent: { slug: string; name: string };
+  workspace: { slug: string; name: string };
+  steps: Array<{ id: string; role: string; status: string; createdAt: string }>;
+  _count: { pieces: number; activities: number };
+};
+
+export async function fetchMissions(workspace: string, status?: string) {
+  const params = new URLSearchParams({ workspace, agent: 'teo' });
+  if (status) params.set('status', status);
+  return api<{ missions: Mission[] }>(`/api/missions?${params.toString()}`);
+}
+
+export type ActivityItem = {
+  id: string;
+  agent: string;
+  agentSlug: string;
+  role: string | null;
+  level: string;
+  message: string;
+  missionId: string | null;
+  missionTitle: string | null;
+  missionStatus: string | null;
+  createdAt: string;
+};
+
+export async function fetchActivity(workspace: string, take = 50) {
+  return api<{ activities: ActivityItem[] }>(`/api/activity?workspace=${workspace}&take=${take}`);
+}
+
 export function pieceAuthorName(
   piece: { mission?: { agent?: { name: string } | null } | null },
   fallback = 'Teo',
