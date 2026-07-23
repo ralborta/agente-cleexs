@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Activity,
   BarChart3,
@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { PLATFORM_NAME, PLATFORM_SHORT } from '@/lib/branding';
+import { clearAuthSession, getStoredUser } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
 
 /** Resultados primero — el agente trabaja solo, el cliente mide. */
@@ -93,6 +94,8 @@ function NavSection({
 
 export function CentroSidebar({ workspaceName, pendingApprovals = 0 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const storedUser = getStoredUser();
 
   const operationWithBadge = operationNav.map((item) =>
     item.href.includes('aprobaciones')
@@ -141,10 +144,18 @@ export function CentroSidebar({ workspaceName, pendingApprovals = 0 }: SidebarPr
 
       <div className="mt-auto flex items-center justify-between rounded-xl border border-hub-border bg-hub-card px-3 py-3">
         <div>
-          <p className="text-sm font-medium text-white">Administrador</p>
-          <p className="text-xs text-hub-muted">admin@cleexs.net</p>
+          <p className="text-sm font-medium text-white">{storedUser?.name ?? 'Administrador'}</p>
+          <p className="text-xs text-hub-muted">{storedUser?.email ?? 'admin@cleexs.net'}</p>
         </div>
-        <button type="button" className="text-hub-muted hover:text-white" aria-label="Cerrar sesión">
+        <button
+          type="button"
+          onClick={() => {
+            clearAuthSession();
+            router.replace('/login');
+          }}
+          className="text-hub-muted hover:text-white"
+          aria-label="Cerrar sesión"
+        >
           <LogOut className="h-4 w-4" />
         </button>
       </div>

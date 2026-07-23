@@ -14,6 +14,8 @@ import cronRoutes from './routes/cron';
 import integrationRoutes from './routes/integrations';
 import webhookRoutes from './routes/webhooks';
 import whatsappRoutes from './routes/whatsapp';
+import authRoutes from './routes/auth';
+import authGuardPlugin from './plugins/auth-guard';
 import { startAutonomousScheduler } from './lib/job-scheduler';
 
 async function bootstrap() {
@@ -36,6 +38,9 @@ async function bootstrap() {
     autonomous: process.env.DISABLE_AUTONOMOUS !== 'true',
     timestamp: new Date().toISOString(),
   }));
+
+  await server.register(authRoutes, { prefix: '/api/auth' });
+  await server.register(authGuardPlugin);
 
   await server.register(agentRoutes, { prefix: '/api/agents' });
   await server.register(missionRoutes, { prefix: '/api/missions' });

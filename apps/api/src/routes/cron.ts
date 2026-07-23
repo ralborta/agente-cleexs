@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { tickAutonomousMissions } from '../lib/job-scheduler';
+import { runSchedulerTick } from '../lib/job-scheduler';
 import { executeMission } from '../lib/mission-executor';
 import { syncWorkspaceMetrics } from '../lib/metrics-sync';
 
@@ -15,7 +15,7 @@ const cronRoutes: FastifyPluginAsync = async (server) => {
     if (!requireCronSecret(request)) {
       return reply.status(401).send({ error: 'No autorizado' });
     }
-    const result = await tickAutonomousMissions();
+    const result = await runSchedulerTick();
     return result;
   });
 

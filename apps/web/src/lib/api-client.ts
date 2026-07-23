@@ -1,19 +1,91 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
+function authHeaders(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  const token = localStorage.getItem('agente_auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders(),
       ...(init?.headers ?? {}),
     },
     cache: 'no-store',
   });
+  if (res.status === 401 && typeof window !== 'undefined' && !path.includes('/api/auth/login')) {
+    localStorage.removeItem('agente_auth_token');
+    localStorage.removeItem('agente_auth_user');
+    window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+    throw new Error('Sesión expirada');
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(typeof err.detail === 'string' ? err.detail : err.error || 'Error API');
   }
   return res.json() as Promise<T>;
+}
+
+export async function login(email: string, password: string) {
+  const res = await fetch(`${API_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(typeof data.error === 'string' ? data.error : 'Credenciales inválidas');
+  }
+  return data as {
+    token: string;
+    user: {
+      id: string;
+      email: string;
+      name: string | null;
+      role: string;
+      workspaceId: string;
+      workspaceSlug: string;
+      workspaceName?: string;
+    };
+  };
+}
+
+export async function fetchCentroDashboard(workspaceSlug: string) {
+  return api<{
+    workspace: { id: string; name: string; slug: string };
+    kpis: Array<{ label: string; value: number; hint?: string; trend?: string }>;
+    agentsOnline: Array<{ slug: string; name: string; status: string }>;
+    activity: Array<{
+      id: string;
+      agent: string;
+      role: string | null;
+      message: string;
+      level: string;
+      createdAt: string;
+    }>;
+    contentRadar: {
+      agentName: string;
+      agentActive: boolean;
+      agentWorking: boolean;
+      pieces: Array<{
+        id: string;
+        title: string;
+        type: string;
+        status: 'published' | 'approval' | 'working' | 'refresh';
+        impact: 'alto' | 'medio' | 'bajo';
+      }>;
+      stats: {
+        active: number;
+        published: number;
+        approval: number;
+        working: number;
+        refresh: number;
+      };
+    };
+  }>(`/api/centro/${workspaceSlug}`);
 }
 
 export type Approval = {

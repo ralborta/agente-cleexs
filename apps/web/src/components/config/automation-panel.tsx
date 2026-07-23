@@ -69,10 +69,15 @@ export function AutomationPanel({ automation }: { automation: AutomationStatus |
 
       {!automation.schedulerEnabled ? (
         <p className="mt-4 rounded-xl border border-cleexs-orange/20 bg-cleexs-orange/10 px-4 py-3 text-sm text-orange-100">
-          El scheduler interno está pausado (`DISABLE_AUTONOMOUS=true`). Configurá temas acá y activalo
-          en Easypanel para que Teo dispare misiones solo.
+          El scheduler interno está pausado (`DISABLE_AUTONOMOUS=true`). Configurá temas acá y activalo en
+          Easypanel.
         </p>
-      ) : null}
+      ) : (
+        <p className="mt-4 text-xs text-hub-muted">
+          El scheduler revisa misiones cada hora y sincroniza métricas GSC/GA4 al menos 1 vez por día. Cron
+          externo opcional: `POST /api/cron/autonomous-tick`.
+        </p>
+      )}
     </div>
   );
 }

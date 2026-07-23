@@ -1,9 +1,12 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityFeed } from '@/components/centro/activity-feed';
 import { ContentEcosystemPanel } from '@/components/centro/content-ecosystem-panel';
 import { KpiGrid } from '@/components/centro/kpi-grid';
 import { CentroShell } from '@/components/shell/centro-shell';
+import { fetchCentroDashboard } from '@/lib/api-client';
 import { PLATFORM_NAME, PLATFORM_SHORT, PLATFORM_TAGLINE } from '@/lib/branding';
-import { fetchCentroDashboard } from '@/lib/utils';
 
 type CentroData = Awaited<ReturnType<typeof fetchCentroDashboard>>;
 
@@ -17,16 +20,7 @@ const FALLBACK: CentroData = {
     { label: 'Misiones activas', value: 0, hint: 'Teo trabajando' },
   ],
   agentsOnline: [{ slug: 'teo', name: 'Teo', status: 'online' }],
-  activity: [
-    {
-      id: 'demo-1',
-      agent: 'Teo',
-      role: 'strategist',
-      message: 'Conectá PostgreSQL y corré npm run db:seed para ver actividad real',
-      level: 'info',
-      createdAt: new Date().toISOString(),
-    },
-  ],
+  activity: [],
   contentRadar: {
     agentName: 'Teo',
     agentActive: true,
@@ -36,13 +30,24 @@ const FALLBACK: CentroData = {
   },
 };
 
-export default async function CleexsCentroPage() {
-  let data: CentroData = FALLBACK;
-  try {
-    data = await fetchCentroDashboard('cleexs');
-  } catch {
-    // UI demo sin DB
-  }
+export default function CleexsCentroPage() {
+  const [data, setData] = useState<CentroData>(FALLBACK);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setData(await fetchCentroDashboard('cleexs'));
+    } catch {
+      setData(FALLBACK);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const onlineCount = data.agentsOnline.filter((a) => a.status !== 'idle').length;
 
@@ -61,12 +66,17 @@ export default async function CleexsCentroPage() {
         </div>
       </div>
 
-      <KpiGrid items={data.kpis} />
-
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
-        <ContentEcosystemPanel data={data.contentRadar} />
-        <ActivityFeed items={data.activity} />
-      </div>
+      {loading ? (
+        <p className="text-hub-muted">Cargando centro…</p>
+      ) : (
+        <>
+          <KpiGrid items={data.kpis} />
+          <div className="mt-6 grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
+            <ContentEcosystemPanel data={data.contentRadar} />
+            <ActivityFeed items={data.activity} />
+          </div>
+        </>
+      )}
     </CentroShell>
   );
 }
