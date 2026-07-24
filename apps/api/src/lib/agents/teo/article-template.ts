@@ -145,9 +145,9 @@ function renderSection(section: ArticleSection, pieceType: string): string {
     const listClass = pieceType === 'checklist' ? 'cleexs-checklist' : '';
     html += `<ul class="${listClass}">${section.items.map((i) => `<li>${renderInlineLinks(i)}</li>`).join('')}</ul>`;
   }
-  if (section.table) {
+  if (section.table?.headers?.length && section.table.rows?.length) {
     const { headers, rows } = section.table;
-    html += `<table class="cleexs-compare-table"><thead><tr>${headers.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    html += `<table class="cleexs-compare-table"><thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((c) => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   }
   return html;
 }
