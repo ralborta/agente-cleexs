@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import {
   Activity,
   BarChart3,
@@ -20,6 +21,8 @@ export type RadarPieceData = {
   type: string;
   status: 'published' | 'approval' | 'working' | 'refresh';
   impact: 'alto' | 'medio' | 'bajo';
+  refreshReason?: string | null;
+  lastRefreshMission?: { id: string; status: string; createdAt: string } | null;
 };
 
 export type ContentRadarData = {
@@ -120,14 +123,21 @@ function toLayoutPieces(pieces: RadarPieceData[]): LayoutPiece[] {
 function RadarNode({ piece }: { piece: LayoutPiece }) {
   const cfg = STATUS[piece.status];
   const Icon = piece.icon;
+  const missionFailed = piece.lastRefreshMission?.status === 'failed';
+  const href =
+    piece.status === 'approval'
+      ? '/cleexs/aprobaciones'
+      : piece.status === 'refresh' || piece.status === 'working'
+        ? '/cleexs/monitor'
+        : null;
 
-  return (
+  const card = (
     <div
-      className="absolute z-10 w-[148px] -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-[#0f172a]/90 p-3 backdrop-blur-sm transition hover:scale-[1.02]"
+      className="absolute z-10 w-[168px] -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-[#0f172a]/90 p-3 backdrop-blur-sm transition hover:scale-[1.02]"
       style={{
         left: `${piece.x}%`,
         top: `${piece.y}%`,
-        borderColor: `${cfg.color}55`,
+        borderColor: `${cfg.color}${missionFailed ? 'aa' : '55'}`,
         boxShadow: `0 0 24px ${cfg.glow}, inset 0 1px 0 rgba(255,255,255,0.06)`,
       }}
     >
@@ -139,15 +149,26 @@ function RadarNode({ piece }: { piece: LayoutPiece }) {
           <Icon className="h-4 w-4" strokeWidth={2} />
         </div>
         <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cfg.badge}`}>
-          {cfg.label}
+          {missionFailed ? 'Falló refresco' : cfg.label}
         </span>
       </div>
       <p className="line-clamp-2 text-sm font-semibold leading-tight text-white">{piece.title}</p>
+      {piece.status === 'refresh' && piece.refreshReason ? (
+        <p className="mt-1 line-clamp-2 text-[10px] leading-snug text-slate-400">{piece.refreshReason}</p>
+      ) : null}
       <p className="mt-1.5 flex items-center gap-1 text-[11px]" style={{ color: cfg.color }}>
         <TrendingUp className="h-3 w-3" />
         {IMPACT_LABEL[piece.impact]}
       </p>
     </div>
+  );
+
+  if (!href) return card;
+
+  return (
+    <Link href={href} className="block">
+      {card}
+    </Link>
   );
 }
 

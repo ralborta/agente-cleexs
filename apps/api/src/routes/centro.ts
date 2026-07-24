@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { prisma } from '../lib/prisma';
+import { getRefreshPiecesMeta } from '../lib/refresher-scan';
 
 type RadarStatus = 'published' | 'approval' | 'working' | 'refresh';
 type RadarImpact = 'alto' | 'medio' | 'bajo';
@@ -106,13 +107,30 @@ const centroRoutes: FastifyPluginAsync = async (server) => {
         b.updatedAt.getTime() - a.updatedAt.getTime(),
     );
 
-    const radarPieces = radarPiecesSorted.slice(0, 6).map((piece) => ({
-      id: piece.id,
-      title: piece.title,
-      type: piece.type,
-      status: mapPieceToRadarStatus(piece.status),
-      impact: mapTypeToImpact(piece.type),
-    }));
+    const radarSlice = radarPiecesSorted.slice(0, 6);
+    const refreshPieceIds = radarSlice
+      .filter((p) => p.status === 'refresh_needed')
+      .map((p) => p.id);
+    const refreshMeta = await getRefreshPiecesMeta(workspaceSlug, refreshPieceIds);
+
+    const radarPieces = radarSlice.map((piece) => {
+      const base = {
+        id: piece.id,
+        title: piece.title,
+        type: piece.type,
+        status: mapPieceToRadarStatus(piece.status),
+        impact: mapTypeToImpact(piece.type),
+      };
+
+      if (piece.status !== 'refresh_needed') return base;
+
+      const meta = refreshMeta[piece.id];
+      return {
+        ...base,
+        refreshReason: meta?.reason ?? null,
+        lastRefreshMission: meta?.lastMission ?? null,
+      };
+    });
 
     const radarStats = {
       active: contentPieces.length,

@@ -8,6 +8,7 @@ import {
   getRefresherStatus,
   scanWorkspaceRefreshCandidates,
   spawnRefreshMission,
+  retryRefreshMissionForPiece,
 } from '../lib/refresher-scan';
 import { prisma } from '../lib/prisma';
 
@@ -114,6 +115,21 @@ const integrationRoutes: FastifyPluginAsync = async (server) => {
       return await scanWorkspaceRefreshCandidates(workspaceSlug);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al listar candidatos';
+      return reply.status(502).send({ error: message });
+    }
+  });
+
+  server.post('/:workspaceSlug/refresher-retry', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    const { pieceId } = (request.body as { pieceId?: string }) ?? {};
+    if (!pieceId) {
+      return reply.status(400).send({ error: 'pieceId requerido' });
+    }
+    try {
+      const mission = await retryRefreshMissionForPiece(workspaceSlug, pieceId);
+      return { workspace: workspaceSlug, pieceId, mission };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al reintentar refresco';
       return reply.status(502).send({ error: message });
     }
   });

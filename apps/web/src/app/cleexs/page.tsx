@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityFeed } from '@/components/centro/activity-feed';
 import { ContentEcosystemPanel } from '@/components/centro/content-ecosystem-panel';
+import { RefreshAlertBanner } from '@/components/centro/refresh-alert-banner';
 import { KpiGrid } from '@/components/centro/kpi-grid';
 import { CentroShell } from '@/components/shell/centro-shell';
 import { fetchCentroDashboard } from '@/lib/api-client';
@@ -89,6 +90,10 @@ export default function CleexsCentroPage() {
           </Link>{' '}
           para preview, editar y publicar.
         </div>
+      ) : null}
+
+      {!loading ? (
+        <RefreshAlertBanner pieces={data.contentRadar.pieces} onRetried={load} />
       ) : null}
 
       {loading ? (

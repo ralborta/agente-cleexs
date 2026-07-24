@@ -265,7 +265,11 @@ export async function applyRefreshScan(workspaceSlug: string) {
   };
 }
 
-export async function spawnRefreshMission(workspaceSlug: string, candidate?: RefreshSignal) {
+export async function spawnRefreshMission(
+  workspaceSlug: string,
+  candidate?: RefreshSignal,
+  options?: { force?: boolean },
+) {
   const workspace = await prisma.workspace.findUnique({
     where: { slug: workspaceSlug },
     include: {
@@ -287,16 +291,19 @@ export async function spawnRefreshMission(workspaceSlug: string, candidate?: Ref
     return { skipped: true, reason: 'mission_active' as const };
   }
 
-  const cooldownSince = new Date(Date.now() - REFRESH_MISSION_COOLDOWN_DAYS * DAY_MS);
-  const recentRefreshMission = await prisma.mission.findFirst({
-    where: {
-      workspaceId: workspace.id,
-      trigger: 'refresh_scan',
-      createdAt: { gte: cooldownSince },
-    },
-  });
-  if (recentRefreshMission) {
-    return { skipped: true, reason: 'cooldown' as const };
+  if (!options?.force) {
+    const cooldownSince = new Date(Date.now() - REFRESH_MISSION_COOLDOWN_DAYS * DAY_MS);
+    const recentRefreshMission = await prisma.mission.findFirst({
+      where: {
+        workspaceId: workspace.id,
+        trigger: 'refresh_scan',
+        createdAt: { gte: cooldownSince },
+        status: { in: ['pending', 'in_progress', 'completed'] },
+      },
+    });
+    if (recentRefreshMission) {
+      return { skipped: true, reason: 'cooldown' as const };
+    }
   }
 
   let target = candidate;
@@ -374,4 +381,105 @@ export function getRefresherStatus(workspaceSlug: string) {
     staleDays: STALE_DAYS,
     missionCooldownDays: REFRESH_MISSION_COOLDOWN_DAYS,
   };
+}
+
+function parseRefreshReasonFromObjective(objective: string): string | null {
+  const match = objective.match(/Refrescar artículo publicado \((.+?)\)\./);
+  return match?.[1] ?? null;
+}
+
+function refreshPieceIdFromObjective(objective: string): string | null {
+  const match = objective.match(/\[refreshPieceId:([^\]]+)\]/);
+  return match?.[1] ?? null;
+}
+
+export type RefreshPieceMeta = {
+  reason: string | null;
+  lastMission: { id: string; status: string; createdAt: string } | null;
+};
+
+export async function getRefreshPiecesMeta(
+  workspaceSlug: string,
+  pieceIds: string[],
+): Promise<Record<string, RefreshPieceMeta>> {
+  if (pieceIds.length === 0) return {};
+
+  const workspace = await prisma.workspace.findUnique({ where: { slug: workspaceSlug } });
+  if (!workspace) return {};
+
+  const missions = await prisma.mission.findMany({
+    where: {
+      workspaceId: workspace.id,
+      trigger: 'refresh_scan',
+    },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true, status: true, objective: true, createdAt: true },
+  });
+
+  let candidateReasons = new Map<string, string>();
+  try {
+    const scan = await scanWorkspaceRefreshCandidates(workspaceSlug);
+    candidateReasons = new Map(scan.candidates.map((c) => [c.pieceId, c.reason]));
+  } catch {
+    // GSC no disponible — usamos motivo de misión previa si existe
+  }
+
+  const meta: Record<string, RefreshPieceMeta> = {};
+
+  for (const pieceId of pieceIds) {
+    const lastMission = missions.find(
+      (m) => m.objective && refreshPieceIdFromObjective(m.objective) === pieceId,
+    );
+    const reasonFromMission =
+      lastMission?.objective ? parseRefreshReasonFromObjective(lastMission.objective) : null;
+
+    meta[pieceId] = {
+      reason: candidateReasons.get(pieceId) ?? reasonFromMission,
+      lastMission: lastMission
+        ? {
+            id: lastMission.id,
+            status: lastMission.status,
+            createdAt: lastMission.createdAt.toISOString(),
+          }
+        : null,
+    };
+  }
+
+  return meta;
+}
+
+export async function retryRefreshMissionForPiece(workspaceSlug: string, pieceId: string) {
+  const scan = await scanWorkspaceRefreshCandidates(workspaceSlug);
+  let candidate = scan.candidates.find((c) => c.pieceId === pieceId);
+
+  if (!candidate) {
+    const workspace = await prisma.workspace.findUnique({ where: { slug: workspaceSlug } });
+    if (!workspace) throw new Error(`Workspace "${workspaceSlug}" no encontrado`);
+
+    const piece = await prisma.contentPiece.findFirst({
+      where: { id: pieceId, workspaceId: workspace.id, status: 'refresh_needed' },
+      include: { publication: true },
+    });
+    if (!piece?.publication?.url) {
+      throw new Error('Pieza no encontrada o sin URL publicada');
+    }
+
+    candidate = {
+      pieceId: piece.id,
+      title: piece.title,
+      url: piece.publication.url,
+      keyword: piece.keyword,
+      pieceType: piece.type,
+      reason: 'Reintento manual de refresco',
+      priority: 100,
+      metrics: {
+        impressionsCurrent: 0,
+        impressionsPrevious: 0,
+        clicksCurrent: 0,
+        publishedDays: MIN_PUBLISHED_AGE_DAYS,
+      },
+    };
+  }
+
+  return spawnRefreshMission(workspaceSlug, candidate, { force: true });
 }

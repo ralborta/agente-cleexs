@@ -76,6 +76,8 @@ export async function fetchCentroDashboard(workspaceSlug: string) {
         type: string;
         status: 'published' | 'approval' | 'working' | 'refresh';
         impact: 'alto' | 'medio' | 'bajo';
+        refreshReason?: string | null;
+        lastRefreshMission?: { id: string; status: string; createdAt: string } | null;
       }>;
       stats: {
         active: number;
@@ -328,6 +330,21 @@ export async function runRefresherScan(workspace: string, spawn = true) {
   return api<RefresherScanResult>(`/api/integrations/${workspace}/refresher-scan`, {
     method: 'POST',
     body: JSON.stringify({ spawn }),
+  });
+}
+
+export async function retryRefreshPiece(workspace: string, pieceId: string) {
+  return api<{
+    workspace: string;
+    pieceId: string;
+    mission: {
+      skipped: boolean;
+      reason?: string;
+      missionId?: string;
+    };
+  }>(`/api/integrations/${workspace}/refresher-retry`, {
+    method: 'POST',
+    body: JSON.stringify({ pieceId }),
   });
 }
 
