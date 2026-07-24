@@ -2,6 +2,7 @@ import { prisma } from './prisma';
 import { queueMissionExecution } from './mission-executor';
 import { frequencyToIntervalDays } from './frequency';
 import { syncWorkspaceMetrics } from './metrics-sync';
+import { tickRefresherScans } from './refresher-scan';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -91,11 +92,10 @@ export async function tickAutonomousMissions() {
 }
 
 export async function runSchedulerTick() {
-  const [missions, metrics] = await Promise.all([
-    tickAutonomousMissions(),
-    tickMetricsSync(),
-  ]);
-  return { missions, metrics };
+  const metrics = await tickMetricsSync();
+  const refresher = await tickRefresherScans();
+  const missions = await tickAutonomousMissions();
+  return { missions, metrics, refresher };
 }
 
 export function startAutonomousScheduler() {
@@ -103,12 +103,15 @@ export function startAutonomousScheduler() {
 
   const tick = () => {
     runSchedulerTick()
-      .then(({ missions, metrics }) => {
+      .then(({ missions, metrics, refresher }) => {
         if (missions.spawned > 0) {
           console.log(`[scheduler] Misiones autónomas disparadas: ${missions.spawned}`);
         }
         if (metrics.synced > 0) {
           console.log(`[scheduler] Sync métricas: ${metrics.synced} workspace(s)`);
+        }
+        if (refresher.missionsSpawned > 0) {
+          console.log(`[scheduler] Misiones refresco: ${refresher.missionsSpawned}`);
         }
       })
       .catch((err) => console.error('[scheduler] Error:', err));

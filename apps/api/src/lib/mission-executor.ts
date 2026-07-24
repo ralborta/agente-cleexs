@@ -11,7 +11,7 @@ import {
   runStrategist,
   runWriter,
 } from './agents/teo/pipeline';
-import { parseMissionPlanHints } from './agents/teo/mission-plan';
+import { parseMissionPlanHints, parseRefreshPieceId } from './agents/teo/mission-plan';
 import { resolveBrandKit } from './branding/brand-kit';
 
 const runningMissions = new Set<string>();
@@ -66,12 +66,45 @@ export async function executeMission(missionId: string) {
     });
 
     const planHints = parseMissionPlanHints(mission);
+    const refreshPieceId = parseRefreshPieceId(mission.objective);
+
+    let refreshSource: {
+      id: string;
+      title: string;
+      keyword: string | null;
+      type: string;
+    } | null = null;
+
+    if (refreshPieceId) {
+      refreshSource = await prisma.contentPiece.findUnique({
+        where: { id: refreshPieceId },
+        select: { id: true, title: true, keyword: true, type: true },
+      });
+      if (refreshSource) {
+        await logAgentActivity({
+          workspaceId: mission.workspaceId,
+          agentId: mission.agentId,
+          missionId,
+          role: 'refresher',
+          message: `Refrescador: actualizando "${refreshSource.title}"`,
+        });
+      }
+    }
 
     // --- Estratega ---
     const plan = runStrategist(teoConfig, missionCount, {
       ...planHints,
-      title: mission.title?.startsWith('Misión manual') ? undefined : mission.title ?? undefined,
-      objective: mission.objective ?? undefined,
+      title:
+        mission.title?.startsWith('Misión manual') || mission.title?.startsWith('Refresco:')
+          ? mission.title.replace(/^Refresco:\s*/i, '').trim() || refreshSource?.title
+          : undefined,
+      topic: planHints.topic ?? refreshSource?.keyword ?? refreshSource?.title,
+      pieceType: (planHints.pieceType as never) ?? refreshSource?.type,
+      objective:
+        mission.objective ??
+        (refreshSource
+          ? `Actualizar y mejorar "${refreshSource.title}" con datos recientes y mejor SEO/AEO.`
+          : undefined),
     });
     const stepStrategist = await createMissionStep({
       missionId,
@@ -153,6 +186,7 @@ export async function executeMission(missionId: string) {
           markdown: draft.bodyMarkdown,
           html: draft.html,
           excerpt: draft.excerpt,
+          ...(refreshSource ? { refreshOfPieceId: refreshSource.id } : {}),
         },
         seoMeta: seo,
       },

@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { runSchedulerTick } from '../lib/job-scheduler';
 import { executeMission } from '../lib/mission-executor';
 import { syncWorkspaceMetrics } from '../lib/metrics-sync';
+import { tickRefresherScans } from '../lib/refresher-scan';
 
 function requireCronSecret(request: { headers: Record<string, string | string[] | undefined> }) {
   const secret = process.env.CRON_SECRET;
@@ -39,6 +40,18 @@ const cronRoutes: FastifyPluginAsync = async (server) => {
       return result;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error en sync de métricas';
+      return reply.status(502).send({ error: message });
+    }
+  });
+
+  server.post('/refresher-scan', async (request, reply) => {
+    if (!requireCronSecret(request)) {
+      return reply.status(401).send({ error: 'No autorizado' });
+    }
+    try {
+      return await tickRefresherScans();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error en escaneo refrescador';
       return reply.status(502).send({ error: message });
     }
   });

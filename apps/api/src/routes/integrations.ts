@@ -3,6 +3,12 @@ import { getGoogleMetricsStatus } from '../lib/integrations/google-config';
 import { testGoogleMetrics, syncWorkspaceMetrics } from '../lib/metrics-sync';
 import { getWordPressStatus, testWorkspaceWordPress } from '../lib/integrations/wordpress-publish';
 import { getAutomationStatus } from '../lib/automation-status';
+import {
+  applyRefreshScan,
+  getRefresherStatus,
+  scanWorkspaceRefreshCandidates,
+  spawnRefreshMission,
+} from '../lib/refresher-scan';
 import { prisma } from '../lib/prisma';
 
 const integrationRoutes: FastifyPluginAsync = async (server) => {
@@ -39,6 +45,7 @@ const integrationRoutes: FastifyPluginAsync = async (server) => {
           : null,
       },
       automation,
+      refresher: getRefresherStatus(workspaceSlug),
     };
   });
 
@@ -73,6 +80,40 @@ const integrationRoutes: FastifyPluginAsync = async (server) => {
       return { ...result, automation };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error en sync de métricas';
+      return reply.status(502).send({ error: message });
+    }
+  });
+
+  server.get('/:workspaceSlug/refresher', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    const workspace = await prisma.workspace.findUnique({ where: { slug: workspaceSlug } });
+    if (!workspace) {
+      return reply.status(404).send({ error: 'Workspace no encontrado' });
+    }
+    return { workspace: workspaceSlug, refresher: getRefresherStatus(workspaceSlug) };
+  });
+
+  server.post('/:workspaceSlug/refresher-scan', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    const { spawn } = (request.body as { spawn?: boolean }) ?? {};
+    try {
+      const scan = await applyRefreshScan(workspaceSlug);
+      const mission = spawn
+        ? await spawnRefreshMission(workspaceSlug, scan.topCandidate ?? undefined)
+        : null;
+      return { ...scan, mission };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error en escaneo refrescador';
+      return reply.status(502).send({ error: message });
+    }
+  });
+
+  server.get('/:workspaceSlug/refresher-candidates', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    try {
+      return await scanWorkspaceRefreshCandidates(workspaceSlug);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al listar candidatos';
       return reply.status(502).send({ error: message });
     }
   });

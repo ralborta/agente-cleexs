@@ -103,6 +103,8 @@ const approvalRoutes: FastifyPluginAsync = async (server) => {
     // Recargar pieza por si hubo edición previa en la misma sesión
     const piece = await prisma.contentPiece.findUniqueOrThrow({ where: { id: approval.pieceId } });
 
+    const refreshOfPieceId = (piece.content as { refreshOfPieceId?: string } | null)?.refreshOfPieceId;
+
     let wpResult: { externalId: string; url: string; status: string };
     try {
       wpResult = await publishPieceToWordPress(
@@ -118,50 +120,65 @@ const approvalRoutes: FastifyPluginAsync = async (server) => {
       });
     }
 
-    await prisma.$transaction([
-      prisma.approval.update({
+    if (refreshOfPieceId) {
+      await prisma.approval.update({
         where: { id },
         data: {
           status: 'approved',
           notes: parsed.data.notes,
           reviewedAt: new Date(),
         },
-      }),
-      prisma.contentPiece.update({
-        where: { id: approval.pieceId },
-        data: { status: 'published' },
-      }),
-      prisma.publication.upsert({
-        where: { pieceId: approval.pieceId },
-        create: {
-          workspaceId: approval.workspaceId,
-          pieceId: approval.pieceId,
-          externalId: wpResult.externalId,
-          url: wpResult.url,
-          publishedAt: new Date(),
-        },
-        update: {
-          externalId: wpResult.externalId,
-          url: wpResult.url,
-          publishedAt: new Date(),
-        },
-      }),
-    ]);
+      });
+    } else {
+      await prisma.$transaction([
+        prisma.approval.update({
+          where: { id },
+          data: {
+            status: 'approved',
+            notes: parsed.data.notes,
+            reviewedAt: new Date(),
+          },
+        }),
+        prisma.contentPiece.update({
+          where: { id: approval.pieceId },
+          data: { status: 'published' },
+        }),
+        prisma.publication.upsert({
+          where: { pieceId: approval.pieceId },
+          create: {
+            workspaceId: approval.workspaceId,
+            pieceId: approval.pieceId,
+            externalId: wpResult.externalId,
+            url: wpResult.url,
+            publishedAt: new Date(),
+          },
+          update: {
+            externalId: wpResult.externalId,
+            url: wpResult.url,
+            publishedAt: new Date(),
+          },
+        }),
+      ]);
+    }
 
     const teo = await prisma.agent.findUnique({ where: { slug: 'teo' } });
     if (teo) {
+      const logMessage = refreshOfPieceId
+        ? `Refresco de "${approval.piece.title}" publicado en WordPress (${wpResult.status}) — ${wpResult.url}`
+        : `"${approval.piece.title}" publicada en WordPress (${wpResult.status}) — ${wpResult.url}`;
       await logAgentActivity({
         workspaceId: approval.workspaceId,
         agentId: teo.id,
-        role: 'publisher',
+        role: refreshOfPieceId ? 'refresher' : 'publisher',
         level: 'success',
-        message: `"${approval.piece.title}" publicada en WordPress (${wpResult.status}) — ${wpResult.url}`,
+        message: logMessage,
       });
     }
 
     return {
       ok: true,
-      pieceId: approval.pieceId,
+      pieceId: refreshOfPieceId ?? approval.pieceId,
+      refreshOfPieceId: refreshOfPieceId ?? undefined,
       wordpress: wpResult,
     };
   });

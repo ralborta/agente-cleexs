@@ -11,6 +11,7 @@ export function parseMissionPlanHints(mission: {
     /\[depth:pro\]/i.test(obj) ||
     /\bdepth:pro\b/i.test(obj) ||
     title.toLowerCase().includes('pro') ||
+    title.toLowerCase().includes('refresco') ||
     obj.toLowerCase().includes(' profundo');
 
   const topicMatch = obj.match(/\[topic:([^\]]+)\]/i);
@@ -21,6 +22,11 @@ export function parseMissionPlanHints(mission: {
     ...(pieceMatch?.[1]?.trim() ? { pieceType: pieceMatch[1].trim() } : {}),
     ...(wantsPro ? { depth: 'pro' as const, pieceType: pieceMatch?.[1]?.trim() || 'pillar' } : {}),
   };
+}
+
+export function parseRefreshPieceId(objective?: string | null): string | null {
+  const match = objective?.match(/\[refreshPieceId:([0-9a-f-]{36})\]/i);
+  return match?.[1] ?? null;
 }
 
 export function buildMissionObjective(

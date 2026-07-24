@@ -297,6 +297,33 @@ export async function syncMetrics(workspace: string) {
   );
 }
 
+export type RefresherScanResult = {
+  workspace: string;
+  scanned: number;
+  candidates: number;
+  marked: number;
+  cleared: number;
+  googleConfigured: boolean;
+  topCandidate: {
+    pieceId: string;
+    title: string;
+    reason: string;
+    priority: number;
+  } | null;
+  mission?: {
+    skipped: boolean;
+    reason?: string;
+    missionId?: string;
+  } | null;
+};
+
+export async function runRefresherScan(workspace: string, spawn = true) {
+  return api<RefresherScanResult>(`/api/integrations/${workspace}/refresher-scan`, {
+    method: 'POST',
+    body: JSON.stringify({ spawn }),
+  });
+}
+
 export type Mission = {
   id: string;
   title: string;

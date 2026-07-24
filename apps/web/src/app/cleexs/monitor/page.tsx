@@ -5,7 +5,7 @@ import { Radio, RefreshCw } from 'lucide-react';
 import { StatusBadge } from '@/components/config/status-badge';
 import { buttonSecondaryClassName } from '@/components/config/settings-section';
 import { CentroShell } from '@/components/shell/centro-shell';
-import { createMission, fetchMissions, type Mission } from '@/lib/api-client';
+import { createMission, fetchMissions, runRefresherScan, type Mission } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
 const STATUS_META: Record<string, { label: string; badge: 'ok' | 'warn' | 'error' | 'idle' }> = {
@@ -26,6 +26,7 @@ export default function MonitorPage() {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -60,6 +61,34 @@ export default function MonitorPage() {
     }
   }
 
+  async function triggerRefresherScan() {
+    setScanning(true);
+    setMessage(null);
+    try {
+      const res = await runRefresherScan('cleexs', true);
+      if (res.candidates === 0) {
+        setMessage(`Refrescador: ${res.scanned} URL(s) analizadas — sin candidatos urgentes`);
+      } else if (res.mission?.skipped) {
+        setMessage(
+          `${res.candidates} candidato(s). Prioridad: "${res.topCandidate?.title}" — misión no encolada (${res.mission.reason})`,
+        );
+      } else if (res.mission?.missionId) {
+        setMessage(
+          `Refrescador: misión encolada para "${res.topCandidate?.title}" — ${res.topCandidate?.reason}`,
+        );
+        setTimeout(load, 2000);
+      } else {
+        setMessage(
+          `${res.candidates} candidato(s) marcados. Prioridad: "${res.topCandidate?.title}" — ${res.topCandidate?.reason}`,
+        );
+      }
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'Error en escaneo');
+    } finally {
+      setScanning(false);
+    }
+  }
+
   const active = missions.filter((m) => ['pending', 'in_progress'].includes(m.status));
 
   return (
@@ -83,8 +112,16 @@ export default function MonitorPage() {
           </button>
           <button
             type="button"
+            onClick={triggerRefresherScan}
+            disabled={scanning || running}
+            className={buttonSecondaryClassName}
+          >
+            {scanning ? 'Escaneando…' : 'Escaneo refrescador'}
+          </button>
+          <button
+            type="button"
             onClick={triggerMission}
-            disabled={running}
+            disabled={running || scanning}
             className="rounded-xl bg-cleexs-orange px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
           >
             {running ? 'Encolando…' : 'Misión manual'}
