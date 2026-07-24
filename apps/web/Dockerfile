@@ -9,7 +9,7 @@ RUN npm ci --workspace=@agente/web --include-workspace-root
 
 FROM base AS builder
 ARG NEXT_PUBLIC_API_URL=http://localhost:4000
-ARG WEB_BUILD_ID=20260724-3
+ARG WEB_BUILD_ID=20260724-4
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN echo "web build ${WEB_BUILD_ID}"
 COPY --from=deps /app/node_modules ./node_modules
