@@ -97,7 +97,7 @@ export type Approval = {
     title: string;
     type: string;
     slug: string | null;
-    content: { excerpt?: string; html?: string } | null;
+    content: { excerpt?: string; html?: string; markdown?: string } | null;
     mission?: { agent?: { name: string; slug: string } | null } | null;
   };
 };
@@ -105,6 +105,16 @@ export type Approval = {
 export async function fetchApprovals(workspace: string) {
   return api<{ approvals: Approval[]; pendingCount: number }>(
     `/api/approvals?workspace=${workspace}&status=pending`,
+  );
+}
+
+export async function updateApprovalPiece(
+  approvalId: string,
+  data: { title?: string; excerpt?: string; markdown?: string },
+) {
+  return api<{ ok: boolean; piece: Approval['piece'] & { content: Approval['piece']['content'] } }>(
+    `/api/approvals/${approvalId}/piece`,
+    { method: 'PATCH', body: JSON.stringify(data) },
   );
 }
 

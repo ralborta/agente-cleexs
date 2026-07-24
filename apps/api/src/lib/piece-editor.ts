@@ -1,0 +1,147 @@
+import type { ContentPiece } from '@prisma/client';
+import { renderArticleHtml, type ArticleData } from './agents/teo/article-template';
+import { resolveBrandKit } from './branding/brand-kit';
+import { prisma } from './prisma';
+
+export function slugifyTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+type PieceContent = {
+  markdown?: string;
+  html?: string;
+  excerpt?: string;
+};
+
+type PieceSeoMeta = {
+  slug?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  canonical?: string;
+};
+
+export function parsePieceContent(content: unknown): PieceContent {
+  if (!content || typeof content !== 'object') return {};
+  return content as PieceContent;
+}
+
+export function parsePieceSeoMeta(seoMeta: unknown): PieceSeoMeta {
+  if (!seoMeta || typeof seoMeta !== 'object') return {};
+  return seoMeta as PieceSeoMeta;
+}
+
+/** Regenera HTML del artículo tras editar título, extracto o markdown. */
+export function rebuildPieceHtml(
+  piece: Pick<ContentPiece, 'title' | 'type' | 'keyword'>,
+  content: PieceContent,
+  branding: ReturnType<typeof resolveBrandKit>,
+): string {
+  const lead = content.excerpt?.trim() || ' ';
+  const markdown = content.markdown?.trim() || '';
+
+  const sections = markdown
+    ? markdown
+        .split(/\n(?=## )/)
+        .filter(Boolean)
+        .map((block) => {
+          const lines = block.trim().split('\n');
+          const headingMatch = lines[0]?.match(/^## (.+)/);
+          if (headingMatch) {
+            return {
+              heading: headingMatch[1],
+              body: lines.slice(1).join('\n').trim(),
+            };
+          }
+          return { body: block.trim() };
+        })
+    : [{ body: lead }];
+
+  const articleData: ArticleData = {
+    kicker: piece.keyword?.trim() || piece.title.split(' ').slice(0, 3).join(' '),
+    title: piece.title,
+    lead,
+    sections,
+    pieceType: piece.type,
+  };
+
+  return renderArticleHtml(articleData, branding);
+}
+
+export type UpdateApprovalPieceInput = {
+  title?: string;
+  excerpt?: string;
+  markdown?: string;
+};
+
+export async function updateApprovalPieceContent(
+  approvalId: string,
+  input: UpdateApprovalPieceInput,
+) {
+  const approval = await prisma.approval.findUnique({
+    where: { id: approvalId },
+    include: {
+      piece: true,
+      workspace: true,
+    },
+  });
+
+  if (!approval) {
+    throw new Error('Aprobación no encontrada');
+  }
+  if (approval.status !== 'pending') {
+    throw new Error('Solo se pueden editar piezas con aprobación pendiente');
+  }
+
+  const agentConfig = await prisma.agentConfig.findFirst({
+    where: {
+      workspaceId: approval.workspaceId,
+      agent: { slug: 'teo' },
+    },
+  });
+
+  const branding = resolveBrandKit(agentConfig?.branding, approval.workspace.name);
+  const currentContent = parsePieceContent(approval.piece.content);
+  const currentSeo = parsePieceSeoMeta(approval.piece.seoMeta);
+
+  const title = input.title?.trim() || approval.piece.title;
+  const excerpt = input.excerpt !== undefined ? input.excerpt.trim() : currentContent.excerpt;
+  const markdown = input.markdown !== undefined ? input.markdown : currentContent.markdown;
+
+  const nextContent: PieceContent = {
+    ...currentContent,
+    excerpt: excerpt || currentContent.excerpt,
+    markdown,
+  };
+
+  nextContent.html = rebuildPieceHtml(
+    { ...approval.piece, title },
+    nextContent,
+    branding,
+  );
+
+  const slug = input.title ? slugifyTitle(title) : approval.piece.slug ?? currentSeo.slug;
+  const nextSeo: PieceSeoMeta = {
+    ...currentSeo,
+    slug,
+    metaTitle: `${title} | ${branding.brandName ?? 'Cleexs'}`,
+    metaDescription: nextContent.excerpt ?? currentSeo.metaDescription,
+    canonical: slug ? `https://cleexs.net/articulos/${slug}` : currentSeo.canonical,
+  };
+
+  const piece = await prisma.contentPiece.update({
+    where: { id: approval.pieceId },
+    data: {
+      title,
+      slug,
+      content: nextContent,
+      seoMeta: nextSeo,
+    },
+  });
+
+  return { piece, approval };
+}

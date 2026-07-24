@@ -3,11 +3,18 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { logAgentActivity } from '../lib/agent-helpers';
 import { publishPieceToWordPress } from '../lib/integrations/wordpress-publish';
+import { updateApprovalPieceContent } from '../lib/piece-editor';
 
 const reviewSchema = z.object({
   notes: z.string().optional(),
   /** draft | publish — override del env al aprobar */
   wpStatus: z.enum(['draft', 'publish']).optional(),
+});
+
+const editPieceSchema = z.object({
+  title: z.string().min(1).max(300).optional(),
+  excerpt: z.string().max(500).optional(),
+  markdown: z.string().max(100_000).optional(),
 });
 
 const approvalRoutes: FastifyPluginAsync = async (server) => {
@@ -36,6 +43,42 @@ const approvalRoutes: FastifyPluginAsync = async (server) => {
     return { approvals, pendingCount: approvals.filter((a) => a.status === 'pending').length };
   });
 
+  server.get('/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const approval = await prisma.approval.findUnique({
+      where: { id },
+      include: {
+        piece: {
+          include: {
+            mission: { select: { agent: { select: { name: true, slug: true } } } },
+          },
+        },
+        reviewedBy: { select: { id: true, name: true, email: true } },
+      },
+    });
+    if (!approval) {
+      return reply.status(404).send({ error: 'Aprobación no encontrada' });
+    }
+    return { approval };
+  });
+
+  server.patch('/:id/piece', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const parsed = editPieceSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({ error: parsed.error.flatten() });
+    }
+
+    try {
+      const { piece } = await updateApprovalPieceContent(id, parsed.data);
+      return { ok: true, piece };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al guardar';
+      const status = message.includes('no encontrada') ? 404 : message.includes('pendiente') ? 409 : 400;
+      return reply.status(status).send({ error: message });
+    }
+  });
+
   server.post('/:id/approve', async (request, reply) => {
     const { id } = request.params as { id: string };
     const parsed = reviewSchema.safeParse(request.body ?? {});
@@ -57,11 +100,14 @@ const approvalRoutes: FastifyPluginAsync = async (server) => {
       return reply.status(409).send({ error: 'Esta aprobación ya fue procesada' });
     }
 
+    // Recargar pieza por si hubo edición previa en la misma sesión
+    const piece = await prisma.contentPiece.findUniqueOrThrow({ where: { id: approval.pieceId } });
+
     let wpResult: { externalId: string; url: string; status: string };
     try {
       wpResult = await publishPieceToWordPress(
         approval.workspace.slug,
-        approval.piece,
+        piece,
         { status: parsed.data.wpStatus ?? 'publish' },
       );
     } catch (err) {
