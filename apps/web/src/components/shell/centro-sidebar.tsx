@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { fetchApprovals } from '@/lib/api-client';
 import {
   Activity,
   BarChart3,
@@ -26,10 +28,10 @@ const resultsNav = [
   { href: '/cleexs/actividad', label: 'Actividad', icon: Activity },
 ];
 
-/** Operación secundaria — transparencia y excepciones. */
+/** Operación — aprobaciones, monitor y refrescador. */
 const operationNav = [
   { href: '/cleexs/aprobaciones', label: 'Aprobaciones', icon: CheckCircle2 },
-  { href: '/cleexs/monitor', label: 'Misiones', icon: Radio },
+  { href: '/cleexs/monitor', label: 'Monitor', icon: Radio },
 ];
 
 /** Configuración al final — se toca poco. */
@@ -92,10 +94,21 @@ function NavSection({
   );
 }
 
-export function CentroSidebar({ workspaceName, pendingApprovals = 0 }: SidebarProps) {
+export function CentroSidebar({ workspaceName, pendingApprovals: pendingProp }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const storedUser = getStoredUser();
+  const [pendingApprovals, setPendingApprovals] = useState(pendingProp ?? 0);
+
+  useEffect(() => {
+    if (pendingProp !== undefined) {
+      setPendingApprovals(pendingProp);
+      return;
+    }
+    fetchApprovals('cleexs')
+      .then((data) => setPendingApprovals(data.pendingCount))
+      .catch(() => undefined);
+  }, [pathname, pendingProp]);
 
   const operationWithBadge = operationNav.map((item) =>
     item.href.includes('aprobaciones')
@@ -104,8 +117,8 @@ export function CentroSidebar({ workspaceName, pendingApprovals = 0 }: SidebarPr
   );
 
   return (
-    <aside className="flex h-full min-h-screen w-[260px] flex-col border-r border-hub-border bg-[#0b1220] px-4 py-5">
-      <div className="mb-8 px-2">
+    <aside className="flex h-screen w-[260px] shrink-0 flex-col border-r border-hub-border bg-[#0b1220] px-4 py-5">
+      <div className="mb-6 shrink-0 px-2">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-hub-muted">
           {PLATFORM_NAME}
         </p>
@@ -113,13 +126,13 @@ export function CentroSidebar({ workspaceName, pendingApprovals = 0 }: SidebarPr
         <p className="mt-1 text-xs text-emerald-400">Teo activo · modo autónomo</p>
       </div>
 
-      <div className="space-y-8">
+      <div className="min-h-0 flex-1 space-y-8 overflow-y-auto pr-1">
         <NavSection title="Resultados" items={resultsNav} pathname={pathname} />
-        <NavSection title="Excepciones" items={operationWithBadge} pathname={pathname} />
+        <NavSection title="Operación" items={operationWithBadge} pathname={pathname} />
         <NavSection title="Configuración" items={configNav} pathname={pathname} />
       </div>
 
-      <div className="mt-8">
+      <div className="mt-4 shrink-0">
         <p className="mb-2 px-2 text-xs font-medium uppercase tracking-[0.18em] text-hub-muted">
           Agentes
         </p>

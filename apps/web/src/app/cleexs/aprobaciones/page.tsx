@@ -38,7 +38,7 @@ export default function AprobacionesPage() {
       <div className="mb-6">
         <h2 className="text-2xl font-semibold text-white">Aprobaciones</h2>
         <p className="mt-1 text-sm text-hub-muted">
-          Revisá el preview, editá si hace falta y publicá en cleexs.net/articulos/ con un clic.
+          Preview del artículo, edición de título/contenido, comentarios y publicación en cleexs.net/articulos/.
         </p>
       </div>
 

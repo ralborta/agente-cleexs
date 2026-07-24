@@ -41,6 +41,7 @@ export function ApprovalReviewCard({
   const [markdown, setMarkdown] = useState(item.piece.content?.markdown ?? '');
   const [previewHtml, setPreviewHtml] = useState(item.piece.content?.html ?? '');
   const [publishLive, setPublishLive] = useState(true);
+  const [reviewNotes, setReviewNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
@@ -78,7 +79,7 @@ export function ApprovalReviewCard({
     onError('');
     try {
       const wpStatus = publishLive ? 'publish' : 'draft';
-      const res = await approvePiece(item.id, wpStatus);
+      const res = await approvePiece(item.id, wpStatus, reviewNotes);
       onSuccess(
         wpStatus === 'publish'
           ? `Publicado en cleexs.net (${res.wordpress.status}): ${res.wordpress.url}`
@@ -96,7 +97,7 @@ export function ApprovalReviewCard({
     onActing(item.id);
     onError('');
     try {
-      await rejectPiece(item.id);
+      await rejectPiece(item.id, reviewNotes);
       onDone();
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Error al rechazar');
@@ -202,7 +203,18 @@ export function ApprovalReviewCard({
         </div>
       )}
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-hub-border/70 pt-5">
+      <div className="mt-6 space-y-4 border-t border-hub-border/70 pt-5">
+        <div>
+          <label className="text-sm font-medium text-slate-200">Comentarios de revisión (opcional)</label>
+          <textarea
+            value={reviewNotes}
+            onChange={(e) => setReviewNotes(e.target.value)}
+            rows={2}
+            placeholder="Notas internas al aprobar o rechazar…"
+            className={`${inputClassName} mt-2 resize-y text-sm`}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-4">
         <label className="flex cursor-pointer items-center gap-3 text-sm text-slate-200">
           <input
             type="checkbox"
@@ -229,6 +241,7 @@ export function ApprovalReviewCard({
           >
             Rechazar
           </button>
+        </div>
         </div>
       </div>
     </article>

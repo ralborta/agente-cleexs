@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityFeed } from '@/components/centro/activity-feed';
 import { ContentEcosystemPanel } from '@/components/centro/content-ecosystem-panel';
@@ -50,9 +51,22 @@ export default function CleexsCentroPage() {
   }, [load]);
 
   const onlineCount = data.agentsOnline.filter((a) => a.status !== 'idle').length;
+  const pendingApprovals = data.kpis.find((k) => k.label === 'En aprobación')?.value ?? 0;
+
+  const kpisWithLinks = data.kpis.map((kpi) => {
+    if (kpi.label === 'En aprobación') return { ...kpi, href: '/cleexs/aprobaciones' };
+    if (kpi.label === 'Misiones activas' || kpi.label === 'A refrescar') {
+      return { ...kpi, href: '/cleexs/monitor' };
+    }
+    return kpi;
+  });
 
   return (
-    <CentroShell workspaceName={data.workspace.name} agentsOnline={onlineCount || 1}>
+    <CentroShell
+      workspaceName={data.workspace.name}
+      agentsOnline={onlineCount || 1}
+      pendingApprovals={typeof pendingApprovals === 'number' ? pendingApprovals : 0}
+    >
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.18em] text-cleexs-blue">
@@ -66,11 +80,22 @@ export default function CleexsCentroPage() {
         </div>
       </div>
 
+      {!loading && typeof pendingApprovals === 'number' && pendingApprovals > 0 ? (
+        <div className="mb-6 rounded-xl border border-cleexs-orange/30 bg-cleexs-orange/10 px-4 py-3 text-sm text-orange-100">
+          Tenés {pendingApprovals} pieza{pendingApprovals === 1 ? '' : 's'} pendiente
+          {pendingApprovals === 1 ? '' : 's'} de revisión.{' '}
+          <Link href="/cleexs/aprobaciones" className="font-semibold text-white underline">
+            Ir a Aprobaciones
+          </Link>{' '}
+          para preview, editar y publicar.
+        </div>
+      ) : null}
+
       {loading ? (
         <p className="text-hub-muted">Cargando centro…</p>
       ) : (
         <>
-          <KpiGrid items={data.kpis} />
+          <KpiGrid items={kpisWithLinks} />
           <div className="mt-6 grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
             <ContentEcosystemPanel data={data.contentRadar} />
             <ActivityFeed items={data.activity} />

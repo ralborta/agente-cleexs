@@ -99,9 +99,9 @@ export default function MonitorPage() {
             <Radio className="h-3.5 w-3.5" />
             Operación
           </div>
-          <h2 className="text-3xl font-semibold text-white">Misiones</h2>
+          <h2 className="text-3xl font-semibold text-white">Monitor</h2>
           <p className="mt-2 text-sm text-hub-muted">
-            Transparencia de lo que ejecuta Teo — autónomo o manual.
+            Misiones de Teo, escaneo refrescador y transparencia operativa.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

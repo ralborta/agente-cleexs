@@ -118,15 +118,22 @@ export async function updateApprovalPiece(
   );
 }
 
-export async function approvePiece(id: string, wpStatus: 'draft' | 'publish' = 'publish') {
+export async function approvePiece(
+  id: string,
+  wpStatus: 'draft' | 'publish' = 'publish',
+  notes?: string,
+) {
   return api<{ ok: boolean; wordpress: { externalId: string; url: string; status: string } }>(
     `/api/approvals/${id}/approve`,
-    { method: 'POST', body: JSON.stringify({ wpStatus }) },
+    { method: 'POST', body: JSON.stringify({ wpStatus, notes: notes?.trim() || undefined }) },
   );
 }
 
-export async function rejectPiece(id: string) {
-  return api<{ ok: boolean }>(`/api/approvals/${id}/reject`, { method: 'POST', body: JSON.stringify({}) });
+export async function rejectPiece(id: string, notes?: string) {
+  return api<{ ok: boolean }>(`/api/approvals/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ notes: notes?.trim() || undefined }),
+  });
 }
 
 export async function createMission(workspaceSlug: string) {
