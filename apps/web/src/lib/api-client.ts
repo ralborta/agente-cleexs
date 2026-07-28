@@ -178,10 +178,45 @@ export async function fetchPieces(workspace: string) {
       status: string;
       slug: string | null;
       updatedAt: string;
+      cluster?: { id: string; name: string } | null;
       publication?: { url: string | null; publishedAt: string | null } | null;
       mission?: { agent?: { name: string; slug: string } | null } | null;
     }>;
   }>(`/api/content/pieces?workspace=${workspace}`);
+}
+
+export type ContentClusterSummary = {
+  id: string;
+  name: string;
+  pillarTopic: string | null;
+  pieces: Array<{
+    id: string;
+    title: string;
+    type: string;
+    status: string;
+    slug: string | null;
+    keyword: string | null;
+    url: string | null;
+    role: 'pillar' | 'satellite';
+  }>;
+  stats: {
+    total: number;
+    published: number;
+    missingTypes: string[];
+  };
+};
+
+export async function fetchContentClusters(workspace: string) {
+  return api<{ workspace: string; clusters: ContentClusterSummary[] }>(
+    `/api/content/clusters?workspace=${workspace}`,
+  );
+}
+
+export async function bootstrapContentClusters(workspace: string) {
+  return api<{ workspace: string; assigned: number; clusters: ContentClusterSummary[] }>(
+    `/api/content/clusters/bootstrap`,
+    { method: 'POST', body: JSON.stringify({ workspace }) },
+  );
 }
 
 export async function fetchAnalytics(workspace: string, period: 7 | 30 | 90 = 30) {

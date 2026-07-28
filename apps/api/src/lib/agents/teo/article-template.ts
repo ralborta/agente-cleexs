@@ -91,6 +91,10 @@ export function buildArticleCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
 .cleexs-references li{margin-bottom:10px}
 .cleexs-references a{color:${t.primary};text-decoration:none}
 .cleexs-references a:hover{text-decoration:underline}
+.cleexs-ecosystem{margin:32px 0;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0}
+.cleexs-ecosystem h2{font-size:18px;margin:0 0 8px;border:none;padding:0}
+.cleexs-ecosystem__list{margin:12px 0 0;padding-left:20px}
+.cleexs-ecosystem__tag{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-left:6px}
 .cleexs-article a{color:${t.primary};text-decoration:none}
 .cleexs-article a:hover{text-decoration:underline}
 `.replace(/\s+/g, ' ').trim();

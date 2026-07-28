@@ -85,7 +85,7 @@ export async function getStrategicPlanHints(
     return { topic, pieceType: 'faq', keyword: topic, rationale: 'Workspace no encontrado — fallback' };
   }
 
-  const [pieces, publications, gscMetrics] = await Promise.all([
+  const [pieces, publications, gscMetrics, clusterPieces] = await Promise.all([
     prisma.contentPiece.findMany({
       where: {
         workspaceId: workspace.id,
@@ -102,6 +102,14 @@ export async function getStrategicPlanHints(
       orderBy: { capturedAt: 'desc' },
       take: 500,
       select: { url: true, impressions: true, clicks: true, capturedAt: true },
+    }),
+    prisma.contentPiece.findMany({
+      where: {
+        workspaceId: workspace.id,
+        clusterId: { not: null },
+        status: { not: 'archived' },
+      },
+      select: { type: true, keyword: true, title: true },
     }),
   ]);
 
@@ -121,6 +129,9 @@ export async function getStrategicPlanHints(
     signal: 'low_visibility' | 'zero_clicks' | 'coverage_gap';
     rationale: string[];
   };
+
+  const clusterTypes = new Set(clusterPieces.map((p) => p.type));
+  const clusterMissing = ECOSYSTEM_TYPES.filter((t) => !clusterTypes.has(t));
 
   const scores: TopicScore[] = [];
 
@@ -187,11 +198,22 @@ export async function getStrategicPlanHints(
     (p) => topicMatches(p.keyword, winner.topic) || topicMatches(p.title, winner.topic),
   );
   const existingTypes = new Set(winnerPieces.map((p) => p.type));
+  for (const missing of clusterMissing) {
+    if (!existingTypes.has(missing)) {
+      existingTypes.add(missing);
+    }
+  }
   const pieceType = pickPieceType(winner.topic, existingTypes, winner.signal);
   const depth = pieceType === 'pillar' ? ('pro' as const) : ('standard' as const);
   const title = buildTitle(pieceType, winner.topic);
 
-  const metricsNote = winner.rationale.length > 0 ? winner.rationale.join('. ') : 'Rotación de temas';
+  const metricsNote =
+    [
+      ...winner.rationale,
+      clusterMissing.length > 0 ? `Ecosistema: faltan tipos ${clusterMissing.join(', ')}` : '',
+    ]
+      .filter(Boolean)
+      .join('. ') || 'Rotación de temas';
 
   return {
     topic: winner.topic,

@@ -15,6 +15,10 @@ import { getStrategicPlanHints } from './agents/teo/strategist-metrics';
 import { parseMissionPlanHints, parseRefreshPieceId } from './agents/teo/mission-plan';
 import { resolveBrandKit } from './branding/brand-kit';
 import { publishAndRecordPiece } from './integrations/wordpress-publish';
+import {
+  ensureDefaultCluster,
+  enrichHtmlWithClusterInterlinks,
+} from './content-cluster';
 
 const runningMissions = new Set<string>();
 
@@ -179,8 +183,27 @@ export async function executeMission(missionId: string) {
     });
     await completeMissionStep(stepWriter.id, draft);
 
+    const cluster = await ensureDefaultCluster(mission.workspace.slug);
+    const { html: linkedHtml, links: interlinks } = await enrichHtmlWithClusterInterlinks(
+      mission.workspaceId,
+      cluster.id,
+      draft.html,
+      { excludePieceId: refreshSource?.id },
+    );
+    const draftLinked = { ...draft, html: linkedHtml };
+
+    if (interlinks.length > 0) {
+      await logAgentActivity({
+        workspaceId: mission.workspaceId,
+        agentId: mission.agentId,
+        missionId,
+        role: 'seo_builder',
+        message: `Interlinks del ecosistema: ${interlinks.length} enlace(s) a piezas relacionadas`,
+      });
+    }
+
     // --- Albañil SEO ---
-    const seo = runSeoBuilder(plan, draft, branding);
+    const seo = runSeoBuilder(plan, draftLinked, branding);
     const stepSeo = await createMissionStep({
       missionId,
       role: 'seo_builder',
@@ -201,6 +224,7 @@ export async function executeMission(missionId: string) {
       data: {
         workspaceId: mission.workspaceId,
         missionId,
+        clusterId: cluster.id,
         type: plan.pieceType as ContentPieceType,
         title: plan.title,
         slug: seo.slug,
@@ -208,7 +232,7 @@ export async function executeMission(missionId: string) {
         status: teoConfig.autoPublish ? 'approved' : 'pending_approval',
         content: {
           markdown: draft.bodyMarkdown,
-          html: draft.html,
+          html: linkedHtml,
           excerpt: draft.excerpt,
           ...(refreshSource ? { refreshOfPieceId: refreshSource.id } : {}),
         },

@@ -1,6 +1,10 @@
 import type { ContentPiece } from '@prisma/client';
 import { prisma } from '../prisma';
 import {
+  ensureDefaultCluster,
+  enrichHtmlWithClusterInterlinks,
+} from '../content-cluster';
+import {
   createWordPressPost,
   findOrCreateCategory,
   isWordPressConfigured,
@@ -38,16 +42,20 @@ function seoFromPiece(
 export async function publishAndRecordPiece(
   workspaceSlug: string,
   workspaceId: string,
-  piece: Pick<ContentPiece, 'id' | 'title' | 'slug' | 'content' | 'seoMeta' | 'keyword'>,
+  piece: Pick<
+    ContentPiece,
+    'id' | 'title' | 'slug' | 'content' | 'seoMeta' | 'keyword' | 'clusterId'
+  >,
   options?: { wpStatus?: 'draft' | 'publish' },
 ): Promise<PublishResult> {
-  const pieceContent = piece.content as {
+  const prepared = await preparePieceHtmlWithInterlinks(workspaceSlug, workspaceId, piece);
+  const pieceContent = prepared.content as {
     refreshOfPieceId?: string;
     excerpt?: string;
   } | null;
   const refreshOfPieceId = pieceContent?.refreshOfPieceId;
 
-  const wpResult = await publishPieceToWordPress(workspaceSlug, piece, {
+  const wpResult = await publishPieceToWordPress(workspaceSlug, prepared, {
     status: options?.wpStatus ?? 'publish',
   });
 
@@ -80,9 +88,43 @@ export async function publishAndRecordPiece(
   return wpResult;
 }
 
+async function preparePieceHtmlWithInterlinks(
+  workspaceSlug: string,
+  workspaceId: string,
+  piece: Pick<
+    ContentPiece,
+    'id' | 'title' | 'slug' | 'content' | 'seoMeta' | 'keyword' | 'clusterId'
+  >,
+) {
+  const content = piece.content as { html?: string; markdown?: string; excerpt?: string } | null;
+  if (!content?.html) return piece;
+
+  const clusterId = piece.clusterId ?? (await ensureDefaultCluster(workspaceSlug)).id;
+  if (!piece.clusterId) {
+    await prisma.contentPiece.update({
+      where: { id: piece.id },
+      data: { clusterId },
+    });
+  }
+
+  const { html } = await enrichHtmlWithClusterInterlinks(workspaceId, clusterId, content.html, {
+    excludePieceId: piece.id,
+    excludeSlug: piece.slug ?? undefined,
+  });
+
+  return {
+    ...piece,
+    clusterId,
+    content: { ...content, html },
+  };
+}
+
 export async function publishPieceToWordPress(
   workspaceSlug: string,
-  piece: Pick<ContentPiece, 'id' | 'title' | 'slug' | 'content' | 'seoMeta' | 'keyword'>,
+  piece: Pick<
+    ContentPiece,
+    'id' | 'title' | 'slug' | 'content' | 'seoMeta' | 'keyword' | 'clusterId'
+  >,
   options?: { status?: 'draft' | 'publish' | 'pending' },
 ): Promise<PublishResult> {
   const pieceContent = piece.content as {
@@ -149,7 +191,10 @@ export async function publishPieceToWordPress(
 /** Actualiza el post WP existente cuando se aprueba un refresco de contenido. */
 export async function publishRefreshPieceToWordPress(
   workspaceSlug: string,
-  refreshPiece: Pick<ContentPiece, 'id' | 'title' | 'slug' | 'content' | 'seoMeta' | 'keyword'>,
+  refreshPiece: Pick<
+    ContentPiece,
+    'id' | 'title' | 'slug' | 'content' | 'seoMeta' | 'keyword' | 'clusterId'
+  >,
   originalPieceId: string,
   options?: { status?: 'draft' | 'publish' | 'pending' },
 ): Promise<PublishResult> {
@@ -167,7 +212,25 @@ export async function publishRefreshPieceToWordPress(
     throw new Error(`WordPress no configurado para workspace "${workspaceSlug}"`);
   }
 
-  const content = refreshPiece.content as { markdown?: string; html?: string; excerpt?: string } | null;
+  const workspace = await prisma.workspace.findUnique({ where: { slug: workspaceSlug } });
+  let content = refreshPiece.content as {
+    markdown?: string;
+    html?: string;
+    excerpt?: string;
+  } | null;
+
+  if (content?.html && workspace) {
+    const clusterId =
+      refreshPiece.clusterId ??
+      original.clusterId ??
+      (await ensureDefaultCluster(workspaceSlug)).id;
+    const { html } = await enrichHtmlWithClusterInterlinks(workspace.id, clusterId, content.html, {
+      excludePieceId: originalPieceId,
+      excludeSlug: original.slug ?? undefined,
+    });
+    content = { ...content, html };
+  }
+
   const seoMeta = refreshPiece.seoMeta as { slug?: string; metaDescription?: string; canonical?: string } | null;
   const slug = original.slug ?? refreshPiece.slug ?? seoMeta?.slug;
   const wpStatus = options?.status ?? config.approvalPostStatus ?? 'publish';
