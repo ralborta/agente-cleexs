@@ -48,6 +48,18 @@ export async function getAutomationStatus(workspaceSlug: string) {
     activeMissions === 0 &&
     (msSinceLastMission === null || msSinceLastMission >= intervalMs);
 
+  const msUntilNext =
+    msSinceLastMission === null
+      ? 0
+      : Math.max(0, intervalMs - msSinceLastMission);
+  const nextEligibleAt =
+    eligibleForNext || msSinceLastMission === null
+      ? new Date().toISOString()
+      : new Date(Date.now() + msUntilNext).toISOString();
+
+  const apiPublicUrl =
+    process.env.API_PUBLIC_URL || 'https://agente-cleexs-api.wd75db.easypanel.host';
+
   return {
     schedulerEnabled,
     tickIntervalMs: Number(process.env.AUTONOMOUS_TICK_MS || 60 * 60 * 1000),
@@ -57,6 +69,15 @@ export async function getAutomationStatus(workspaceSlug: string) {
     topicsConfigured: Array.isArray(teoConfig?.topics) && (teoConfig.topics as string[]).length > 0,
     activeMissions,
     eligibleForNext,
+    nextEligibleAt,
+    hoursUntilNext: Math.ceil(msUntilNext / (60 * 60 * 1000)),
+    cronBackup: {
+      apiBaseUrl: apiPublicUrl,
+      autonomousTick: `${apiPublicUrl}/api/cron/autonomous-tick`,
+      metricsSync: `${apiPublicUrl}/api/cron/metrics-sync`,
+      refresherScan: `${apiPublicUrl}/api/cron/refresher-scan`,
+      header: 'x-cron-secret',
+    },
     lastMission: lastMission
       ? {
           id: lastMission.id,

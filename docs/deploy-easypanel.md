@@ -46,11 +46,13 @@ Easypanel despliega desde un repositorio Git. Asegurate de que el repo incluya:
 ```env
 DATABASE_URL=postgresql://postgres:PASSWORD@NOMBRE_SERVICIO_PG:5432/agente_cleexs?schema=public
 API_PORT=4000
+API_PUBLIC_URL=https://agente-cleexs-api.wd75db.easypanel.host
 JWT_SECRET=generar-secreto-largo
 CRON_SECRET=generar-secreto-cron
 FRONTEND_URL=https://agents.cleexs.net
 FRONTEND_URLS=https://agents.cleexs.net
-DISABLE_AUTONOMOUS=true
+DISABLE_AUTONOMOUS=false
+AUTONOMOUS_TICK_MS=3600000
 RUN_DB_SEED=true
 WORDPRESS_URL=https://cleexs.net
 WORDPRESS_USERNAME=...
@@ -102,17 +104,30 @@ Respuesta esperada de `/health`:
 
 ---
 
-## 6. Cron de misiones autónomas (opcional)
+## 6. Cron de misiones autónomas
 
-Cuando quieras activar Teo autónomo:
+### Scheduler interno (recomendado)
 
-1. En API: `DISABLE_AUTONOMOUS=false`
-2. En Easypanel, creá un **Cron Job** que llame cada hora:
+En API Easypanel:
+
+```env
+DISABLE_AUTONOMOUS=false
+AUTONOMOUS_TICK_MS=3600000
+API_PUBLIC_URL=https://agente-cleexs-api.wd75db.easypanel.host
+```
+
+La API ejecuta tick cada hora al arrancar (misiones + métricas + refrescador).
+
+### Cron de respaldo (opcional)
+
+Ver guía completa: [`docs/cron-backup-easypanel.md`](./cron-backup-easypanel.md)
 
 ```bash
-curl -X POST https://api-agents.cleexs.net/api/cron/autonomous-tick \
+curl -X POST https://agente-cleexs-api.wd75db.easypanel.host/api/cron/autonomous-tick \
   -H "x-cron-secret: TU_CRON_SECRET"
 ```
+
+También podés usar **Integraciones → Ejecutar tick ahora** en el backoffice.
 
 ---
 

@@ -248,6 +248,15 @@ export type AutomationStatus = {
   topicsConfigured: boolean;
   activeMissions: number;
   eligibleForNext: boolean;
+  nextEligibleAt?: string;
+  hoursUntilNext?: number;
+  cronBackup?: {
+    apiBaseUrl: string;
+    autonomousTick: string;
+    metricsSync: string;
+    refresherScan: string;
+    header: string;
+  };
   lastMission: {
     id: string;
     title: string;
@@ -314,6 +323,22 @@ export type IntegrationsOverview = {
 
 export async function fetchIntegrationsOverview(workspace: string) {
   return api<IntegrationsOverview>(`/api/integrations/${workspace}/overview`);
+}
+
+export async function triggerSchedulerTick(workspace: string) {
+  return api<{
+    ok: boolean;
+    workspace: string;
+    result: {
+      missions: { spawned: number; missionIds: string[] };
+      metrics: { synced: number; workspaces: string[] };
+      refresher: { missionsSpawned: number; candidates: number };
+    };
+    automation: AutomationStatus;
+  }>(`/api/integrations/${workspace}/trigger-scheduler`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
 }
 
 export async function testWordPressIntegration(workspace: string) {

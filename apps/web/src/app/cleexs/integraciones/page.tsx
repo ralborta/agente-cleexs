@@ -132,7 +132,7 @@ export default function IntegracionesPage() {
         <p className="text-hub-muted">Cargando integraciones…</p>
       ) : (
         <div className="space-y-6">
-          <AutomationPanel automation={data.automation} />
+          <AutomationPanel automation={data.automation} onTickComplete={load} />
 
           <RankMathSetupPanel />
 

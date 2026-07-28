@@ -4,6 +4,7 @@ import { testGoogleMetrics, syncWorkspaceMetrics } from '../lib/metrics-sync';
 import { getWordPressStatus, testWorkspaceWordPress } from '../lib/integrations/wordpress-publish';
 import { auditWordPressSetup } from '../lib/integrations/wordpress-setup';
 import { getAutomationStatus } from '../lib/automation-status';
+import { runSchedulerTick } from '../lib/job-scheduler';
 import {
   applyRefreshScan,
   getRefresherStatus,
@@ -137,6 +138,25 @@ const integrationRoutes: FastifyPluginAsync = async (server) => {
       return { workspace: workspaceSlug, pieceId, mission };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al reintentar refresco';
+      return reply.status(502).send({ error: message });
+    }
+  });
+
+  server.post('/:workspaceSlug/trigger-scheduler', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    if (request.authUser?.role !== 'admin') {
+      return reply.status(403).send({ error: 'Solo administradores pueden ejecutar el scheduler' });
+    }
+    const workspace = await prisma.workspace.findUnique({ where: { slug: workspaceSlug } });
+    if (!workspace) {
+      return reply.status(404).send({ error: 'Workspace no encontrado' });
+    }
+    try {
+      const result = await runSchedulerTick();
+      const automation = await getAutomationStatus(workspaceSlug);
+      return { ok: true, workspace: workspaceSlug, result, automation };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al ejecutar scheduler';
       return reply.status(502).send({ error: message });
     }
   });
