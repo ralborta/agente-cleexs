@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { getGoogleMetricsStatus } from '../lib/integrations/google-config';
 import { testGoogleMetrics, syncWorkspaceMetrics } from '../lib/metrics-sync';
 import { getWordPressStatus, testWorkspaceWordPress } from '../lib/integrations/wordpress-publish';
+import { auditWordPressSetup } from '../lib/integrations/wordpress-setup';
 import { getAutomationStatus } from '../lib/automation-status';
 import {
   applyRefreshScan,
@@ -60,6 +61,12 @@ const integrationRoutes: FastifyPluginAsync = async (server) => {
     const { workspaceSlug } = request.params as { workspaceSlug: string };
     const result = await testWorkspaceWordPress(workspaceSlug);
     return { workspace: workspaceSlug, wordpress: result };
+  });
+
+  server.get('/:workspaceSlug/wordpress/setup', async (request) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    const report = await auditWordPressSetup(workspaceSlug);
+    return { workspace: workspaceSlug, setup: report };
   });
 
   server.get('/:workspaceSlug/google', async (request) => {

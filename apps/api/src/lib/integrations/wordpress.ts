@@ -1,3 +1,5 @@
+import { buildWordPressSeoMetaFields } from './wordpress-seo';
+
 export type WordPressConfig = {
   baseUrl: string;
   username: string;
@@ -18,6 +20,11 @@ export type WordPressPostPayload = {
   status?: 'draft' | 'publish' | 'pending' | 'private';
   slug?: string;
   categories?: number[];
+  seoMeta?: {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    focusKeyword?: string | null;
+  };
 };
 
 export type WordPressPostResponse = {
@@ -162,6 +169,11 @@ export async function createWordPressPost(
     title: payload.title,
     content: payload.content,
     status: payload.status ?? config.approvalPostStatus ?? 'draft',
+    ...buildWordPressSeoMetaFields({
+      metaTitle: payload.seoMeta?.metaTitle,
+      metaDescription: payload.seoMeta?.metaDescription ?? payload.excerpt,
+      focusKeyword: payload.seoMeta?.focusKeyword,
+    }),
   };
 
   if (payload.excerpt) body.excerpt = payload.excerpt;
@@ -213,9 +225,21 @@ export async function updateWordPressPost(
   postId: number,
   payload: Partial<WordPressPostPayload>,
 ): Promise<WordPressPostResponse> {
+  const body: Record<string, unknown> = { ...payload };
+  if (payload.seoMeta) {
+    Object.assign(
+      body,
+      buildWordPressSeoMetaFields({
+        metaTitle: payload.seoMeta.metaTitle,
+        metaDescription: payload.seoMeta.metaDescription ?? payload.excerpt,
+        focusKeyword: payload.seoMeta.focusKeyword,
+      }),
+    );
+    delete body.seoMeta;
+  }
   return wpFetch<WordPressPostResponse>(config, `/posts/${postId}`, {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
 }
 

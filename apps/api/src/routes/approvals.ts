@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { logAgentActivity } from '../lib/agent-helpers';
-import { publishPieceToWordPress } from '../lib/integrations/wordpress-publish';
+import { publishAndRecordPiece } from '../lib/integrations/wordpress-publish';
 import { updateApprovalPieceContent } from '../lib/piece-editor';
 
 const reviewSchema = z.object({
@@ -107,10 +107,11 @@ const approvalRoutes: FastifyPluginAsync = async (server) => {
 
     let wpResult: { externalId: string; url: string; status: string };
     try {
-      wpResult = await publishPieceToWordPress(
+      wpResult = await publishAndRecordPiece(
         approval.workspace.slug,
+        approval.workspaceId,
         piece,
-        { status: parsed.data.wpStatus ?? 'publish' },
+        { wpStatus: parsed.data.wpStatus ?? 'publish' },
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al publicar en WordPress';
@@ -130,35 +131,14 @@ const approvalRoutes: FastifyPluginAsync = async (server) => {
         },
       });
     } else {
-      await prisma.$transaction([
-        prisma.approval.update({
-          where: { id },
-          data: {
-            status: 'approved',
-            notes: parsed.data.notes,
-            reviewedAt: new Date(),
-          },
-        }),
-        prisma.contentPiece.update({
-          where: { id: approval.pieceId },
-          data: { status: 'published' },
-        }),
-        prisma.publication.upsert({
-          where: { pieceId: approval.pieceId },
-          create: {
-            workspaceId: approval.workspaceId,
-            pieceId: approval.pieceId,
-            externalId: wpResult.externalId,
-            url: wpResult.url,
-            publishedAt: new Date(),
-          },
-          update: {
-            externalId: wpResult.externalId,
-            url: wpResult.url,
-            publishedAt: new Date(),
-          },
-        }),
-      ]);
+      await prisma.approval.update({
+        where: { id },
+        data: {
+          status: 'approved',
+          notes: parsed.data.notes,
+          reviewedAt: new Date(),
+        },
+      });
     }
 
     const teo = await prisma.agent.findUnique({ where: { slug: 'teo' } });

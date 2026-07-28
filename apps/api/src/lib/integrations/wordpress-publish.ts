@@ -19,9 +19,70 @@ type PublishResult = {
   status: string;
 };
 
+function seoFromPiece(
+  piece: Pick<ContentPiece, 'title' | 'seoMeta' | 'keyword'>,
+  excerpt?: string,
+) {
+  const seoMeta = piece.seoMeta as {
+    metaTitle?: string;
+    metaDescription?: string;
+  } | null;
+  return {
+    metaTitle: seoMeta?.metaTitle ?? piece.title,
+    metaDescription: seoMeta?.metaDescription ?? excerpt,
+    focusKeyword: piece.keyword ?? undefined,
+  };
+}
+
+/** Publica en WP y persiste Publication / refresco — usado por aprobaciones y autopublicación. */
+export async function publishAndRecordPiece(
+  workspaceSlug: string,
+  workspaceId: string,
+  piece: Pick<ContentPiece, 'id' | 'title' | 'slug' | 'content' | 'seoMeta' | 'keyword'>,
+  options?: { wpStatus?: 'draft' | 'publish' },
+): Promise<PublishResult> {
+  const pieceContent = piece.content as {
+    refreshOfPieceId?: string;
+    excerpt?: string;
+  } | null;
+  const refreshOfPieceId = pieceContent?.refreshOfPieceId;
+
+  const wpResult = await publishPieceToWordPress(workspaceSlug, piece, {
+    status: options?.wpStatus ?? 'publish',
+  });
+
+  if (refreshOfPieceId) {
+    return wpResult;
+  }
+
+  await prisma.$transaction([
+    prisma.contentPiece.update({
+      where: { id: piece.id },
+      data: { status: 'published' },
+    }),
+    prisma.publication.upsert({
+      where: { pieceId: piece.id },
+      create: {
+        workspaceId,
+        pieceId: piece.id,
+        externalId: wpResult.externalId,
+        url: wpResult.url,
+        publishedAt: new Date(),
+      },
+      update: {
+        externalId: wpResult.externalId,
+        url: wpResult.url,
+        publishedAt: new Date(),
+      },
+    }),
+  ]);
+
+  return wpResult;
+}
+
 export async function publishPieceToWordPress(
   workspaceSlug: string,
-  piece: Pick<ContentPiece, 'id' | 'title' | 'slug' | 'content' | 'seoMeta'>,
+  piece: Pick<ContentPiece, 'id' | 'title' | 'slug' | 'content' | 'seoMeta' | 'keyword'>,
   options?: { status?: 'draft' | 'publish' | 'pending' },
 ): Promise<PublishResult> {
   const pieceContent = piece.content as {
@@ -68,6 +129,7 @@ export async function publishPieceToWordPress(
     slug,
     status: wpStatus,
     categories: categoryId ? [categoryId] : undefined,
+    seoMeta: seoFromPiece(piece, content?.excerpt ?? seoMeta?.metaDescription),
   });
 
   const publicUrl = resolveWordPressPublicUrl(
@@ -87,7 +149,7 @@ export async function publishPieceToWordPress(
 /** Actualiza el post WP existente cuando se aprueba un refresco de contenido. */
 export async function publishRefreshPieceToWordPress(
   workspaceSlug: string,
-  refreshPiece: Pick<ContentPiece, 'id' | 'title' | 'slug' | 'content' | 'seoMeta'>,
+  refreshPiece: Pick<ContentPiece, 'id' | 'title' | 'slug' | 'content' | 'seoMeta' | 'keyword'>,
   originalPieceId: string,
   options?: { status?: 'draft' | 'publish' | 'pending' },
 ): Promise<PublishResult> {
@@ -116,6 +178,7 @@ export async function publishRefreshPieceToWordPress(
     excerpt: content?.excerpt ?? seoMeta?.metaDescription,
     slug,
     status: wpStatus,
+    seoMeta: seoFromPiece(refreshPiece, content?.excerpt ?? seoMeta?.metaDescription),
   });
 
   const publicUrl = resolveWordPressPublicUrl(

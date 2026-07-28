@@ -11,8 +11,10 @@ import {
   runStrategist,
   runWriter,
 } from './agents/teo/pipeline';
+import { getStrategicPlanHints } from './agents/teo/strategist-metrics';
 import { parseMissionPlanHints, parseRefreshPieceId } from './agents/teo/mission-plan';
 import { resolveBrandKit } from './branding/brand-kit';
+import { publishAndRecordPiece } from './integrations/wordpress-publish';
 
 const runningMissions = new Set<string>();
 
@@ -67,6 +69,8 @@ export async function executeMission(missionId: string) {
 
     const planHints = parseMissionPlanHints(mission);
     const refreshPieceId = parseRefreshPieceId(mission.objective);
+    const hasManualHints = Boolean(planHints.topic || planHints.pieceType);
+    const isManualMission = Boolean(mission.title?.startsWith('Misión manual'));
 
     let refreshSource: {
       id: string;
@@ -92,16 +96,36 @@ export async function executeMission(missionId: string) {
     }
 
     // --- Estratega ---
+    const metricsHints =
+      refreshSource || hasManualHints || isManualMission
+        ? {}
+        : await getStrategicPlanHints(mission.workspace.slug, teoConfig, missionCount);
+
+    if (metricsHints.rationale && !refreshSource) {
+      await logAgentActivity({
+        workspaceId: mission.workspaceId,
+        agentId: mission.agentId,
+        missionId,
+        role: 'strategist',
+        message: `Prioridad por métricas: ${metricsHints.rationale}`,
+      });
+    }
+
     const plan = runStrategist(teoConfig, missionCount, {
+      ...metricsHints,
       ...planHints,
       title:
         mission.title?.startsWith('Misión manual') || mission.title?.startsWith('Refresco:')
           ? mission.title.replace(/^Refresco:\s*/i, '').trim() || refreshSource?.title
-          : undefined,
-      topic: planHints.topic ?? refreshSource?.keyword ?? refreshSource?.title,
-      pieceType: (planHints.pieceType as never) ?? refreshSource?.type,
+          : metricsHints.title ?? planHints.title,
+      topic: planHints.topic ?? refreshSource?.keyword ?? refreshSource?.title ?? metricsHints.topic,
+      pieceType:
+        (planHints.pieceType as never) ??
+        (refreshSource?.type as never) ??
+        (metricsHints.pieceType as never),
       objective:
         mission.objective ??
+        metricsHints.objective ??
         (refreshSource
           ? `Actualizar y mejorar "${refreshSource.title}" con datos recientes y mejor SEO/AEO.`
           : undefined),
@@ -208,6 +232,33 @@ export async function executeMission(missionId: string) {
         level: 'warning',
         message: `"${plan.title}" en cola de aprobación`,
       });
+    } else {
+      try {
+        const wpResult = await publishAndRecordPiece(
+          mission.workspace.slug,
+          mission.workspaceId,
+          piece,
+          { wpStatus: 'publish' },
+        );
+        await logAgentActivity({
+          workspaceId: mission.workspaceId,
+          agentId: mission.agentId,
+          missionId,
+          role: 'publisher',
+          level: 'success',
+          message: `"${plan.title}" autopublicada en WordPress (${wpResult.status}) — ${wpResult.url}`,
+        });
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : 'Error desconocido';
+        await logAgentActivity({
+          workspaceId: mission.workspaceId,
+          agentId: mission.agentId,
+          missionId,
+          role: 'publisher',
+          level: 'error',
+          message: `Autopublicación falló para "${plan.title}": ${detail}`,
+        });
+      }
     }
 
     await prisma.mission.update({

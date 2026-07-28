@@ -12,10 +12,12 @@ import {
 import { CentroShell } from '@/components/shell/centro-shell';
 import {
   fetchIntegrationsOverview,
+  fetchWordPressSetup,
   syncMetrics,
   testGoogleIntegration,
   testWordPressIntegration,
   type IntegrationsOverview,
+  type WordPressSetupReport,
 } from '@/lib/api-client';
 
 function integrationBadge(configured: boolean, connected?: boolean) {
@@ -26,6 +28,7 @@ function integrationBadge(configured: boolean, connected?: boolean) {
 
 export default function IntegracionesPage() {
   const [data, setData] = useState<IntegrationsOverview | null>(null);
+  const [wpSetup, setWpSetup] = useState<WordPressSetupReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -35,7 +38,12 @@ export default function IntegracionesPage() {
     setLoading(true);
     setError(null);
     try {
-      setData(await fetchIntegrationsOverview('cleexs'));
+      const [overview, setup] = await Promise.all([
+        fetchIntegrationsOverview('cleexs'),
+        fetchWordPressSetup('cleexs'),
+      ]);
+      setData(overview);
+      setWpSetup(setup.setup);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar');
     } finally {
@@ -151,6 +159,37 @@ export default function IntegracionesPage() {
                   <dd className="text-slate-200">{data.wordpress.user ?? '—'}</dd>
                 </div>
               </dl>
+              {wpSetup ? (
+                <div className="mt-5 border-t border-hub-border pt-4">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-hub-muted">
+                    Checklist WordPress
+                  </p>
+                  <ul className="space-y-2 text-sm">
+                    {wpSetup.checks.map((check) => (
+                      <li key={check.id} className="flex gap-2">
+                        <span
+                          className={
+                            check.status === 'ok'
+                              ? 'text-emerald-400'
+                              : check.status === 'warning'
+                                ? 'text-amber-300'
+                                : 'text-slate-400'
+                          }
+                        >
+                          {check.status === 'ok' ? '✓' : check.status === 'warning' ? '!' : '○'}
+                        </span>
+                        <span>
+                          <span className="text-slate-200">{check.label}</span>
+                          <span className="block text-xs text-hub-muted">{check.detail}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 text-xs text-hub-muted">
+                    CSS: <code className="rounded bg-[#0b1220] px-1">{wpSetup.cssSnippetPath}</code>
+                  </p>
+                </div>
+              ) : null}
             </SettingsSection>
 
             <SettingsSection title="Google (GSC + GA4)" description="Métricas para Resultados">

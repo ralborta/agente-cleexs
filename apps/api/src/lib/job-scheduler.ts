@@ -3,6 +3,9 @@ import { queueMissionExecution } from './mission-executor';
 import { frequencyToIntervalDays } from './frequency';
 import { syncWorkspaceMetrics } from './metrics-sync';
 import { tickRefresherScans } from './refresher-scan';
+import { getStrategicPlanHints } from './agents/teo/strategist-metrics';
+import { buildMissionObjective } from './agents/teo/mission-plan';
+import { logAgentActivity } from './agent-helpers';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -72,17 +75,41 @@ export async function tickAutonomousMissions() {
       continue;
     }
 
-    const topic = topics[Math.floor(Math.random() * topics.length)];
+    const missionCount = await prisma.mission.count({
+      where: { workspaceId: workspace.id },
+    });
+
+    const hints = await getStrategicPlanHints(
+      workspace.slug,
+      { topics: teoConfig.topics as string[] | null },
+      missionCount,
+    );
+    const objective = buildMissionObjective(hints.objective, {
+      topic: hints.topic,
+      pieceType: hints.pieceType,
+      depth: hints.depth,
+    });
+
     const mission = await prisma.mission.create({
       data: {
         workspaceId: workspace.id,
         agentId: teoConfig.agentId,
-        title: `Misión autónoma: ${topic}`,
-        objective: `Producir contenido sobre "${topic}" de forma autónoma.`,
+        title: `Misión autónoma: ${hints.title ?? hints.topic ?? 'contenido'}`,
+        objective: objective ?? `Producir contenido sobre "${hints.topic}" impulsado por métricas.`,
         status: 'pending',
         trigger: 'scheduled',
       },
     });
+
+    if (hints.rationale) {
+      await logAgentActivity({
+        workspaceId: workspace.id,
+        agentId: teoConfig.agentId,
+        missionId: mission.id,
+        role: 'strategist',
+        message: `Misión autónoma planificada — ${hints.rationale}`,
+      });
+    }
 
     queueMissionExecution(mission.id);
     spawned.push(mission.id);

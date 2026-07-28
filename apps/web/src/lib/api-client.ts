@@ -288,6 +288,26 @@ export async function testWordPressIntegration(workspace: string) {
   );
 }
 
+export type WordPressSetupCheck = {
+  id: string;
+  label: string;
+  status: 'ok' | 'warning' | 'pending';
+  detail: string;
+};
+
+export type WordPressSetupReport = {
+  configured: boolean;
+  checks: WordPressSetupCheck[];
+  cssSnippetPath: string;
+  manualSteps: string[];
+};
+
+export async function fetchWordPressSetup(workspace: string) {
+  return api<{ workspace: string; setup: WordPressSetupReport }>(
+    `/api/integrations/${workspace}/wordpress/setup`,
+  );
+}
+
 export async function testGoogleIntegration(workspace: string) {
   return api<{
     google: {
