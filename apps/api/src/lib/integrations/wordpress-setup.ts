@@ -130,7 +130,7 @@ export async function auditWordPressSetup(workspaceSlug: string): Promise<WordPr
       label: 'Puente REST Rank Math (mu-plugin)',
       status: 'pending',
       detail:
-        'Subí docs/wordpress/cleexs-teo-rankmath-rest.php a wp-content/mu-plugins/ en cleexs.net',
+        'Subí docs/wordpress/cleexs-teo-rankmath-rest.php a public_html/wp-content/mu-plugins/ en SiteGround (Site Tools → File Manager)',
     });
   }
 

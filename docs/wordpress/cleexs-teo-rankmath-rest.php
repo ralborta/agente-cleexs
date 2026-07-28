@@ -7,8 +7,9 @@
  *
  * Instalación:
  * 1. Instalar y activar Rank Math SEO en WordPress.
- * 2. Copiar este archivo a: wp-content/mu-plugins/cleexs-teo-rankmath-rest.php
- *    (crear carpeta mu-plugins si no existe)
+ * 2. Copiar este archivo a SiteGround:
+ *    public_html/wp-content/mu-plugins/cleexs-teo-rankmath-rest.php
+ *    (Site Tools → File Manager; crear carpeta mu-plugins si no existe)
  * 3. En Easypanel API: WORDPRESS_SEO_PLUGIN=rankmath
  */
 

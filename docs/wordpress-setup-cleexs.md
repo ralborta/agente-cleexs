@@ -46,13 +46,22 @@ Teo envía título SEO, meta description y focus keyword al publicar. WordPress 
 
 `docs/wordpress/cleexs-teo-rankmath-rest.php`
 
-**A Hostinger / cleexs.net:**
+**En SiteGround (cleexs.net):**
+
+1. Entrá a **Site Tools** → **Site** → **File Manager**
+2. Abrí `public_html/wp-content/`
+3. Creá la carpeta `mu-plugins` si no existe (clic derecho → New Folder)
+4. Subí el archivo como `cleexs-teo-rankmath-rest.php`
+
+Ruta final:
 
 ```
-wp-content/mu-plugins/cleexs-teo-rankmath-rest.php
+public_html/wp-content/mu-plugins/cleexs-teo-rankmath-rest.php
 ```
 
-(Creá la carpeta `mu-plugins` si no existe. Los mu-plugins se activan solos.)
+Los mu-plugins se activan solos (no aparecen en Plugins).
+
+**Alternativa:** SFTP con las credenciales de Site Tools → **Site** → **FTP Accounts**.
 
 ### Paso C — Variable en Easypanel API
 

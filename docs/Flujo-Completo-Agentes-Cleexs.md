@@ -45,7 +45,7 @@ La plataforma **Agentes Cleexs** es un sistema multiagente **separado del produc
 | Servicio | Hosting sugerido |
 |----------|------------------|
 | API + PostgreSQL + Backoffice | Easypanel (todo en un panel) |
-| cleexs.net | Hostinger (WordPress + Elementor) |
+| cleexs.net | SiteGround (WordPress) |
 | app.cleexs.net (PRIA) | Producto aparte — no forma parte de esta plataforma |
 
 ### 2.3 Dominios sugeridos
