@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import fp from 'fastify-plugin';
 import { extractBearerToken, isPublicApiPath, verifyAuthToken } from '../lib/auth';
 
 declare module 'fastify' {
@@ -38,4 +39,4 @@ const authGuardPlugin: FastifyPluginAsync = async (server) => {
   });
 };
 
-export default authGuardPlugin;
+export default fp(authGuardPlugin);

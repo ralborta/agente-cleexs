@@ -144,8 +144,11 @@ const integrationRoutes: FastifyPluginAsync = async (server) => {
 
   server.post('/:workspaceSlug/trigger-scheduler', async (request, reply) => {
     const { workspaceSlug } = request.params as { workspaceSlug: string };
-    if (request.authUser?.role !== 'admin') {
-      return reply.status(403).send({ error: 'Solo administradores pueden ejecutar el scheduler' });
+    if (!request.authUser) {
+      return reply.status(401).send({ error: 'Autenticación requerida' });
+    }
+    if (request.authUser.workspaceSlug !== workspaceSlug && request.authUser.role !== 'admin') {
+      return reply.status(403).send({ error: 'Sin acceso a este workspace' });
     }
     const workspace = await prisma.workspace.findUnique({ where: { slug: workspaceSlug } });
     if (!workspace) {
