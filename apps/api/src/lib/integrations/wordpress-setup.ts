@@ -34,6 +34,43 @@ async function wpFetchRaw(
   });
 }
 
+const RANK_MATH_REST_KEYS = [
+  'rank_math_title',
+  'rank_math_description',
+  'rank_math_focus_keyword',
+] as const;
+
+/** Verifica que el mu-plugin exponga campos Rank Math en REST (context=edit). */
+async function checkRankMathRestBridge(
+  config: { baseUrl: string; username: string; appPassword: string },
+): Promise<boolean> {
+  const res = await wpFetchRaw(config, '/posts?context=edit&per_page=1&status=any');
+  if (!res.ok) return false;
+
+  const posts = (await res.json()) as Array<{ meta?: Record<string, unknown> }>;
+  const meta = posts[0]?.meta;
+  if (meta && RANK_MATH_REST_KEYS.every((key) => key in meta)) {
+    return true;
+  }
+
+  const schemaRes = await fetch(`${config.baseUrl}/wp-json/wp/v2/posts`, {
+    method: 'OPTIONS',
+    headers: {
+      Authorization: `Basic ${Buffer.from(
+        `${config.username}:${config.appPassword.replace(/\s/g, '')}`,
+      ).toString('base64')}`,
+      Accept: 'application/json',
+    },
+  });
+  if (!schemaRes.ok) return false;
+
+  const schema = (await schemaRes.json()) as {
+    schema?: { properties?: { meta?: { properties?: Record<string, unknown> } } };
+  };
+  const metaProps = schema.schema?.properties?.meta?.properties;
+  return Boolean(metaProps && RANK_MATH_REST_KEYS.every((key) => key in metaProps));
+}
+
 export async function auditWordPressSetup(workspaceSlug: string): Promise<WordPressSetupReport> {
   const config = resolveWordPressConfig(workspaceSlug);
   const cssSnippetPath = 'docs/wordpress/cleexs-article.css';
@@ -124,13 +161,32 @@ export async function auditWordPressSetup(workspaceSlug: string): Promise<WordPr
       : 'Definí WORDPRESS_SEO_PLUGIN=rankmath en Easypanel API',
   });
 
-  if (seoPlugin) {
+  if (seoPlugin === 'rankmath') {
+    try {
+      const bridgeOk = await checkRankMathRestBridge(config!);
+      checks.push({
+        id: 'seo_rest_bridge',
+        label: 'Puente REST Rank Math (mu-plugin)',
+        status: bridgeOk ? 'ok' : 'pending',
+        detail: bridgeOk
+          ? 'Meta SEO expuesta vía REST (rank_math_title, rank_math_description, rank_math_focus_keyword)'
+          : 'Subí docs/wordpress/cleexs-teo-rankmath-rest.php a public_html/wp-content/mu-plugins/ en SiteGround (Site Tools → File Manager)',
+      });
+    } catch {
+      checks.push({
+        id: 'seo_rest_bridge',
+        label: 'Puente REST Rank Math (mu-plugin)',
+        status: 'pending',
+        detail:
+          'No se pudo verificar el puente REST — confirmá que cleexs-teo-rankmath-rest.php está en wp-content/mu-plugins/',
+      });
+    }
+  } else if (seoPlugin === 'yoast') {
     checks.push({
       id: 'seo_rest_bridge',
-      label: 'Puente REST Rank Math (mu-plugin)',
-      status: 'pending',
-      detail:
-        'Subí docs/wordpress/cleexs-teo-rankmath-rest.php a public_html/wp-content/mu-plugins/ en SiteGround (Site Tools → File Manager)',
+      label: 'Meta SEO vía REST (Yoast)',
+      status: 'ok',
+      detail: 'Yoast expone meta SEO por REST en versiones recientes',
     });
   }
 
