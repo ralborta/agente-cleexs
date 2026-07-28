@@ -27,13 +27,50 @@ Copiar el contenido de [`cleexs-article.css`](./cleexs-article.css) en:
 
 Los artículos de Teo incluyen la clase `.cleexs-article` en el HTML.
 
-## 4. Plugin SEO (Rank Math recomendado)
+## 4. Plugin SEO (Rank Math — recomendado)
 
-1. Instalar **Rank Math SEO** (o Yoast)
-2. En Easypanel API agregar: `WORDPRESS_SEO_PLUGIN=rankmath`
-3. El usuario de Application Password debe ser **Editor** o **Administrador**
+Rank Math **no expone meta SEO por REST API por defecto**. Hacé estos 3 pasos:
 
-Teo envía título SEO, meta description y focus keyword vía REST al publicar.
+### Paso A — Instalar Rank Math en WordPress
+
+1. WP Admin → **Plugins → Añadir nuevo**
+2. Buscar **Rank Math SEO** → Instalar → Activar
+3. Completar el asistente (modo **Advanced** recomendado)
+4. Opcional: Rank Math SEO → General → Others → **Headless CMS Support** (solo lectura; no alcanza para escribir meta)
+
+### Paso B — Puente REST (obligatorio para Teo)
+
+Teo envía título SEO, meta description y focus keyword al publicar. WordPress bloquea esos campos hasta que los registres.
+
+**Copiá este archivo del repo:**
+
+`docs/wordpress/cleexs-teo-rankmath-rest.php`
+
+**A Hostinger / cleexs.net:**
+
+```
+wp-content/mu-plugins/cleexs-teo-rankmath-rest.php
+```
+
+(Creá la carpeta `mu-plugins` si no existe. Los mu-plugins se activan solos.)
+
+### Paso C — Variable en Easypanel API
+
+```env
+WORDPRESS_SEO_PLUGIN=rankmath
+```
+
+Redeploy del servicio **api** tras guardar.
+
+### Verificación
+
+1. Publicá o aprobá un artículo desde Teo
+2. En WP Admin → editá el post → panel Rank Math: deberías ver título SEO, description y keyword rellenados
+3. Integraciones → Checklist WordPress → item Plugin SEO en verde
+
+### Alternativa: Yoast
+
+Si preferís Yoast: `WORDPRESS_SEO_PLUGIN=yoast` (Yoast registra meta REST en versiones recientes; probá sin mu-plugin).
 
 ## 5. Usuario Application Password
 

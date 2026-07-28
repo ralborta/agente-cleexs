@@ -34,3 +34,29 @@ export function buildWordPressSeoMetaFields(seo: WordPressSeoInput): Record<stri
   if (keyword) meta._yoast_wpseo_focuskw = keyword;
   return Object.keys(meta).length ? { meta } : {};
 }
+
+export function hasSeoPluginConfigured(): boolean {
+  return resolveSeoPlugin() !== null;
+}
+
+export function buildSeoMetaPayload(seo: WordPressSeoInput): Record<string, string> {
+  const plugin = resolveSeoPlugin();
+  if (!plugin) return {};
+
+  const title = seo.metaTitle?.trim();
+  const description = seo.metaDescription?.trim();
+  const keyword = seo.focusKeyword?.trim();
+  const meta: Record<string, string> = {};
+
+  if (plugin === 'rankmath') {
+    if (title) meta.rank_math_title = title;
+    if (description) meta.rank_math_description = description;
+    if (keyword) meta.rank_math_focus_keyword = keyword;
+  } else {
+    if (title) meta._yoast_wpseo_title = title;
+    if (description) meta._yoast_wpseo_metadesc = description;
+    if (keyword) meta._yoast_wpseo_focuskw = keyword;
+  }
+
+  return meta;
+}

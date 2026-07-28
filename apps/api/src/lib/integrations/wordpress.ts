@@ -1,4 +1,4 @@
-import { buildWordPressSeoMetaFields } from './wordpress-seo';
+import { buildWordPressSeoMetaFields, buildSeoMetaPayload, hasSeoPluginConfigured } from './wordpress-seo';
 
 export type WordPressConfig = {
   baseUrl: string;
@@ -187,7 +187,36 @@ export async function createWordPressPost(
   return wpFetch<WordPressPostResponse>(config, '/posts', {
     method: 'POST',
     body: JSON.stringify(body),
+  }).then(async (post) => {
+    if (payload.seoMeta && hasSeoPluginConfigured()) {
+      await syncWordPressSeoMeta(config, post.id, payload.seoMeta, payload.excerpt);
+    }
+    return post;
   });
+}
+
+/** Refuerza meta SEO tras crear/actualizar (Rank Math requiere mu-plugin en WP). */
+export async function syncWordPressSeoMeta(
+  config: WordPressConfig,
+  postId: number,
+  seoMeta: NonNullable<WordPressPostPayload['seoMeta']>,
+  excerpt?: string,
+): Promise<void> {
+  const metaFields = buildSeoMetaPayload({
+    metaTitle: seoMeta.metaTitle,
+    metaDescription: seoMeta.metaDescription ?? excerpt,
+    focusKeyword: seoMeta.focusKeyword,
+  });
+  if (Object.keys(metaFields).length === 0) return;
+
+  try {
+    await wpFetch(config, `/posts/${postId}`, {
+      method: 'POST',
+      body: JSON.stringify({ meta: metaFields }),
+    });
+  } catch (err) {
+    console.warn('[wordpress] No se pudo sincronizar meta SEO:', err);
+  }
 }
 
 /** URL pública legible (cleexs.net/articulos/slug/), no el preview ?p= de borradores. */
@@ -237,9 +266,15 @@ export async function updateWordPressPost(
     );
     delete body.seoMeta;
   }
+  const seoMetaForSync = payload.seoMeta;
   return wpFetch<WordPressPostResponse>(config, `/posts/${postId}`, {
     method: 'POST',
     body: JSON.stringify(body),
+  }).then(async (post) => {
+    if (seoMetaForSync && hasSeoPluginConfigured()) {
+      await syncWordPressSeoMeta(config, postId, seoMetaForSync, payload.excerpt);
+    }
+    return post;
   });
 }
 

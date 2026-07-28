@@ -117,12 +117,22 @@ export async function auditWordPressSetup(workspaceSlug: string): Promise<WordPr
   const seoPlugin = resolveSeoPlugin();
   checks.push({
     id: 'seo_plugin',
-    label: 'Plugin SEO',
+    label: 'Plugin SEO (Rank Math / Yoast)',
     status: seoPlugin ? 'ok' : 'pending',
     detail: seoPlugin
-      ? `Configurado: ${seoPlugin} (WORDPRESS_SEO_PLUGIN)`
-      : 'Definí WORDPRESS_SEO_PLUGIN=rankmath|yoast tras instalar el plugin',
+      ? `API configurada: ${seoPlugin}. Instalá el plugin en WP + mu-plugin cleexs-teo-rankmath-rest.php`
+      : 'Definí WORDPRESS_SEO_PLUGIN=rankmath en Easypanel API',
   });
+
+  if (seoPlugin) {
+    checks.push({
+      id: 'seo_rest_bridge',
+      label: 'Puente REST Rank Math (mu-plugin)',
+      status: 'pending',
+      detail:
+        'Subí docs/wordpress/cleexs-teo-rankmath-rest.php a wp-content/mu-plugins/ en cleexs.net',
+    });
+  }
 
   try {
     const res = await wpFetchRaw(config!, '/posts?per_page=5&status=publish&orderby=date&order=desc');
