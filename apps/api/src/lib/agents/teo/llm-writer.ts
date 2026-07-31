@@ -10,6 +10,11 @@ function readOpenAiKey(): string | null {
   return key || null;
 }
 
+/** GPT-5/o-series usan max_completion_tokens y no aceptan temperature custom. */
+function isReasoningFamily(model: string): boolean {
+  return /^(gpt-5|o[0-9])/i.test(model);
+}
+
 export function isLlmWriterEnabled(): boolean {
   return Boolean(readOpenAiKey());
 }
@@ -95,15 +100,17 @@ ${sourcesBlock}
 Requisitos de estructura para este tipo de pieza (${plan.pieceType}):
 ${typeBrief}
 
-Requisitos obligatorios de profundidad:
+Requisitos obligatorios de profundidad (se verifican, no son sugerencias):
+- OBLIGATORIO: al menos 2 secciones deben incluir el campo "chart" con datos numéricos reales o estimaciones explícitas. Un artículo sin ningún "chart" se considera incompleto. Elegí lo cuantificable: comparación de opciones, evolución mes a mes, distribución impacto/esfuerzo, resultados típicos antes/después.
 - Mínimo ${minSections} secciones sustanciales (no relleno), con ${minWords}+ palabras en total entre lead y secciones.
-- Cada sección de tipo "body" debe tener 3-5 párrafos (no 1-2), con datos, cifras o contexto verificable, no solo afirmaciones vagas.
+- Cada sección de tipo "body" debe tener 3-5 párrafos de 60-90 palabras cada uno (mínimo 220 palabras por sección), con datos, cifras o contexto verificable, no solo afirmaciones vagas.
+- Las tablas deben tener datos concretos y comparables (números, rangos, plazos, costos), no descripciones genéricas de una línea.
 - Incluí al menos 3 bloques "examples" con casos concretos y distintos de PyMEs latinoamericanas (retail, servicios, B2B, industria) — con números o situaciones específicas, no genéricas.
 - Incluí al menos 2 "callout" con insights accionables o datos que llamen la atención.
 - En el cuerpo, usá enlaces markdown [texto](url) a fuentes autorizadas. Si te di fuentes reales arriba, priorizá citarlas. Si no, solo dominios creíbles (.google.com, .org, medios tech serios) — no inventes URLs.
 - Sección final de "references": 6-8 fuentes con URL https válida (usá las fuentes reales si te las di).
 - Mencioná AEO, AI Overviews y visibilidad en asistentes (ChatGPT, Gemini, Claude) cuando aplique naturalmente.
-- Incluí 1-2 gráficos ("chart") en las secciones donde haya algo cuantificable para visualizar (comparativas, evolución en el tiempo, distribución de esfuerzo/impacto, resultados típicos). Si el dato no viene de una fuente dura, marcalo igual con "sourceNote": "Estimación ilustrativa" — nunca presentes un número inventado como si fuera un dato oficial. Si no hay nada sensato para graficar en una pieza, no fuerces un chart.
+- En los "chart": si el dato no viene de una fuente dura, marcalo con "sourceNote": "Estimación ilustrativa" — nunca presentes un número inventado como si fuera un dato oficial.
 - ${ctaHint}
 - NO uses emojis. NO digas "como modelo de lenguaje". NO repitas la misma idea con otras palabras para rellenar.
 
@@ -142,27 +149,35 @@ export async function generateArticleWithLlm(
     throw new Error('OPENAI_API_KEY no configurada');
   }
 
+  const reasoning = isReasoningFamily(DEFAULT_MODEL);
+  const body: Record<string, unknown> = {
+    model: DEFAULT_MODEL,
+    response_format: { type: 'json_object' },
+    messages: [
+      {
+        role: 'system',
+        content:
+          'Sos un editor SEO/AEO experto. Respondés únicamente JSON válido según el esquema pedido, con contenido denso y profundo, sin relleno. Cumplís TODOS los mínimos pedidos (secciones, palabras, ejemplos, gráficos y referencias) sin excepción.',
+      },
+      { role: 'user', content: buildWriterPrompt(plan, research, tone, branding) },
+    ],
+  };
+
+  if (reasoning) {
+    body.max_completion_tokens = 16000;
+  } else {
+    body.max_tokens = 8000;
+    body.temperature = 0.65;
+  }
+
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model: DEFAULT_MODEL,
-      temperature: 0.65,
-      max_tokens: 8000,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content:
-            'Sos un editor SEO/AEO experto. Respondés únicamente JSON válido según el esquema pedido, con contenido denso y profundo, sin relleno.',
-        },
-        { role: 'user', content: buildWriterPrompt(plan, research, tone, branding) },
-      ],
-    }),
-    signal: AbortSignal.timeout(180_000),
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(300_000),
   });
 
   if (!res.ok) {
