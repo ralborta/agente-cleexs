@@ -368,6 +368,30 @@ export async function fetchWordPressSetup(workspace: string) {
   );
 }
 
+export type IndexingPage = {
+  pieceId: string;
+  title: string;
+  url: string;
+  publishedAt: string | null;
+  indexed: boolean;
+  coverageState: string | null;
+  verdict: string;
+  lastCrawlTime: string | null;
+};
+
+export type IndexingReport = {
+  configured: boolean;
+  checkedAt: string | null;
+  summary: { total: number; indexed: number; pending: number };
+  pages: IndexingPage[];
+};
+
+export async function fetchIndexingStatus(workspace: string, force = false) {
+  return api<{ workspace: string; indexing: IndexingReport }>(
+    `/api/integrations/${workspace}/indexing${force ? '?force=true' : ''}`,
+  );
+}
+
 export async function testGoogleIntegration(workspace: string) {
   return api<{
     google: {

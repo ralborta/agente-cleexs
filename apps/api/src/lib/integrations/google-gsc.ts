@@ -150,6 +150,59 @@ export async function fetchGscAggregateMetrics(
   };
 }
 
+export type UrlIndexStatus = {
+  url: string;
+  verdict: 'PASS' | 'PARTIAL' | 'FAIL' | 'NEUTRAL' | 'UNKNOWN';
+  coverageState: string | null;
+  indexed: boolean;
+  lastCrawlTime: string | null;
+  robotsTxtState: string | null;
+};
+
+/** URL Inspection API — estado real de indexación de una URL puntual. */
+export async function inspectUrlIndexStatus(
+  config: GoogleMetricsConfig,
+  inspectionUrl: string,
+): Promise<UrlIndexStatus> {
+  const token = await getGoogleAccessToken(config, ['https://www.googleapis.com/auth/webmasters.readonly']);
+
+  const res = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ inspectionUrl, siteUrl: config.gscSiteUrl }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`GSC urlInspection ${res.status}: ${body.slice(0, 300)}`);
+  }
+
+  const data = (await res.json()) as {
+    inspectionResult?: {
+      indexStatusResult?: {
+        verdict?: string;
+        coverageState?: string;
+        lastCrawlTime?: string;
+        robotsTxtState?: string;
+      };
+    };
+  };
+
+  const result = data.inspectionResult?.indexStatusResult;
+  const coverageState = result?.coverageState ?? null;
+  return {
+    url: inspectionUrl,
+    verdict: (result?.verdict as UrlIndexStatus['verdict']) ?? 'UNKNOWN',
+    coverageState,
+    indexed: Boolean(coverageState?.toLowerCase().includes('indexed')),
+    lastCrawlTime: result?.lastCrawlTime ?? null,
+    robotsTxtState: result?.robotsTxtState ?? null,
+  };
+}
+
 export async function testGscConnection(config: GoogleMetricsConfig) {
   const sites = await listGscSites(config);
   const hasSite = sites.some(

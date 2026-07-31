@@ -4,6 +4,7 @@ import { testGoogleMetrics, syncWorkspaceMetrics } from '../lib/metrics-sync';
 import { getWordPressStatus, testWorkspaceWordPress } from '../lib/integrations/wordpress-publish';
 import { auditWordPressSetup } from '../lib/integrations/wordpress-setup';
 import { getAutomationStatus } from '../lib/automation-status';
+import { getWorkspaceIndexingStatus } from '../lib/indexing-status';
 import { runSchedulerTick } from '../lib/job-scheduler';
 import {
   applyRefreshScan,
@@ -79,6 +80,18 @@ const integrationRoutes: FastifyPluginAsync = async (server) => {
     const { workspaceSlug } = request.params as { workspaceSlug: string };
     const result = await testGoogleMetrics(workspaceSlug);
     return { workspace: workspaceSlug, google: result };
+  });
+
+  server.get('/:workspaceSlug/indexing', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    const { force } = request.query as { force?: string };
+    try {
+      const report = await getWorkspaceIndexingStatus(workspaceSlug, { force: force === 'true' });
+      return { workspace: workspaceSlug, indexing: report };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al verificar indexación';
+      return reply.status(502).send({ error: message });
+    }
   });
 
   server.post('/:workspaceSlug/metrics-sync', async (request, reply) => {

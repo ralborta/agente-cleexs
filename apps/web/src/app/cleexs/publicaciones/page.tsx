@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { EcosystemPanel } from '@/components/content/ecosystem-panel';
+import { IndexingStatusPanel } from '@/components/content/indexing-status-panel';
 import { CentroShell } from '@/components/shell/centro-shell';
 import {
   fetchContentClusters,
@@ -51,6 +52,7 @@ export default function PublicacionesPage() {
         <p className="text-hub-muted">Cargando…</p>
       ) : (
         <>
+          <IndexingStatusPanel workspace="cleexs" />
           <EcosystemPanel clusters={clusters} />
 
           {pieces.length === 0 ? (
