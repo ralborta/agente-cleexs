@@ -47,6 +47,7 @@ export function sanitizeChartSpec(raw: unknown): ChartSpec | null {
  */
 export function buildQuickChartUrl(spec: ChartSpec): string {
   const isPie = spec.type === 'pie' || spec.type === 'doughnut';
+  const isLine = spec.type === 'line';
   const config = {
     type: spec.type,
     data: {
@@ -58,8 +59,10 @@ export function buildQuickChartUrl(spec: ChartSpec): string {
           ? spec.labels.map((_, li) => CHART_COLORS[li % CHART_COLORS.length])
           : CHART_COLORS[i % CHART_COLORS.length],
         borderColor: isPie ? '#ffffff' : CHART_COLORS[i % CHART_COLORS.length],
-        borderWidth: isPie ? 2 : 0,
-        fill: spec.type === 'line' ? false : undefined,
+        // En line charts el trazo ES el borde: con borderWidth 0 solo se verían los puntos.
+        borderWidth: isLine ? 3 : isPie ? 2 : 0,
+        fill: isLine ? false : undefined,
+        tension: isLine ? 0.3 : undefined,
       })),
     },
     options: {
@@ -71,5 +74,7 @@ export function buildQuickChartUrl(spec: ChartSpec): string {
   };
 
   const encoded = encodeURIComponent(JSON.stringify(config));
-  return `https://quickchart.io/chart?c=${encoded}&backgroundColor=white&width=680&height=380&devicePixelRatio=2&format=png`;
+  // v=4 es necesario: QuickChart usa Chart.js 2 por defecto y ahí el título
+  // vive en options.title, así que options.plugins.title se ignoraría.
+  return `https://quickchart.io/chart?c=${encoded}&v=4&backgroundColor=white&width=680&height=380&devicePixelRatio=2&format=png`;
 }
