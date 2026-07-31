@@ -22,6 +22,32 @@ import {
 
 const runningMissions = new Set<string>();
 
+/** Título autogenerado al crear una misión manual sin nombre propio ("Misión manual — 31/7/2026"). */
+const AUTO_MISSION_TITLE = /^Misión manual\s*[—-]\s*\d{1,2}\/\d{1,2}\/\d{2,4}\s*$/;
+
+/**
+ * El título de la misión solo sirve como título del artículo si el usuario puso uno propio.
+ * El autogenerado ("Misión manual — 31/7/2026") no debe terminar como título publicado:
+ * en ese caso deja que el estratega lo construya desde tema + tipo de pieza.
+ */
+function resolvePieceTitle(input: {
+  missionTitle: string | null;
+  refreshTitle?: string;
+  hintTitle?: string;
+}): string | undefined {
+  const missionTitle = input.missionTitle?.trim();
+
+  if (missionTitle?.startsWith('Refresco:')) {
+    return missionTitle.replace(/^Refresco:\s*/i, '').trim() || input.refreshTitle;
+  }
+
+  if (missionTitle?.startsWith('Misión manual') && !AUTO_MISSION_TITLE.test(missionTitle)) {
+    return missionTitle;
+  }
+
+  return input.hintTitle ?? input.refreshTitle;
+}
+
 export async function executeMission(missionId: string) {
   if (runningMissions.has(missionId)) {
     return { skipped: true, reason: 'already_running' };
@@ -118,10 +144,11 @@ export async function executeMission(missionId: string) {
     const plan = runStrategist(teoConfig, missionCount, {
       ...metricsHints,
       ...planHints,
-      title:
-        mission.title?.startsWith('Misión manual') || mission.title?.startsWith('Refresco:')
-          ? mission.title.replace(/^Refresco:\s*/i, '').trim() || refreshSource?.title
-          : metricsHints.title ?? planHints.title,
+      title: resolvePieceTitle({
+        missionTitle: mission.title,
+        refreshTitle: refreshSource?.title,
+        hintTitle: planHints.title ?? metricsHints.title,
+      }),
       topic: planHints.topic ?? refreshSource?.keyword ?? refreshSource?.title ?? metricsHints.topic,
       pieceType:
         (planHints.pieceType as never) ??
