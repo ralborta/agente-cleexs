@@ -49,7 +49,7 @@ function pickPieceType(
   return ECOSYSTEM_TYPES[existingTypes.size % ECOSYSTEM_TYPES.length];
 }
 
-function buildTitle(pieceType: string, topic: string): string {
+export function buildTitle(pieceType: string, topic: string): string {
   switch (pieceType) {
     case 'faq':
       return `FAQ: ${topic}`;
@@ -60,7 +60,8 @@ function buildTitle(pieceType: string, topic: string): string {
     case 'how_to':
       return `Cómo mejorar ${topic}`;
     case 'pillar':
-      return `Guía PRO: ${topic} para PyMEs`;
+      // Evita "…para PyMEs para PyMEs" cuando el tema ya menciona el público.
+      return /pyme/i.test(topic) ? `Guía PRO: ${topic}` : `Guía PRO: ${topic} para PyMEs`;
     default:
       return `Artículo: ${topic}`;
   }

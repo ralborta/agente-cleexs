@@ -261,6 +261,9 @@ export async function executeMission(missionId: string) {
           markdown: draft.bodyMarkdown,
           html: linkedHtml,
           excerpt: draft.excerpt,
+          // Se persiste la estructura para poder re-renderizar sin perder
+          // tablas, gráficos, ejemplos y referencias al editar la pieza.
+          articleData: draft.articleData,
           ...(refreshSource ? { refreshOfPieceId: refreshSource.id } : {}),
         },
         seoMeta: seo,

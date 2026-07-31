@@ -16,6 +16,8 @@ type PieceContent = {
   markdown?: string;
   html?: string;
   excerpt?: string;
+  /** Estructura original del artículo (secciones, tablas, gráficos, referencias). */
+  articleData?: ArticleData;
 };
 
 type PieceSeoMeta = {
@@ -118,11 +120,23 @@ export async function updateApprovalPieceContent(
     markdown,
   };
 
-  nextContent.html = rebuildPieceHtml(
-    { ...approval.piece, title },
-    nextContent,
-    branding,
-  );
+  // Si el cuerpo no se editó y tenemos la estructura original, re-renderizamos
+  // desde ahí: rebuildPieceHtml solo entiende heading + body, así que usarlo
+  // para un simple cambio de título borraría tablas, gráficos y referencias.
+  const markdownEdited = input.markdown !== undefined && input.markdown !== currentContent.markdown;
+  const structured = currentContent.articleData;
+
+  if (!markdownEdited && structured?.sections?.length) {
+    const articleData: ArticleData = {
+      ...structured,
+      title,
+      lead: nextContent.excerpt?.trim() || structured.lead,
+    };
+    nextContent.articleData = articleData;
+    nextContent.html = renderArticleHtml(articleData, branding);
+  } else {
+    nextContent.html = rebuildPieceHtml({ ...approval.piece, title }, nextContent, branding);
+  }
 
   const slug = input.title ? slugifyTitle(title) : approval.piece.slug ?? currentSeo.slug;
   const nextSeo: PieceSeoMeta = {

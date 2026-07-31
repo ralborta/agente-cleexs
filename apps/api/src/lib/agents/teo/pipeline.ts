@@ -1,4 +1,5 @@
 import { runWriterRich } from './content-builder';
+import { buildTitle } from './strategist-metrics';
 import { runWebResearch } from './web-research';
 import type { BrandKit } from '@agente/shared';
 import type { ResearchResult, StrategistPlan } from './types';
@@ -19,17 +20,7 @@ export function runStrategist(config: TeoConfig, missionIndex: number, overrides
   const topic = overrides?.topic?.trim() || topics[missionIndex % topics.length];
   const types = ['faq', 'comparison', 'checklist', 'how_to', 'pillar'] as const;
   const pieceType = (overrides?.pieceType as StrategistPlan['pieceType']) || types[missionIndex % types.length];
-  const title =
-    overrides?.title?.trim() ||
-    (pieceType === 'faq'
-      ? `FAQ: ${topic}`
-      : pieceType === 'comparison'
-        ? `Comparativa: ${topic}`
-        : pieceType === 'checklist'
-          ? `Checklist: ${topic}`
-          : pieceType === 'how_to'
-            ? `Cómo mejorar ${topic}`
-            : `Guía PRO: ${topic} para PyMEs`);
+  const title = overrides?.title?.trim() || buildTitle(pieceType, topic);
 
   const depth = overrides?.depth ?? (pieceType === 'pillar' ? 'pro' : 'standard');
 
