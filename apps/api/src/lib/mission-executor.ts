@@ -150,7 +150,7 @@ export async function executeMission(missionId: string) {
     await completeMissionStep(stepStrategist.id, plan);
 
     // --- Researcher ---
-    const research = runResearcher(plan);
+    const research = await runResearcher(plan);
     const stepResearch = await createMissionStep({
       missionId,
       role: 'researcher',

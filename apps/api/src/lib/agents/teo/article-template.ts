@@ -1,5 +1,6 @@
 import { brandCssTokens, formatAuthorLine, type BrandKit } from '../../branding/brand-kit';
 import { DEFAULT_BRAND_KIT } from '@agente/shared';
+import { buildQuickChartUrl, type ChartSpec } from './charts';
 
 export type ArticleReference = {
   title: string;
@@ -20,6 +21,7 @@ export type ArticleSection = {
   table?: { headers: string[]; rows: string[][] };
   examples?: ArticleExample[];
   callout?: string;
+  chart?: ChartSpec;
 };
 
 export type ArticleData = {
@@ -82,6 +84,9 @@ export function buildArticleCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
 .cleexs-cta p{color:${ctaTextSoft};margin:0 0 16px;font-size:15px}
 .cleexs-cta a{display:inline-block;background:#fff;color:${t.primary};font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none}
 .cleexs-meta{font-size:13px;color:#94a3b8;margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0}
+.cleexs-chart{margin:24px 0;text-align:center}
+.cleexs-chart img{max-width:100%;height:auto;border-radius:12px;border:1px solid #e2e8f0}
+.cleexs-chart figcaption{font-size:12px;color:#94a3b8;margin-top:8px;font-style:italic}
 .cleexs-example{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px 20px;margin:20px 0}
 .cleexs-example strong{display:block;color:#92400e;margin-bottom:6px}
 .cleexs-callout{background:${t.primarySoft};border-left:4px solid ${t.primary};border-radius:0 12px 12px 0;padding:14px 18px;margin:20px 0;color:${t.secondary}}
@@ -128,6 +133,12 @@ function renderSection(section: ArticleSection, pieceType: string): string {
   }
   if (section.callout) {
     html += `<div class="cleexs-callout">${renderInlineLinks(section.callout)}</div>`;
+  }
+  if (section.chart) {
+    const chart = section.chart;
+    const chartUrl = buildQuickChartUrl(chart);
+    const caption = [chart.title, chart.sourceNote].filter(Boolean).join(' — ');
+    html += `<figure class="cleexs-chart"><img src="${escapeHtml(chartUrl)}" alt="${escapeHtml(chart.title || 'Gráfico')}" loading="lazy" />${caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ''}</figure>`;
   }
   if (section.examples?.length) {
     html += section.examples

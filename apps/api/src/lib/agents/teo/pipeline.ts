@@ -1,6 +1,7 @@
 import { runWriterRich } from './content-builder';
+import { runWebResearch } from './web-research';
 import type { BrandKit } from '@agente/shared';
-import type { StrategistPlan } from './types';
+import type { ResearchResult, StrategistPlan } from './types';
 
 export type { StrategistPlan } from './types';
 
@@ -44,45 +45,61 @@ export function runStrategist(config: TeoConfig, missionIndex: number, overrides
   };
 }
 
-export function runResearcher(plan: StrategistPlan) {
+/**
+ * Devuelve outline + fuentes para el escritor. Si hay TAVILY_API_KEY configurada,
+ * intenta primero una investigación real en la web (fuentes verificadas con URL
+ * y resumen); si no está disponible o falla, usa el outline/fuentes estáticas
+ * como red de seguridad (nunca rompe la generación de la pieza).
+ */
+export async function runResearcher(plan: StrategistPlan): Promise<ResearchResult> {
   const isPro = plan.depth === 'pro' || plan.pieceType === 'pillar';
+
+  const outline = isPro
+    ? [
+        `Contexto: ${plan.topic} en Google e IA (2025–2026)`,
+        'Diagnóstico rápido: qué medir antes de publicar',
+        'Ejemplos aplicados a PyMEs latinoamericanas',
+        'Arquitectura de contenido (pilar + satélites + FAQ schema)',
+        'Errores comunes y cómo evitarlos',
+        'Plan 90 días con medición (GSC + visibilidad en IA)',
+      ]
+    : [
+        `Introducción: qué es ${plan.topic} y por qué importa`,
+        'Problema que resuelve para PyMEs',
+        'Pasos o respuestas concretas',
+        'Errores comunes',
+        'Cómo Cleexs ayuda en este tema',
+        'Conclusión con CTA',
+      ];
+
+  const staticSources = isPro
+    ? [
+        'Google Search Central — AI Overviews',
+        'llms.txt / especificación para LLMs',
+        'Google Search Console (impresiones por URL)',
+        'Schema.org FAQPage / Article',
+        'Diagnóstico Cleexs (app.cleexs.net)',
+      ]
+    : [
+        'Google Search Console — datos del workspace',
+        'Documentación pública de Cleexs',
+        'Buenas prácticas AEO/SEO 2025',
+      ];
+
+  const webResearch = await runWebResearch(plan).catch((err) => {
+    console.warn('[teo-researcher] research web falló:', err instanceof Error ? err.message : err);
+    return null;
+  });
+
   return {
-    outline: isPro
-      ? [
-          `Contexto: ${plan.topic} en Google e IA (2025–2026)`,
-          'Diagnóstico rápido: qué medir antes de publicar',
-          'Ejemplos aplicados a PyMEs latinoamericanas',
-          'Arquitectura de contenido (pilar + satélites + FAQ schema)',
-          'Errores comunes y cómo evitarlos',
-          'Plan 90 días con medición (GSC + visibilidad en IA)',
-        ]
-      : [
-          `Introducción: qué es ${plan.topic} y por qué importa`,
-          'Problema que resuelve para PyMEs',
-          'Pasos o respuestas concretas',
-          'Errores comunes',
-          'Cómo Cleexs ayuda en este tema',
-          'Conclusión con CTA',
-        ],
-    sources: isPro
-      ? [
-          'Google Search Central — AI Overviews',
-          'llms.txt / especificación para LLMs',
-          'Google Search Console (impresiones por URL)',
-          'Schema.org FAQPage / Article',
-          'Diagnóstico Cleexs (app.cleexs.net)',
-        ]
-      : [
-          'Google Search Console — datos del workspace',
-          'Documentación pública de Cleexs',
-          'Buenas prácticas AEO/SEO 2025',
-        ],
+    outline,
+    sources: webResearch?.sources?.length ? webResearch.sources : staticSources,
   };
 }
 
 export async function runWriter(
   plan: StrategistPlan,
-  research: ReturnType<typeof runResearcher>,
+  research: Awaited<ReturnType<typeof runResearcher>>,
   tone?: string | null,
   branding?: BrandKit,
 ) {

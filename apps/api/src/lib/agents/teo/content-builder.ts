@@ -134,6 +134,7 @@ function articleToMarkdown(data: ArticleData): string {
     if (section.heading) lines.push(`## ${section.heading}`, '');
     if (section.body) lines.push(section.body, '');
     if (section.callout) lines.push(`> ${section.callout}`, '');
+    if (section.chart) lines.push(`*(Gráfico: ${section.chart.title || section.heading || 'ver versión publicada'})*`, '');
     if (section.examples?.length) {
       for (const ex of section.examples) {
         lines.push(`### ${ex.title}`, '', ex.body, '');
@@ -163,11 +164,13 @@ export async function runWriterRich(
   tone?: string | null,
   branding?: BrandKit,
 ) {
-  const usePro = plan.depth === 'pro' || plan.pieceType === 'pillar';
+  // Todas las piezas pasan por el LLM real, no solo las "pro"/pilar. El fallback
+  // estático (buildProArticleData) es la red de seguridad si no hay API key o falla OpenAI,
+  // nunca el camino principal — así ninguna pieza sale con texto repetido/genérico.
   let articleData: ArticleData;
-  let writerMode: 'llm' | 'pro_fallback' | 'template' = 'template';
+  let writerMode: 'llm' | 'pro_fallback' = 'pro_fallback';
 
-  if (usePro && isLlmWriterEnabled()) {
+  if (isLlmWriterEnabled()) {
     try {
       articleData = await generateArticleWithLlm(plan, research, tone, branding);
       writerMode = 'llm';
@@ -179,12 +182,9 @@ export async function runWriterRich(
       articleData = buildProArticleData(plan, tone);
       writerMode = 'pro_fallback';
     }
-  } else if (usePro) {
+  } else {
     articleData = buildProArticleData(plan, tone);
     writerMode = 'pro_fallback';
-  } else {
-    articleData = buildArticleData(plan, research, tone);
-    writerMode = 'template';
   }
 
   const html = renderArticleHtml(articleData, branding);

@@ -31,6 +31,16 @@ export function buildProArticleData(plan: StrategistPlan, tone?: string | null):
       },
       {
         heading: 'Ejemplos reales (PyMEs)',
+        chart: {
+          type: 'bar',
+          title: 'Impresiones en Google antes/después de aplicar la estrategia',
+          labels: ['Distribuidora B2B (Rosario)', 'Estudio contable (CDMX)'],
+          datasets: [
+            { label: 'Antes (10 semanas)', data: [100, 100] },
+            { label: 'Después (10 semanas)', data: [138, 160] },
+          ],
+          sourceNote: 'Estimación ilustrativa basada en casos típicos de clientes Cleexs',
+        },
         examples: [
           {
             title: 'Distribuidora B2B (Rosario)',
