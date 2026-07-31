@@ -187,9 +187,16 @@ export async function generateArticleWithLlm(
 
   const data = (await res.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
+    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
   };
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error('OpenAI sin contenido');
+
+  if (data.usage) {
+    console.info(
+      `[teo-writer] ${DEFAULT_MODEL} | tokens in=${data.usage.prompt_tokens ?? '?'} out=${data.usage.completion_tokens ?? '?'}`,
+    );
+  }
 
   const article = parseArticleJson(content, branding);
   return {
