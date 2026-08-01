@@ -74,6 +74,54 @@ export function rebuildPieceHtml(
   return renderArticleHtml(articleData, branding);
 }
 
+/**
+ * Vuelve a generar el HTML de una pieza desde su estructura guardada, aplicando
+ * el diseño/branding actual. Sirve para aplicar un template nuevo a piezas ya
+ * escritas sin volver a pagar una generación con el LLM.
+ */
+export async function rerenderPieceFromArticleData(
+  pieceId: string,
+  opts?: { workspaceId?: string },
+) {
+  const piece = await prisma.contentPiece.findUnique({
+    where: { id: pieceId },
+    include: { workspace: true },
+  });
+
+  if (!piece) {
+    throw new Error('Pieza no encontrada');
+  }
+  if (opts?.workspaceId && piece.workspaceId !== opts.workspaceId) {
+    throw new Error('La pieza no pertenece a tu workspace');
+  }
+
+  const content = parsePieceContent(piece.content);
+  if (!content.articleData?.sections?.length) {
+    throw new Error(
+      'La pieza no tiene estructura guardada (articleData): se generó antes de persistirla. Hay que regenerarla para poder re-renderizarla.',
+    );
+  }
+
+  const agentConfig = await prisma.agentConfig.findFirst({
+    where: { workspaceId: piece.workspaceId, agent: { slug: 'teo' } },
+  });
+  const branding = resolveBrandKit(agentConfig?.branding, piece.workspace.name);
+
+  const articleData: ArticleData = {
+    ...content.articleData,
+    title: piece.title,
+    publishedAt: content.articleData.publishedAt ?? piece.createdAt.toISOString(),
+  };
+  const html = renderArticleHtml(articleData, branding);
+
+  const updated = await prisma.contentPiece.update({
+    where: { id: pieceId },
+    data: { content: { ...content, articleData, html } },
+  });
+
+  return updated;
+}
+
 export type UpdateApprovalPieceInput = {
   title?: string;
   excerpt?: string;

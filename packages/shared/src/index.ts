@@ -45,7 +45,7 @@ export type AgentActivityItem = {
   createdAt: string;
 };
 
-export const BRAND_TEMPLATE_IDS = ['default', 'minimal', 'corporate'] as const;
+export const BRAND_TEMPLATE_IDS = ['default', 'minimal', 'corporate', 'editorial'] as const;
 export type BrandTemplateId = (typeof BRAND_TEMPLATE_IDS)[number];
 
 export type BrandCta = {

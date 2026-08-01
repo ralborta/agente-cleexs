@@ -286,6 +286,49 @@ export async function publishRefreshPieceToWordPress(
   };
 }
 
+/**
+ * Empuja el HTML actual de una pieza ya publicada a su post de WordPress.
+ * Sirve para propagar cambios de diseño/branding sin crear una publicación nueva.
+ */
+export async function resyncPublishedPieceToWordPress(
+  workspaceSlug: string,
+  pieceId: string,
+): Promise<PublishResult> {
+  const piece = await prisma.contentPiece.findUnique({
+    where: { id: pieceId },
+    include: { publication: true, workspace: true },
+  });
+
+  if (!piece) throw new Error('Pieza no encontrada');
+  if (!piece.publication?.externalId) {
+    throw new Error('La pieza no tiene publicación en WordPress para actualizar');
+  }
+
+  const config = resolveWordPressConfig(workspaceSlug);
+  if (!isWordPressConfigured(config)) {
+    throw new Error(`WordPress no configurado para workspace "${workspaceSlug}"`);
+  }
+
+  const prepared = await preparePieceHtmlWithInterlinks(workspaceSlug, piece.workspaceId, piece);
+  const content = prepared.content as { html?: string; markdown?: string; excerpt?: string } | null;
+  const seoMeta = piece.seoMeta as { slug?: string; metaDescription?: string; canonical?: string } | null;
+  const slug = piece.slug ?? seoMeta?.slug;
+
+  const wpPost = await updateWordPressPost(config, Number(piece.publication.externalId), {
+    title: piece.title,
+    content: pieceContentToHtml(content),
+    excerpt: content?.excerpt ?? seoMeta?.metaDescription,
+    slug,
+    seoMeta: seoFromPiece(piece, content?.excerpt ?? seoMeta?.metaDescription),
+  });
+
+  return {
+    externalId: String(wpPost.id),
+    url: resolveWordPressPublicUrl(config, wpPost, slug, seoMeta?.canonical ?? piece.publication.url),
+    status: wpPost.status,
+  };
+}
+
 /** Republica un post ya creado (ej. quedó en draft) y devuelve URL pública. */
 export async function publishExistingWordPressPost(
   workspaceSlug: string,

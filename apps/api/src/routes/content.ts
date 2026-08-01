@@ -4,6 +4,8 @@ import {
   bootstrapClusterAssignments,
   listWorkspaceClusters,
 } from '../lib/content-cluster';
+import { rerenderPieceFromArticleData } from '../lib/piece-editor';
+import { resyncPublishedPieceToWordPress } from '../lib/integrations/wordpress-publish';
 
 const contentRoutes: FastifyPluginAsync = async (server) => {
   server.get('/pieces', async (request) => {
@@ -35,6 +37,46 @@ const contentRoutes: FastifyPluginAsync = async (server) => {
     });
 
     return { pieces };
+  });
+
+  /** Re-aplica el diseño actual al HTML de una pieza (sin regenerar el contenido). */
+  server.post('/pieces/:id/rerender', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { resync } = (request.body as { resync?: boolean }) ?? {};
+    const authUser = request.authUser;
+
+    if (!authUser || !['admin', 'editor'].includes(authUser.role)) {
+      return reply.status(403).send({ error: 'Permiso insuficiente' });
+    }
+
+    try {
+      const piece = await rerenderPieceFromArticleData(id, { workspaceId: authUser.workspaceId });
+
+      let publication: { url: string; status: string } | null = null;
+      if (resync) {
+        const workspace = await prisma.workspace.findUnique({
+          where: { id: authUser.workspaceId },
+          select: { slug: true },
+        });
+        if (!workspace) return reply.status(404).send({ error: 'Workspace no encontrado' });
+        const result = await resyncPublishedPieceToWordPress(workspace.slug, piece.id);
+        publication = { url: result.url, status: result.status };
+      }
+
+      return {
+        ok: true,
+        piece: { id: piece.id, title: piece.title, status: piece.status },
+        publication,
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al re-renderizar';
+      const status = message.includes('no encontrada')
+        ? 404
+        : message.includes('no pertenece')
+          ? 403
+          : 409;
+      return reply.status(status).send({ error: message });
+    }
   });
 
   server.get('/clusters', async (request, reply) => {

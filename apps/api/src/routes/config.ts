@@ -1,11 +1,18 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { BRAND_TEMPLATE_IDS } from '@agente/shared';
+import { BRAND_TEMPLATE_IDS, type BrandTemplateId } from '@agente/shared';
 import { prisma } from '../lib/prisma';
 import { getAutomationStatus } from '../lib/automation-status';
 import { FREQUENCY_PRESETS } from '../lib/frequency';
 import { resolveBrandKit } from '../lib/branding/brand-kit';
 import { renderBrandPreviewHtml } from '../lib/agents/teo/article-template';
+
+const BRAND_TEMPLATE_LABELS: Record<BrandTemplateId, string> = {
+  default: 'Clásico (default)',
+  minimal: 'Minimal',
+  corporate: 'Corporate (con logo)',
+  editorial: 'Editorial PRO (hero oscuro, secciones numeradas)',
+};
 
 const brandCtaSchema = z.object({
   headline: z.string().max(200).optional(),
@@ -69,12 +76,7 @@ const configRoutes: FastifyPluginAsync = async (server) => {
       frequencyPresets: FREQUENCY_PRESETS,
       brandTemplates: BRAND_TEMPLATE_IDS.map((id) => ({
         id,
-        label:
-          id === 'default'
-            ? 'Editorial (default)'
-            : id === 'minimal'
-              ? 'Minimal'
-              : 'Corporate (con logo)',
+        label: BRAND_TEMPLATE_LABELS[id],
       })),
     };
   });
