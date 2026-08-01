@@ -74,6 +74,25 @@ export function rebuildPieceHtml(
   return renderArticleHtml(articleData, branding);
 }
 
+function extractLeadFromMarkdown(markdown?: string): string | null {
+  if (!markdown) return null;
+  const body = markdown.replace(/^#\s+.*(\r?\n)+/, '');
+  const first = body.split(/\n{2,}/)[0]?.trim();
+  return first && !first.startsWith('#') ? first : null;
+}
+
+/**
+ * Repara entradillas que quedaron recortadas cuando editar el título las
+ * pisaba con el excerpt. El markdown conserva el texto original, así que se
+ * restaura solo si lo guardado es un prefijo exacto de aquel.
+ */
+function recoverLead(lead: string, markdown?: string): string {
+  const original = extractLeadFromMarkdown(markdown);
+  if (!original) return lead;
+  const stored = lead.replace(/…$/, '').trim();
+  return original.startsWith(stored) && original.length > stored.length ? original : lead;
+}
+
 /**
  * Vuelve a generar el HTML de una pieza desde su estructura guardada, aplicando
  * el diseño/branding actual. Sirve para aplicar un template nuevo a piezas ya
@@ -110,6 +129,7 @@ export async function rerenderPieceFromArticleData(
   const articleData: ArticleData = {
     ...content.articleData,
     title: piece.title,
+    lead: recoverLead(content.articleData.lead, content.markdown),
     publishedAt: content.articleData.publishedAt ?? piece.createdAt.toISOString(),
   };
   const html = renderArticleHtml(articleData, branding);
@@ -174,11 +194,17 @@ export async function updateApprovalPieceContent(
   const markdownEdited = input.markdown !== undefined && input.markdown !== currentContent.markdown;
   const structured = currentContent.articleData;
 
+  // El excerpt es la meta description (recortada): solo puede reemplazar la
+  // entradilla si el usuario la editó a propósito. Si no, cambiar el título
+  // dejaría el artículo con un lead cortado a la mitad.
+  const excerptEdited =
+    input.excerpt !== undefined && input.excerpt.trim() !== (currentContent.excerpt ?? '').trim();
+
   if (!markdownEdited && structured?.sections?.length) {
     const articleData: ArticleData = {
       ...structured,
       title,
-      lead: nextContent.excerpt?.trim() || structured.lead,
+      lead: excerptEdited ? input.excerpt!.trim() : structured.lead,
     };
     nextContent.articleData = articleData;
     nextContent.html = renderArticleHtml(articleData, branding);

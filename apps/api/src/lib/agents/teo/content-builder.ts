@@ -128,6 +128,16 @@ export function buildArticleData(
   }
 }
 
+/** Extracto para meta description: corta en palabra entera, no a la mitad. */
+function buildExcerpt(lead: string, max = 160): string {
+  const clean = lead.replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max - 1);
+  const lastSpace = cut.lastIndexOf(' ');
+  const base = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
+  return `${base.replace(/[\s,;:.–-]+$/, '')}…`;
+}
+
 function articleToMarkdown(data: ArticleData): string {
   const lines = [`# ${data.title}`, '', data.lead, ''];
   for (const section of data.sections) {
@@ -188,7 +198,7 @@ export async function runWriterRich(
   }
 
   const html = renderArticleHtml(articleData, branding);
-  const excerpt = articleData.lead.slice(0, 160);
+  const excerpt = buildExcerpt(articleData.lead);
   const bodyMarkdown = articleToMarkdown(articleData);
 
   return {

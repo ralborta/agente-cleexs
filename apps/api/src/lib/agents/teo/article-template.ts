@@ -289,12 +289,17 @@ function renderEditorialListItem(text: string): string {
   return `<li><b>${match[1]}:</b> ${match[2]}</li>`;
 }
 
+/** El modelo suele numerar los títulos ("2. Diagnóstico"); el template ya pone su número. */
+function stripLeadingNumber(heading: string): string {
+  return heading.replace(/^\s*\d{1,2}\s*[.)–-]\s+/, '');
+}
+
 function renderEditorialSection(section: ArticleSection, index: number, pieceType: string): string {
   const parts: string[] = [];
 
   if (section.heading) {
     parts.push(
-      `<div class="cleexs-editorial__section-head"><span class="cleexs-editorial__num">${String(index).padStart(2, '0')}.</span><h2>${section.heading}</h2></div>`,
+      `<div class="cleexs-editorial__section-head"><span class="cleexs-editorial__num">${String(index).padStart(2, '0')}.</span><h2>${stripLeadingNumber(section.heading)}</h2></div>`,
     );
   }
   if (section.body) {
