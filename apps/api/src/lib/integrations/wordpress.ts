@@ -284,6 +284,17 @@ export async function updateWordPressPost(
   });
 }
 
+/** Mueve un post a la papelera de WordPress (recuperable desde WP). */
+export async function trashWordPressPost(
+  config: WordPressConfig,
+  postId: number,
+): Promise<WordPressPostResponse> {
+  return wpFetch<WordPressPostResponse>(config, `/posts/${postId}`, {
+    method: 'POST',
+    body: JSON.stringify({ status: 'trash' }),
+  });
+}
+
 /** Sube un archivo a la biblioteca de medios de WP. */
 export async function uploadWordPressMedia(
   config: WordPressConfig,

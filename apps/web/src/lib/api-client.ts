@@ -185,6 +185,49 @@ export async function fetchPieces(workspace: string) {
   }>(`/api/content/pieces?workspace=${workspace}`);
 }
 
+export async function archivePiece(pieceId: string, workspace = 'cleexs') {
+  return api<{
+    ok: boolean;
+    pieceId: string;
+    status: 'archived';
+    wordpressTrashed: boolean;
+    wordpressWarning?: string;
+  }>(`/api/content/pieces/${pieceId}/archive`, {
+    method: 'POST',
+    body: JSON.stringify({ workspace }),
+  });
+}
+
+export type CalendarKind = 'publicado' | 'pendiente' | 'programado' | 'borrador';
+
+export type CalendarItem = {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+  kind: CalendarKind;
+  date: string;
+  day: number;
+  url: string | null;
+  cluster: { id: string; name: string } | null;
+};
+
+export async function fetchContentCalendar(
+  workspace: string,
+  year: number,
+  month: number,
+) {
+  return api<{
+    workspace: string;
+    year: number;
+    month: number;
+    daysInMonth: number;
+    counts: Record<CalendarKind, number>;
+    items: CalendarItem[];
+    byDay: Record<string, CalendarItem[]>;
+  }>(`/api/content/calendar?workspace=${workspace}&year=${year}&month=${month}`);
+}
+
 export type ContentClusterSummary = {
   id: string;
   name: string;

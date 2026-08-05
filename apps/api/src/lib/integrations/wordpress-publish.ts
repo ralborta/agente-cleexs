@@ -13,6 +13,7 @@ import {
   resolveWordPressConfig,
   resolveWordPressPublicUrl,
   testWordPressConnection,
+  trashWordPressPost,
   updateWordPressPost,
   uploadWordPressMedia,
 } from './wordpress';
@@ -425,4 +426,78 @@ export async function testWorkspaceWordPress(workspaceSlug: string) {
       error: err instanceof Error ? err.message : 'Error de conexión',
     };
   }
+}
+
+export type ArchivePieceResult = {
+  pieceId: string;
+  status: 'archived';
+  wordpressTrashed: boolean;
+  wordpressWarning?: string;
+};
+
+/**
+ * Soft-archive en Teo + trash en WP si hay publication.externalId.
+ * No borra el registro: queda en archived para auditoría / restore futuro.
+ */
+export async function archivePieceWithWordPressTrash(
+  workspaceSlug: string,
+  pieceId: string,
+  opts?: { workspaceId?: string },
+): Promise<ArchivePieceResult> {
+  const piece = await prisma.contentPiece.findUnique({
+    where: { id: pieceId },
+    include: {
+      publication: true,
+      workspace: { select: { id: true, slug: true } },
+    },
+  });
+
+  if (!piece) throw new Error('Pieza no encontrada');
+  if (opts?.workspaceId && piece.workspaceId !== opts.workspaceId) {
+    throw new Error('La pieza no pertenece a tu workspace');
+  }
+  if (piece.workspace.slug !== workspaceSlug) {
+    throw new Error('La pieza no pertenece a ese workspace');
+  }
+
+  if (piece.status === 'archived') {
+    return {
+      pieceId: piece.id,
+      status: 'archived',
+      wordpressTrashed: false,
+      wordpressWarning: 'Ya estaba archivada',
+    };
+  }
+
+  let wordpressTrashed = false;
+  let wordpressWarning: string | undefined;
+
+  const externalId = piece.publication?.externalId;
+  if (externalId) {
+    const config = resolveWordPressConfig(workspaceSlug);
+    if (isWordPressConfigured(config)) {
+      try {
+        await trashWordPressPost(config, Number(externalId));
+        wordpressTrashed = true;
+      } catch (err) {
+        wordpressWarning =
+          err instanceof Error ? err.message.slice(0, 200) : 'No se pudo enviar a papelera WP';
+        console.warn('[wordpress] trash falló:', wordpressWarning);
+      }
+    } else {
+      wordpressWarning = 'WordPress no configurado; solo se archivó en Teo';
+    }
+  }
+
+  await prisma.contentPiece.update({
+    where: { id: piece.id },
+    data: { status: 'archived' },
+  });
+
+  return {
+    pieceId: piece.id,
+    status: 'archived',
+    wordpressTrashed,
+    wordpressWarning,
+  };
 }

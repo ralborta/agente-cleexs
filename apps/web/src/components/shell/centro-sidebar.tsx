@@ -7,6 +7,7 @@ import { fetchApprovals } from '@/lib/api-client';
 import {
   Activity,
   BarChart3,
+  CalendarDays,
   CheckCircle2,
   FileText,
   LayoutDashboard,
@@ -27,6 +28,7 @@ const resultsNav = [
   { href: '/cleexs', label: PLATFORM_SHORT, icon: LayoutDashboard },
   { href: '/cleexs/resultados', label: 'Resultados', icon: BarChart3 },
   { href: '/cleexs/publicaciones', label: 'Publicaciones', icon: FileText },
+  { href: '/cleexs/calendario', label: 'Calendario', icon: CalendarDays },
   { href: '/cleexs/oportunidades', label: 'Oportunidades', icon: Target },
   { href: '/cleexs/actividad', label: 'Actividad', icon: Activity },
 ];
