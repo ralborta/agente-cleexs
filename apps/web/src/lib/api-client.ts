@@ -489,6 +489,89 @@ export async function fetchActivity(workspace: string, take = 50) {
   return api<{ activities: ActivityItem[] }>(`/api/activity?workspace=${workspace}&take=${take}`);
 }
 
+export type FunnelStage = 'tofu' | 'mofu' | 'bofu';
+export type KeywordOpportunityStatus =
+  | 'idea'
+  | 'queued'
+  | 'in_progress'
+  | 'covered'
+  | 'discarded';
+
+export type KeywordOpportunity = {
+  id: string;
+  seedKeyword: string;
+  keyword: string;
+  cluster: string;
+  stage: FunnelStage;
+  intent: string | null;
+  intentLabel: string | null;
+  status: KeywordOpportunityStatus;
+  priority: number;
+  source: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OpportunitiesResponse = {
+  workspace: string;
+  opportunities: KeywordOpportunity[];
+  seeds: string[];
+  clusters: string[];
+  summary: {
+    total: number;
+    byStage: { tofu: number; mofu: number; bofu: number };
+    byStatus: Record<string, number>;
+  };
+};
+
+export async function fetchOpportunities(
+  workspace: string,
+  filters?: { status?: string; stage?: string; cluster?: string; seed?: string },
+) {
+  const params = new URLSearchParams({ workspace });
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.stage) params.set('stage', filters.stage);
+  if (filters?.cluster) params.set('cluster', filters.cluster);
+  if (filters?.seed) params.set('seed', filters.seed);
+  return api<OpportunitiesResponse>(`/api/opportunities?${params.toString()}`);
+}
+
+export async function ingestOpportunitySeeds(
+  workspace: string,
+  seeds: string[],
+  expand = true,
+) {
+  return api<OpportunitiesResponse & { ok: boolean; created: number; skipped: number; source: string }>(
+    '/api/opportunities/seeds',
+    {
+      method: 'POST',
+      body: JSON.stringify({ workspace, seeds, expand }),
+    },
+  );
+}
+
+export async function updateOpportunity(
+  id: string,
+  data: Partial<{
+    status: KeywordOpportunityStatus;
+    priority: number;
+    notes: string | null;
+    cluster: string;
+    stage: FunnelStage;
+    intentLabel: string | null;
+  }>,
+) {
+  return api<{ ok: boolean; opportunity: KeywordOpportunity }>(`/api/opportunities/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteOpportunity(id: string) {
+  return api<{ ok: boolean }>(`/api/opportunities/${id}`, { method: 'DELETE' });
+}
+
 export function pieceAuthorName(
   piece: { mission?: { agent?: { name: string } | null } | null },
   fallback = 'Teo',

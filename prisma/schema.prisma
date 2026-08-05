@@ -30,6 +30,7 @@ model Workspace {
   activities    AgentActivity[]
   integrations  Integration[]
   metrics       MetricSnapshot[]
+  opportunities KeywordOpportunity[]
 
   @@map("workspaces")
 }
@@ -364,6 +365,50 @@ model MetricSnapshot {
 
   @@index([workspaceId, url, capturedAt])
   @@map("metric_snapshots")
+}
+
+// ============================================
+// KEYWORD OPPORTUNITIES (Input engine — Fase A)
+// ============================================
+
+enum FunnelStage {
+  tofu
+  mofu
+  bofu
+}
+
+enum KeywordOpportunityStatus {
+  idea
+  queued
+  in_progress
+  covered
+  discarded
+}
+
+model KeywordOpportunity {
+  id           String                    @id @default(uuid())
+  workspaceId  String                    @map("workspace_id")
+  seedKeyword  String                    @map("seed_keyword")
+  keyword      String
+  cluster      String
+  stage        FunnelStage
+  intent       String?
+  intentLabel  String?                   @map("intent_label")
+  status       KeywordOpportunityStatus  @default(idea)
+  priority     Int                       @default(0)
+  source       String                    @default("manual")
+  notes        String?                   @db.Text
+  createdAt    DateTime                  @default(now()) @map("created_at")
+  updatedAt    DateTime                  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, keyword])
+  @@index([workspaceId, status])
+  @@index([workspaceId, stage])
+  @@index([workspaceId, cluster])
+  @@index([workspaceId, priority])
+  @@map("keyword_opportunities")
 }
 
 // ============================================

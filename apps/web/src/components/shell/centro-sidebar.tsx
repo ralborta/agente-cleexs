@@ -15,6 +15,7 @@ import {
   Radio,
   Settings,
   Sparkles,
+  Target,
 } from 'lucide-react';
 import { PLATFORM_NAME, PLATFORM_SHORT } from '@/lib/branding';
 import { clearAuthSession, getStoredUser } from '@/lib/auth-client';
@@ -25,6 +26,7 @@ const resultsNav = [
   { href: '/cleexs', label: PLATFORM_SHORT, icon: LayoutDashboard },
   { href: '/cleexs/resultados', label: 'Resultados', icon: BarChart3 },
   { href: '/cleexs/publicaciones', label: 'Publicaciones', icon: FileText },
+  { href: '/cleexs/oportunidades', label: 'Oportunidades', icon: Target },
   { href: '/cleexs/actividad', label: 'Actividad', icon: Activity },
 ];
 

@@ -1,5 +1,9 @@
 import { prisma } from '../../prisma';
 import type { StrategistPlan } from './types';
+import {
+  markOpportunityInProgress,
+  pickNextOpportunityTopic,
+} from './keyword-opportunities';
 
 const ECOSYSTEM_TYPES = ['pillar', 'faq', 'checklist', 'comparison', 'how_to'] as const;
 
@@ -68,7 +72,7 @@ export function buildTitle(pieceType: string, topic: string): string {
 }
 
 /**
- * Prioriza tema y tipo de pieza usando cobertura existente + métricas GSC en DB.
+ * Prioriza: 1) oportunidades de keyword en cola, 2) cobertura + métricas GSC, 3) rotación de topics.
  */
 export async function getStrategicPlanHints(
   workspaceSlug: string,
@@ -84,6 +88,42 @@ export async function getStrategicPlanHints(
   if (!workspace) {
     const topic = topics[missionIndex % topics.length];
     return { topic, pieceType: 'faq', keyword: topic, rationale: 'Workspace no encontrado — fallback' };
+  }
+
+  // Preferir oportunidades en cola (status=queued) del Input Engine.
+  const opportunity = await pickNextOpportunityTopic(workspace.id);
+  if (opportunity) {
+    const piecesForOp = await prisma.contentPiece.findMany({
+      where: {
+        workspaceId: workspace.id,
+        status: { notIn: ['archived'] },
+        OR: [
+          { keyword: { contains: opportunity.keyword, mode: 'insensitive' } },
+          { title: { contains: opportunity.keyword, mode: 'insensitive' } },
+        ],
+      },
+      select: { type: true },
+    });
+    const existingTypes = new Set(piecesForOp.map((p) => p.type));
+    const signal =
+      opportunity.stage === 'bofu'
+        ? ('zero_clicks' as const)
+        : opportunity.stage === 'tofu'
+          ? ('coverage_gap' as const)
+          : ('low_visibility' as const);
+    const pieceType = pickPieceType(opportunity.topic, existingTypes, signal);
+    const depth = pieceType === 'pillar' ? ('pro' as const) : ('standard' as const);
+    await markOpportunityInProgress(workspace.id, opportunity.opportunityId).catch(() => undefined);
+
+    return {
+      topic: opportunity.topic,
+      pieceType,
+      title: buildTitle(pieceType, opportunity.topic),
+      keyword: opportunity.keyword,
+      depth,
+      objective: `Generar pieza tipo ${pieceType} sobre "${opportunity.topic}" desde oportunidad ${opportunity.stage.toUpperCase()} (cluster: ${opportunity.cluster}).`,
+      rationale: `Oportunidad priorizada (${opportunity.stage}): ${opportunity.cluster}`,
+    };
   }
 
   const [pieces, publications, gscMetrics, clusterPieces] = await Promise.all([
