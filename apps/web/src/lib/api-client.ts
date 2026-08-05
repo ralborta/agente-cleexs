@@ -512,11 +512,22 @@ export type IndexingPage = {
   coverageState: string | null;
   verdict: string;
   lastCrawlTime: string | null;
+  gscSubmittedAt: string | null;
+  gscSubmitStatus: string | null;
+  gscSubmitDetail: string | null;
+  indexNowSubmittedAt: string | null;
+  indexNowStatus: string | null;
+  indexNowDetail: string | null;
 };
 
 export type IndexingReport = {
   configured: boolean;
   checkedAt: string | null;
+  submitReady: {
+    googleIndexing: boolean;
+    indexNow: boolean;
+    indexNowKeyLocation: string | null;
+  };
   summary: { total: number; indexed: number; pending: number };
   pages: IndexingPage[];
 };
@@ -525,6 +536,41 @@ export async function fetchIndexingStatus(workspace: string, force = false) {
   return api<{ workspace: string; indexing: IndexingReport }>(
     `/api/integrations/${workspace}/indexing${force ? '?force=true' : ''}`,
   );
+}
+
+export async function submitIndexingUrl(
+  workspace: string,
+  body: { pieceId?: string; url?: string; pending?: boolean; onlyNotSubmitted?: boolean },
+) {
+  return api<{
+    workspace: string;
+    result?: {
+      url: string;
+      gsc: { ok: boolean; skipped?: boolean; detail: string };
+      indexNow: { ok: boolean; skipped?: boolean; detail: string };
+    };
+    submitted?: Array<{
+      url: string;
+      gsc: { ok: boolean; detail: string };
+      indexNow: { ok: boolean; detail: string };
+    }>;
+    total?: number;
+  }>(`/api/integrations/${workspace}/indexing/submit`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function publishIndexNowKey(workspace: string) {
+  return api<{
+    workspace: string;
+    key: string;
+    keyLocation: string;
+    pageUrl: string | null;
+  }>(`/api/integrations/${workspace}/indexing/indexnow-key`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
 }
 
 export async function testGoogleIntegration(workspace: string) {

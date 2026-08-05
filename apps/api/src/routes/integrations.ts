@@ -5,7 +5,12 @@ import { getWordPressStatus, testWorkspaceWordPress } from '../lib/integrations/
 import { auditWordPressSetup } from '../lib/integrations/wordpress-setup';
 import { auditSeoFoundations, publishLlmsTxt } from '../lib/integrations/seo-foundations';
 import { getAutomationStatus } from '../lib/automation-status';
-import { getWorkspaceIndexingStatus } from '../lib/indexing-status';
+import { getWorkspaceIndexingStatus, invalidateIndexingCache } from '../lib/indexing-status';
+import {
+  ensureIndexNowKeyFile,
+  submitPendingUrls,
+  submitUrlForIndexing,
+} from '../lib/integrations/url-submit';
 import { runSchedulerTick } from '../lib/job-scheduler';
 import {
   applyRefreshScan,
@@ -114,6 +119,58 @@ const integrationRoutes: FastifyPluginAsync = async (server) => {
       return { workspace: workspaceSlug, indexing: report };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al verificar indexación';
+      return reply.status(502).send({ error: message });
+    }
+  });
+
+  /** Sprint 5.2 — solicitar indexación (GSC Indexing API + IndexNow) */
+  server.post('/:workspaceSlug/indexing/submit', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    const body = (request.body as {
+      pieceId?: string;
+      url?: string;
+      pending?: boolean;
+      onlyNotSubmitted?: boolean;
+      limit?: number;
+    }) ?? {};
+
+    try {
+      if (body.pending) {
+        const result = await submitPendingUrls(workspaceSlug, {
+          onlyNotSubmitted: body.onlyNotSubmitted ?? true,
+          limit: body.limit ?? 20,
+        });
+        invalidateIndexingCache(workspaceSlug);
+        return { workspace: workspaceSlug, ...result };
+      }
+
+      let url = body.url?.trim();
+      let pieceId = body.pieceId;
+
+      if (pieceId && !url) {
+        const pub = await prisma.publication.findUnique({ where: { pieceId } });
+        url = pub?.url ?? undefined;
+      }
+      if (!url) {
+        return reply.status(400).send({ error: 'url o pieceId requerido' });
+      }
+
+      const result = await submitUrlForIndexing(workspaceSlug, { url, pieceId });
+      invalidateIndexingCache(workspaceSlug);
+      return { workspace: workspaceSlug, result };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al submitear URL';
+      return reply.status(502).send({ error: message });
+    }
+  });
+
+  server.post('/:workspaceSlug/indexing/indexnow-key', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    try {
+      const result = await ensureIndexNowKeyFile(workspaceSlug);
+      return { workspace: workspaceSlug, ...result };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al publicar IndexNow key';
       return reply.status(502).send({ error: message });
     }
   });

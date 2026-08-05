@@ -90,6 +90,14 @@ Si preferís Yoast: `WORDPRESS_SEO_PLUGIN=yoast` (Yoast registra meta REST en ve
 
 Teo **no** sobrescribe `robots.txt`. El sitemap lo sirve WordPress/Rank Math; la auditoría solo verifica.
 
+## 4c. IndexNow + GSC Indexing (Sprint 5.2)
+
+1. En GCP: habilitar **Indexing API** y dar a la service account rol de **propietario** en Search Console del sitio.
+2. En Easypanel API: `INDEXNOW_KEY=<uuid-hex>` (ej. 32 chars).
+3. Copiá `docs/wordpress/cleexs-teo-indexnow.php` a `mu-plugins/`.
+4. Publicaciones → **Sync IndexNow key** (crea `{key}.txt` en la raíz).
+5. Al publicar/refrescar, Teo notifica GSC Indexing + IndexNow; también podés **Submitear** a mano.
+
 ## 5. Usuario Application Password
 
 - WP Admin → Usuarios → tu usuario → **Contraseñas de aplicación**

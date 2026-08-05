@@ -285,6 +285,16 @@ model Publication {
   publishedAt   DateTime? @map("published_at")
   createdAt     DateTime  @default(now()) @map("created_at")
 
+  /// Sprint 5.2 — última solicitud a Google Indexing API
+  gscSubmittedAt   DateTime? @map("gsc_submitted_at")
+  gscSubmitStatus  String?   @map("gsc_submit_status") // ok | error | skipped
+  gscSubmitDetail  String?   @map("gsc_submit_detail") @db.Text
+
+  /// Sprint 5.2 — última notificación IndexNow (Bing+)
+  indexNowSubmittedAt DateTime? @map("indexnow_submitted_at")
+  indexNowStatus      String?   @map("indexnow_status") // ok | error | skipped
+  indexNowDetail      String?   @map("indexnow_detail") @db.Text
+
   workspace Workspace    @relation(fields: [workspaceId], references: [id])
   piece     ContentPiece @relation(fields: [pieceId], references: [id])
 

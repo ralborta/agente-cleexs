@@ -17,6 +17,7 @@ import {
   updateWordPressPost,
   uploadWordPressMedia,
 } from './wordpress';
+import { submitUrlAfterPublishSafe } from './url-submit';
 
 const DEFAULT_CATEGORY = 'Artículos';
 
@@ -94,6 +95,15 @@ export async function publishAndRecordPiece(
   });
 
   if (refreshOfPieceId) {
+    // publishRefreshPieceToWordPress ya actualizó Publication de la pieza original
+    if (wpResult.status === 'publish' && wpResult.url) {
+      const originalId = refreshOfPieceId;
+      void submitUrlAfterPublishSafe(workspaceSlug, {
+        url: wpResult.url,
+        pieceId: originalId,
+        wpStatus: wpResult.status,
+      });
+    }
     return wpResult;
   }
 
@@ -118,6 +128,14 @@ export async function publishAndRecordPiece(
       },
     }),
   ]);
+
+  if (wpResult.status === 'publish' && wpResult.url) {
+    void submitUrlAfterPublishSafe(workspaceSlug, {
+      url: wpResult.url,
+      pieceId: piece.id,
+      wpStatus: wpResult.status,
+    });
+  }
 
   return wpResult;
 }
