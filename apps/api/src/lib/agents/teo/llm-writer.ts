@@ -61,6 +61,12 @@ const PIECE_TYPE_BRIEF: Record<string, string> = {
   pillar: `- Es la pieza pilar del cluster: máxima profundidad. Mínimo 9 secciones sustanciales.
 - Incluí al menos 1 tabla comparativa/resumen y 1 checklist de acción.
 - Cerrá con un plan de implementación por etapas (ej. 30/60/90 días) con métricas de éxito por etapa.`,
+  case_study: `- Contá UN caso realista de PyME LATAM (podés anonimizar): contexto, problema, intervención, resultados medibles.
+- Incluí timeline, métricas antes/después (tabla o chart) y lecciones transferibles.
+- Cerrá con "cómo replicarlo" en 5 pasos y FAQs de objeciones típicas.`,
+  landing: `- Pieza orientada a decisión: problema → promesa → prueba → plan → CTA.
+- Lead = respuesta directa a la intención de búsqueda. Sección "En esta guía" corta.
+- Incluí tabla de opciones (hacerlo solo vs con ayuda), FAQs de objeciones y CTA claro sin hype vacío.`,
 };
 
 function buildWriterPrompt(
@@ -99,6 +105,14 @@ ${research.outline.map((o, i) => `${i + 1}. ${o}`).join('\n')}
 ${sourcesBlock}
 Requisitos de estructura para este tipo de pieza (${plan.pieceType}):
 ${typeBrief}
+
+Checklist AEO obligatorio (Answer Engine Optimization — se verifica, no es opcional):
+1. RESPUESTA AL INICIO: el "lead" debe abrir con la respuesta directa a la intención principal (1-2 oraciones citables por AI Overviews / ChatGPT). Empezá el lead con "Respuesta directa:".
+2. EN ESTA GUÍA: incluí una sección (o bloque al inicio) titulada "En esta guía" con 3-5 bullets de lo que cubre el artículo.
+3. FAQs: al menos una sección con campo "faqs" (≥4 Q&A concretas) aunque el tipo no sea faq.
+4. TABLAS: al menos 1 "table" con datos comparables (números, plazos, criterios).
+5. EVIDENCIA: datos, rangos o fuentes en el body; al menos 1 "callout" con insight accionable.
+6. Densidad: sin párrafos vacíos ni frases corporativas de relleno.
 
 Requisitos obligatorios de profundidad (se verifican, no son sugerencias):
 - OBLIGATORIO: al menos 2 secciones deben incluir el campo "chart" con datos numéricos reales o estimaciones explícitas. Un artículo sin ningún "chart" se considera incompleto. Elegí lo cuantificable: comparación de opciones, evolución mes a mes, distribución impacto/esfuerzo, resultados típicos antes/después.

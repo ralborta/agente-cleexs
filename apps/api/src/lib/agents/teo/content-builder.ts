@@ -1,6 +1,7 @@
 import { renderArticleHtml, type ArticleData } from './article-template';
 import { generateArticleWithLlm, isLlmWriterEnabled } from './llm-writer';
 import { buildProArticleData } from './pro-content-fallback';
+import { enforceAeoChecklist } from './aeo-checklist';
 import type { BrandKit } from '@agente/shared';
 import type { StrategistPlan } from './types';
 
@@ -114,6 +115,86 @@ export function buildArticleData(
         })),
       };
 
+    case 'case_study':
+      return {
+        kicker,
+        title: plan.title,
+        lead: `Respuesta directa: un caso realista de PyME muestra cómo ${plan.topic} se traduce en impresiones y menciones medibles, no en teoría.`,
+        pieceType: 'case_study',
+        sections: [
+          {
+            heading: 'En esta guía',
+            items: ['Contexto del negocio', 'Problema', 'Intervención', 'Resultados', 'Cómo replicarlo'],
+          },
+          {
+            heading: 'Contexto y problema',
+            body: `Una PyME de servicios B2B en LATAM tenía contenido genérico sobre ${plan.topic} y casi cero menciones en asistentes de IA, pese a algo de tráfico Google.`,
+          },
+          {
+            heading: 'Resultados',
+            table: {
+              headers: ['Métrica', 'Antes', 'Después (10 semanas)'],
+              rows: [
+                ['Impresiones GSC', 'Bajas / irregulares', '+30–60% en URLs del cluster'],
+                ['CTR', 'Estancado', 'Mejora en títulos con intención clara'],
+                ['Menciones en IA', 'Raras', 'Aparece en prompts de categoría'],
+              ],
+            },
+          },
+          {
+            heading: 'Preguntas frecuentes',
+            faqs: [
+              {
+                q: '¿Sirve si soy más chico que este caso?',
+                a: 'Sí: el patrón es el mismo — respuesta al inicio, FAQ reales, medición semanal. El tamaño del sitio cambia el ritmo, no el método.',
+              },
+              {
+                q: '¿Cuánto contenido hace falta?',
+                a: 'Empezá por un pilar + 3 satélites (FAQ, checklist, comparativa). Completá el ecosistema antes de disparar volumen.',
+              },
+            ],
+          },
+        ],
+      };
+
+    case 'landing':
+      return {
+        kicker,
+        title: plan.title,
+        lead: `Respuesta directa: ${plan.topic} es el punto de partida para que tu PyME sea encontrada en Google y citada por IA cuando un cliente pregunta por soluciones.`,
+        pieceType: 'landing',
+        sections: [
+          {
+            heading: 'En esta guía',
+            items: ['El problema', 'Qué cambia con AEO', 'Plan de 30 días', 'Objeciones frecuentes'],
+          },
+          {
+            heading: 'Opciones',
+            table: {
+              headers: ['Camino', 'Esfuerzo', 'Resultado típico'],
+              rows: [
+                ['Solo SEO clásico', 'Medio', 'Tráfico Google, poca IA'],
+                ['Contenido genérico con IA', 'Bajo', 'Rápido, poco diferenciado'],
+                ['Ecosistema AEO + medición', 'Medio-alto', 'Google + citas en asistentes'],
+              ],
+            },
+          },
+          {
+            heading: 'Preguntas frecuentes',
+            faqs: [
+              {
+                q: `¿Esto reemplaza mi SEO actual?`,
+                a: 'No: lo extiende. Segís midiendo GSC, pero agregás estructura y evidencia para que la IA pueda citarte.',
+              },
+              {
+                q: '¿Por dónde empiezo hoy?',
+                a: `Definí 3 preguntas reales de clientes sobre ${plan.topic}, publicá respuestas claras y medí impresiones por URL en 28 días.`,
+              },
+            ],
+          },
+        ],
+      };
+
     default:
       return {
         kicker,
@@ -196,6 +277,8 @@ export async function runWriterRich(
     articleData = buildProArticleData(plan, tone);
     writerMode = 'pro_fallback';
   }
+
+  articleData = enforceAeoChecklist(articleData, plan);
 
   const html = renderArticleHtml(articleData, branding);
   const excerpt = buildExcerpt(articleData.lead);

@@ -71,6 +71,8 @@ export const PIECE_TYPES: ContentPieceType[] = [
   'checklist',
   'how_to',
   'pillar',
+  'case_study',
+  'landing',
   'definition',
   'glossary',
 ];

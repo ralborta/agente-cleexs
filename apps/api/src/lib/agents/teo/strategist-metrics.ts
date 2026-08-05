@@ -9,7 +9,15 @@ import {
   pickNextQuestion,
 } from './keyword-questions';
 
-const ECOSYSTEM_TYPES = ['pillar', 'faq', 'checklist', 'comparison', 'how_to'] as const;
+const ECOSYSTEM_TYPES = [
+  'pillar',
+  'faq',
+  'checklist',
+  'comparison',
+  'how_to',
+  'case_study',
+  'landing',
+] as const;
 
 type TeoConfigInput = {
   topics?: string[] | null;
@@ -55,6 +63,8 @@ function pickPieceType(
   if (missing.includes('checklist')) return 'checklist';
   if (missing.includes('comparison')) return 'comparison';
   if (missing.includes('how_to')) return 'how_to';
+  if (missing.includes('case_study')) return 'case_study';
+  if (missing.includes('landing')) return 'landing';
 
   return ECOSYSTEM_TYPES[existingTypes.size % ECOSYSTEM_TYPES.length];
 }
@@ -72,6 +82,10 @@ export function buildTitle(pieceType: string, topic: string): string {
     case 'pillar':
       // Evita "…para PyMEs para PyMEs" cuando el tema ya menciona el público.
       return /pyme/i.test(topic) ? `Guía PRO: ${topic}` : `Guía PRO: ${topic} para PyMEs`;
+    case 'case_study':
+      return `Caso real: ${topic}`;
+    case 'landing':
+      return `${topic}: qué es y cómo empezar`;
     default:
       return `Artículo: ${topic}`;
   }

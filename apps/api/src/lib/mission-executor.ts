@@ -246,10 +246,14 @@ export async function executeMission(missionId: string) {
 
     // --- Albañil SEO ---
     const seo = runSeoBuilder(plan, draftLinked, branding);
+    const finalHtml = seo.html || linkedHtml;
     const stepSeo = await createMissionStep({
       missionId,
       role: 'seo_builder',
-      message: 'Schema, OG y canonical aplicados',
+      message:
+        seo.faqCount > 0
+          ? `Schema Article + FAQPage (${seo.faqCount} Q&A), OG y canonical`
+          : 'Schema Article, OG y canonical aplicados',
       output: seo,
     });
     await logAgentActivity({
@@ -257,7 +261,10 @@ export async function executeMission(missionId: string) {
       agentId: mission.agentId,
       missionId,
       role: 'seo_builder',
-      message: `SEO aplicado a "${plan.title}"`,
+      message:
+        seo.faqCount > 0
+          ? `SEO + FAQPage (${seo.faqCount} preguntas) en "${plan.title}"`
+          : `SEO aplicado a "${plan.title}"`,
     });
     await completeMissionStep(stepSeo.id, seo);
 
@@ -274,7 +281,7 @@ export async function executeMission(missionId: string) {
         status: teoConfig.autoPublish ? 'approved' : 'pending_approval',
         content: {
           markdown: draft.bodyMarkdown,
-          html: linkedHtml,
+          html: finalHtml,
           excerpt: draft.excerpt,
           // Se persiste la estructura para poder re-renderizar sin perder
           // tablas, gráficos, ejemplos y referencias al editar la pieza.

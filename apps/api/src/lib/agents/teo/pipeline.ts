@@ -1,6 +1,7 @@
 import { runWriterRich } from './content-builder';
 import { buildTitle } from './strategist-metrics';
 import { runWebResearch } from './web-research';
+import { buildSeoSchemaGraph, collectArticleFaqs, injectJsonLd } from './aeo-checklist';
 import type { BrandKit } from '@agente/shared';
 import type { ResearchResult, StrategistPlan } from './types';
 
@@ -18,7 +19,7 @@ export function runStrategist(config: TeoConfig, missionIndex: number, overrides
     ? config.topics
     : ['visibilidad en IA', 'SEO', 'AEO'];
   const topic = overrides?.topic?.trim() || topics[missionIndex % topics.length];
-  const types = ['faq', 'comparison', 'checklist', 'how_to', 'pillar'] as const;
+  const types = ['faq', 'comparison', 'checklist', 'how_to', 'pillar', 'case_study', 'landing'] as const;
   const pieceType = (overrides?.pieceType as StrategistPlan['pieceType']) || types[missionIndex % types.length];
   const title = overrides?.title?.trim() || buildTitle(pieceType, topic);
 
@@ -108,22 +109,28 @@ export function runSeoBuilder(plan: StrategistPlan, draft: WriterDraft, branding
     .replace(/^-|-$/g, '');
 
   const brandName = branding?.brandName?.trim() || 'Cleexs';
+  const faqs = collectArticleFaqs(draft.articleData);
+  const schema = buildSeoSchemaGraph({
+    title: plan.title,
+    description: draft.excerpt,
+    pieceType: plan.pieceType,
+    faqs,
+    brandName,
+  });
+  const html = injectJsonLd(draft.html, schema);
 
   return {
     metaTitle: `${plan.title} | ${brandName}`,
     metaDescription: draft.excerpt,
     canonical: `https://cleexs.net/articulos/${slug}`,
-    schema: {
-      '@context': 'https://schema.org',
-      '@type': 'Article',
-      headline: plan.title,
-      description: draft.excerpt,
-    },
+    schema,
     openGraph: {
       title: plan.title,
       description: draft.excerpt,
       type: 'article',
     },
     slug,
+    html,
+    faqCount: faqs.length,
   };
 }

@@ -1,5 +1,10 @@
 import type { ContentPiece } from '@prisma/client';
 import { renderArticleHtml, type ArticleData } from './agents/teo/article-template';
+import {
+  buildSeoSchemaGraph,
+  collectArticleFaqs,
+  injectJsonLd,
+} from './agents/teo/aeo-checklist';
 import { resolveBrandKit } from './branding/brand-kit';
 import { prisma } from './prisma';
 
@@ -132,11 +137,27 @@ export async function rerenderPieceFromArticleData(
     lead: recoverLead(content.articleData.lead, content.markdown),
     publishedAt: content.articleData.publishedAt ?? piece.createdAt.toISOString(),
   };
-  const html = renderArticleHtml(articleData, branding);
+  let html = renderArticleHtml(articleData, branding);
+  const faqs = collectArticleFaqs(articleData);
+  const schema = buildSeoSchemaGraph({
+    title: piece.title,
+    description: content.excerpt || articleData.lead,
+    pieceType: piece.type,
+    faqs,
+    brandName: branding.brandName,
+  });
+  html = injectJsonLd(html, schema);
 
   const updated = await prisma.contentPiece.update({
     where: { id: pieceId },
-    data: { content: { ...content, articleData, html } },
+    data: {
+      content: { ...content, articleData, html },
+      seoMeta: {
+        ...(typeof piece.seoMeta === 'object' && piece.seoMeta ? piece.seoMeta : {}),
+        schema,
+        faqCount: faqs.length,
+      },
+    },
   });
 
   return updated;
