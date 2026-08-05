@@ -404,3 +404,45 @@ export async function findOrCreateCategory(
   });
   return created.id;
 }
+
+type WpPage = {
+  id: number;
+  link: string;
+  status: string;
+  slug: string;
+  title: { rendered: string };
+};
+
+/** Busca o crea/actualiza una página WP (p. ej. slug llms-txt). */
+export async function upsertWordPressPage(
+  config: WordPressConfig,
+  input: {
+    slug: string;
+    title: string;
+    content: string;
+    status?: 'draft' | 'publish' | 'private';
+  },
+): Promise<WpPage> {
+  const search = encodeURIComponent(input.slug);
+  const existing = await wpFetch<WpPage[]>(
+    config,
+    `/pages?slug=${search}&per_page=5&status=any&context=edit`,
+  );
+  const match = existing.find((p) => p.slug === input.slug);
+  const body = {
+    title: input.title,
+    content: input.content,
+    slug: input.slug,
+    status: input.status ?? 'publish',
+  };
+  if (match) {
+    return wpFetch<WpPage>(config, `/pages/${match.id}`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+  return wpFetch<WpPage>(config, '/pages', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}

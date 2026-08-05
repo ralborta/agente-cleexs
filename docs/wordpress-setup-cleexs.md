@@ -81,6 +81,15 @@ Redeploy del servicio **api** tras guardar.
 
 Si preferís Yoast: `WORDPRESS_SEO_PLUGIN=yoast` (Yoast registra meta REST en versiones recientes; probá sin mu-plugin).
 
+## 4b. llms.txt (AEO)
+
+1. Copiá `docs/wordpress/cleexs-teo-llms-txt.php` a `mu-plugins/cleexs-teo-llms-txt.php`
+2. En el backoffice → Integraciones → **Fundaciones SEO** → **Publicar llms.txt**
+3. WP Admin → Ajustes → Enlaces permanentes → Guardar (flush rewrite)
+4. Verificá `https://cleexs.net/llms.txt` (texto plano, no HTML)
+
+Teo **no** sobrescribe `robots.txt`. El sitemap lo sirve WordPress/Rank Math; la auditoría solo verifica.
+
 ## 5. Usuario Application Password
 
 - WP Admin → Usuarios → tu usuario → **Contraseñas de aplicación**

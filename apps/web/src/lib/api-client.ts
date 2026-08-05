@@ -463,6 +463,46 @@ export async function fetchWordPressSetup(workspace: string) {
   );
 }
 
+export type SeoFoundationsCheck = {
+  id: string;
+  label: string;
+  status: 'ok' | 'warning' | 'pending' | 'error';
+  detail: string;
+  url?: string;
+};
+
+export type SeoFoundationsReport = {
+  siteUrl: string | null;
+  checks: SeoFoundationsCheck[];
+  robots: {
+    found: boolean;
+    rawPreview: string | null;
+    sitemapLines: string[];
+    suggestions: Array<{ id: string; severity: 'info' | 'warning'; message: string }>;
+  };
+  llms: {
+    generated: string;
+    pageUrl: string | null;
+    rootUrl: string | null;
+    rootReachable: boolean;
+  };
+};
+
+export async function fetchSeoFoundations(workspace: string) {
+  return api<{ workspace: string; foundations: SeoFoundationsReport }>(
+    `/api/integrations/${workspace}/seo-foundations`,
+  );
+}
+
+export async function publishLlmsTxt(workspace: string) {
+  return api<{
+    workspace: string;
+    content: string;
+    page: { id: number; url: string; slug: string };
+    foundations: SeoFoundationsReport;
+  }>(`/api/integrations/${workspace}/seo-foundations/llms`, { method: 'POST' });
+}
+
 export type IndexingPage = {
   pieceId: string;
   title: string;

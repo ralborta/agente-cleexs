@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Plug, RefreshCw, TestTube2 } from 'lucide-react';
 import { AutomationPanel } from '@/components/config/automation-panel';
 import { RankMathSetupPanel } from '@/components/config/rank-math-setup-panel';
+import { SeoFoundationsPanel } from '@/components/config/seo-foundations-panel';
 import { StatusBadge } from '@/components/config/status-badge';
 import {
   SettingsSection,
@@ -133,6 +134,8 @@ export default function IntegracionesPage() {
       ) : (
         <div className="space-y-6">
           <AutomationPanel automation={data.automation} onTickComplete={load} />
+
+          <SeoFoundationsPanel />
 
           <RankMathSetupPanel />
 

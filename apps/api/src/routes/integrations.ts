@@ -3,6 +3,7 @@ import { getGoogleMetricsStatus } from '../lib/integrations/google-config';
 import { testGoogleMetrics, syncWorkspaceMetrics } from '../lib/metrics-sync';
 import { getWordPressStatus, testWorkspaceWordPress } from '../lib/integrations/wordpress-publish';
 import { auditWordPressSetup } from '../lib/integrations/wordpress-setup';
+import { auditSeoFoundations, publishLlmsTxt } from '../lib/integrations/seo-foundations';
 import { getAutomationStatus } from '../lib/automation-status';
 import { getWorkspaceIndexingStatus } from '../lib/indexing-status';
 import { runSchedulerTick } from '../lib/job-scheduler';
@@ -69,6 +70,29 @@ const integrationRoutes: FastifyPluginAsync = async (server) => {
     const { workspaceSlug } = request.params as { workspaceSlug: string };
     const report = await auditWordPressSetup(workspaceSlug);
     return { workspace: workspaceSlug, setup: report };
+  });
+
+  server.get('/:workspaceSlug/seo-foundations', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    try {
+      const report = await auditSeoFoundations(workspaceSlug);
+      return { workspace: workspaceSlug, foundations: report };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al auditar fundaciones SEO';
+      return reply.status(502).send({ error: message });
+    }
+  });
+
+  server.post('/:workspaceSlug/seo-foundations/llms', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    try {
+      const result = await publishLlmsTxt(workspaceSlug);
+      const foundations = await auditSeoFoundations(workspaceSlug);
+      return { workspace: workspaceSlug, ...result, foundations };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al publicar llms.txt';
+      return reply.status(502).send({ error: message });
+    }
   });
 
   server.get('/:workspaceSlug/google', async (request) => {
