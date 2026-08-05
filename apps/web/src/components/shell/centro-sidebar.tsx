@@ -16,6 +16,7 @@ import {
   Settings,
   Sparkles,
   Target,
+  Mic2,
 } from 'lucide-react';
 import { PLATFORM_NAME, PLATFORM_SHORT } from '@/lib/branding';
 import { clearAuthSession, getStoredUser } from '@/lib/auth-client';
@@ -38,6 +39,7 @@ const operationNav = [
 
 /** Configuración al final — se toca poco. */
 const configNav = [
+  { href: '/cleexs/voz', label: 'Voz del founder', icon: Mic2 },
   { href: '/cleexs/config/teo', label: 'Temas y reglas Teo', icon: Settings },
   { href: '/cleexs/integraciones', label: 'Integraciones', icon: Plug },
 ];

@@ -27,6 +27,10 @@ import {
   markQuestionCovered,
   releaseQuestion,
 } from './agents/teo/keyword-questions';
+import {
+  createFounderVoiceInvite,
+  markFounderQuotesUsed,
+} from './agents/teo/founder-voice';
 
 const runningMissions = new Set<string>();
 
@@ -209,19 +213,52 @@ export async function executeMission(missionId: string) {
     await completeMissionStep(stepResearch.id, research);
 
     // --- Escritor ---
-    const draft = await runWriter(plan, research, teoConfig.tone, branding);
+    // Link de voz (opcional): no espera. Si ya hay frases en el banco, se insertan ahora.
+    if (!refreshSource) {
+      try {
+        const invite = await createFounderVoiceInvite({
+          workspaceId: mission.workspaceId,
+          topic: plan.topic || plan.keyword,
+          missionId,
+        });
+        await logAgentActivity({
+          workspaceId: mission.workspaceId,
+          agentId: mission.agentId,
+          missionId,
+          role: 'strategist',
+          message: `Voz del founder opcional (no bloquea): ${invite.url}`,
+        });
+      } catch (err) {
+        console.warn(
+          '[founder-voice] no se pudo crear invite:',
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+
+    const draft = await runWriter(plan, research, teoConfig.tone, branding, {
+      workspaceId: mission.workspaceId,
+    });
     const stepWriter = await createMissionStep({
       missionId,
       role: 'writer',
-      message: `Borrador generado (${draft.writerMode ?? 'template'})`,
-      output: { excerpt: draft.excerpt, writerMode: draft.writerMode },
+      message: `Borrador generado (${draft.writerMode ?? 'template'})${
+        draft.founderInjected ? ` · voz founder ×${draft.founderInjected}` : ''
+      }`,
+      output: {
+        excerpt: draft.excerpt,
+        writerMode: draft.writerMode,
+        founderInjected: draft.founderInjected ?? 0,
+      },
     });
     await logAgentActivity({
       workspaceId: mission.workspaceId,
       agentId: mission.agentId,
       missionId,
       role: 'writer',
-      message: `Borrador "${plan.title}" listo para revisión`,
+      message: draft.founderInjected
+        ? `Borrador "${plan.title}" con ${draft.founderInjected} voz(es) del founder`
+        : `Borrador "${plan.title}" listo para revisión`,
     });
     await completeMissionStep(stepWriter.id, draft);
 
@@ -291,6 +328,10 @@ export async function executeMission(missionId: string) {
         seoMeta: seo,
       },
     });
+
+    if (draft.founderQuoteIds?.length) {
+      await markFounderQuotesUsed(draft.founderQuoteIds, piece.id).catch(() => undefined);
+    }
 
     if (!teoConfig.autoPublish) {
       await prisma.approval.create({

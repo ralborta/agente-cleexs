@@ -94,8 +94,9 @@ export async function runWriter(
   research: Awaited<ReturnType<typeof runResearcher>>,
   tone?: string | null,
   branding?: BrandKit,
+  opts?: { workspaceId?: string },
 ) {
-  return runWriterRich(plan, research, tone, branding);
+  return runWriterRich(plan, research, tone, branding, opts);
 }
 
 export type WriterDraft = Awaited<ReturnType<typeof runWriter>>;

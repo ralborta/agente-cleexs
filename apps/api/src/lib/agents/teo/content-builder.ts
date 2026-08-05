@@ -2,6 +2,7 @@ import { renderArticleHtml, type ArticleData } from './article-template';
 import { generateArticleWithLlm, isLlmWriterEnabled } from './llm-writer';
 import { buildProArticleData } from './pro-content-fallback';
 import { enforceAeoChecklist } from './aeo-checklist';
+import { applyFounderVoiceToArticle } from './founder-voice';
 import type { BrandKit } from '@agente/shared';
 import type { StrategistPlan } from './types';
 
@@ -254,6 +255,7 @@ export async function runWriterRich(
   research: Research,
   tone?: string | null,
   branding?: BrandKit,
+  opts?: { workspaceId?: string },
 ) {
   // Todas las piezas pasan por el LLM real, no solo las "pro"/pilar. El fallback
   // estático (buildProArticleData) es la red de seguridad si no hay API key o falla OpenAI,
@@ -280,6 +282,15 @@ export async function runWriterRich(
 
   articleData = enforceAeoChecklist(articleData, plan);
 
+  let founderQuoteIds: string[] = [];
+  let founderInjected = 0;
+  if (opts?.workspaceId) {
+    const voice = await applyFounderVoiceToArticle(opts.workspaceId, plan, articleData);
+    articleData = voice.article;
+    founderQuoteIds = voice.quoteIds;
+    founderInjected = voice.injected;
+  }
+
   const html = renderArticleHtml(articleData, branding);
   const excerpt = buildExcerpt(articleData.lead);
   const bodyMarkdown = articleToMarkdown(articleData);
@@ -290,5 +301,7 @@ export async function runWriterRich(
     excerpt,
     bodyMarkdown,
     writerMode,
+    founderQuoteIds,
+    founderInjected,
   };
 }

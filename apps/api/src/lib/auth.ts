@@ -78,5 +78,6 @@ export function isPublicApiPath(pathname: string): boolean {
   if (pathname.startsWith('/api/auth/login')) return true;
   if (pathname.startsWith('/api/webhooks/')) return true;
   if (pathname.startsWith('/api/cron/')) return true;
+  if (pathname.startsWith('/api/voice/public/')) return true;
   return false;
 }

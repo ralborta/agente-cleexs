@@ -32,6 +32,8 @@ model Workspace {
   metrics       MetricSnapshot[]
   opportunities KeywordOpportunity[]
   questions     KeywordQuestion[]
+  founderNotes  FounderVoiceNote[]
+  founderInvites FounderVoiceInvite[]
 
   @@map("workspaces")
 }
@@ -450,6 +452,50 @@ model KeywordQuestion {
   @@index([workspaceId, cluster])
   @@index([workspaceId, priority])
   @@map("keyword_questions")
+}
+
+enum FounderVoiceNoteStatus {
+  available
+  used
+  discarded
+}
+
+/// Frases del founder/CEO — Sprint 2.2 (no bloquean publicación)
+model FounderVoiceNote {
+  id            String                  @id @default(uuid())
+  workspaceId   String                  @map("workspace_id")
+  topic         String?
+  quote         String                  @db.Text
+  authorLabel   String                  @default("Founder") @map("author_label")
+  status        FounderVoiceNoteStatus  @default(available)
+  usedInPieceId String?                 @map("used_in_piece_id")
+  inviteId      String?                 @map("invite_id")
+  createdAt     DateTime                @default(now()) @map("created_at")
+  updatedAt     DateTime                @updatedAt @map("updated_at")
+
+  workspace Workspace          @relation(fields: [workspaceId], references: [id])
+  invite    FounderVoiceInvite? @relation(fields: [inviteId], references: [id])
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, topic])
+  @@map("founder_voice_notes")
+}
+
+model FounderVoiceInvite {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  token       String    @unique
+  topic       String?
+  missionId   String?   @map("mission_id")
+  expiresAt   DateTime  @map("expires_at")
+  consumedAt  DateTime? @map("consumed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  workspace Workspace         @relation(fields: [workspaceId], references: [id])
+  notes     FounderVoiceNote[]
+
+  @@index([workspaceId, expiresAt])
+  @@map("founder_voice_invites")
 }
 
 // ============================================

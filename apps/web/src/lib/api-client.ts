@@ -636,6 +636,48 @@ export async function deleteOpportunity(id: string) {
   return api<{ ok: boolean }>(`/api/opportunities/${id}`, { method: 'DELETE' });
 }
 
+export type FounderVoiceNote = {
+  id: string;
+  topic: string | null;
+  quote: string;
+  authorLabel: string;
+  status: 'available' | 'used' | 'discarded';
+  createdAt: string;
+};
+
+export type FounderVoiceResponse = {
+  workspace: string;
+  notes: FounderVoiceNote[];
+  openInvites: Array<{
+    id: string;
+    topic: string | null;
+    url: string;
+    expiresAt: string;
+  }>;
+  summary: { available: number; used: number };
+};
+
+export async function fetchFounderVoice(workspace: string) {
+  return api<FounderVoiceResponse>(`/api/voice?workspace=${encodeURIComponent(workspace)}`);
+}
+
+export async function addFounderVoiceQuotes(
+  workspace: string,
+  data: { topic?: string; quotes: string[]; authorLabel?: string },
+) {
+  return api<{ ok: boolean; created: number }>('/api/voice/quotes', {
+    method: 'POST',
+    body: JSON.stringify({ workspace, ...data }),
+  });
+}
+
+export async function createFounderVoiceInvite(workspace: string, topic?: string) {
+  return api<{ ok: boolean; url: string; token: string; expiresAt: string }>('/api/voice/invite', {
+    method: 'POST',
+    body: JSON.stringify({ workspace, topic }),
+  });
+}
+
 export function pieceAuthorName(
   piece: { mission?: { agent?: { name: string } | null } | null },
   fallback = 'Teo',

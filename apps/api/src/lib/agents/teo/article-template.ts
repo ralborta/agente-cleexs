@@ -92,6 +92,7 @@ export function buildArticleCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
 .cleexs-example{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px 20px;margin:20px 0}
 .cleexs-example strong{display:block;color:#92400e;margin-bottom:6px}
 .cleexs-callout{background:${t.primarySoft};border-left:4px solid ${t.primary};border-radius:0 12px 12px 0;padding:14px 18px;margin:20px 0;color:${t.secondary}}
+.cleexs-callout--founder{background:#fff7ed;border-left-color:#ea580c;font-style:italic}
 .cleexs-references{margin:28px 0 0;padding:20px 0 0;border-top:1px solid #e2e8f0}
 .cleexs-references h2{font-size:18px;margin:0 0 12px}
 .cleexs-references ol{margin:0;padding-left:20px;color:#475569}
@@ -134,7 +135,8 @@ function renderSection(section: ArticleSection, pieceType: string): string {
     html += `<p>${renderInlineLinks(section.body)}</p>`;
   }
   if (section.callout) {
-    html += `<div class="cleexs-callout">${renderInlineLinks(section.callout)}</div>`;
+    const isFounder = /voz del founder/i.test(section.callout);
+    html += `<div class="cleexs-callout${isFounder ? ' cleexs-callout--founder' : ''}">${renderInlineLinks(section.callout)}</div>`;
   }
   if (section.chart) {
     const chart = section.chart;
@@ -222,6 +224,7 @@ body.single-post .entry-header{display:none}
 .cleexs-editorial__check li{position:relative;padding-left:32px;margin:0 0 12px;color:#374151}
 .cleexs-editorial__check li:before{content:"✓";position:absolute;left:0;top:0;color:${t.primary};font-weight:800}
 .cleexs-editorial__quote{border-left:4px solid ${t.primary};background:#f5f8ff;border-radius:0 14px 14px 0;padding:18px 22px;margin:26px 0;color:#1e3a5f;font-style:italic}
+.cleexs-editorial__quote--founder{border-left-color:#ea580c;background:#fff7ed;color:#9a3412}
 .cleexs-editorial__note{display:flex;gap:14px;align-items:flex-start;background:#eaf0fe;border:1px solid #d5dffd;border-radius:14px;padding:18px 20px;margin:22px 0}
 .cleexs-editorial__note-icon{flex:0 0 26px;width:26px;height:26px;border-radius:50%;background:${t.primary};color:#fff;font-size:15px;font-weight:700;font-style:italic;line-height:26px;text-align:center}
 .cleexs-editorial__note strong{display:block;font-size:15px;color:#0b2545;margin:0 0 4px}
@@ -306,7 +309,10 @@ function renderEditorialSection(section: ArticleSection, index: number, pieceTyp
     parts.push(`<p>${renderInlineLinks(section.body)}</p>`);
   }
   if (section.callout) {
-    parts.push(`<div class="cleexs-editorial__quote">${renderInlineLinks(section.callout)}</div>`);
+    const isFounder = /voz del founder/i.test(section.callout);
+    parts.push(
+      `<div class="cleexs-editorial__quote${isFounder ? ' cleexs-editorial__quote--founder' : ''}">${renderInlineLinks(section.callout)}</div>`,
+    );
   }
   if (section.chart) {
     const chartUrl = buildQuickChartUrl(section.chart);
