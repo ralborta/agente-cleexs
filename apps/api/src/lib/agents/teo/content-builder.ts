@@ -1,4 +1,4 @@
-import { renderArticleHtml, type ArticleData } from './article-template';
+import { articleToMarkdown, renderArticleHtml, type ArticleData } from './article-template';
 import { generateArticleWithLlm, isLlmWriterEnabled } from './llm-writer';
 import { buildProArticleData } from './pro-content-fallback';
 import { enforceAeoChecklist } from './aeo-checklist';
@@ -219,36 +219,6 @@ function buildExcerpt(lead: string, max = 160): string {
   const lastSpace = cut.lastIndexOf(' ');
   const base = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
   return `${base.replace(/[\s,;:.–-]+$/, '')}…`;
-}
-
-function articleToMarkdown(data: ArticleData): string {
-  const lines = [`# ${data.title}`, '', data.lead, ''];
-  for (const section of data.sections) {
-    if (section.heading) lines.push(`## ${section.heading}`, '');
-    if (section.body) lines.push(section.body, '');
-    if (section.callout) lines.push(`> ${section.callout}`, '');
-    if (section.chart) lines.push(`*(Gráfico: ${section.chart.title || section.heading || 'ver versión publicada'})*`, '');
-    if (section.examples?.length) {
-      for (const ex of section.examples) {
-        lines.push(`### ${ex.title}`, '', ex.body, '');
-      }
-    }
-    if (section.items?.length) {
-      lines.push(...section.items.map((i) => `- ${i}`), '');
-    }
-    if (section.faqs?.length) {
-      for (const faq of section.faqs) {
-        lines.push(`**${faq.q}**`, '', faq.a, '');
-      }
-    }
-  }
-  if (data.references?.length) {
-    lines.push('## Referencias', '');
-    for (const ref of data.references) {
-      lines.push(`- [${ref.title}](${ref.url})${ref.note ? ` — ${ref.note}` : ''}`);
-    }
-  }
-  return lines.join('\n').trim();
 }
 
 export async function runWriterRich(

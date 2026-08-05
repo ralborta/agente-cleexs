@@ -15,6 +15,53 @@ const editPieceSchema = z.object({
   title: z.string().min(1).max(300).optional(),
   excerpt: z.string().max(500).optional(),
   markdown: z.string().max(100_000).optional(),
+  articleData: z
+    .object({
+      kicker: z.string().max(120).optional(),
+      title: z.string().max(300).optional(),
+      lead: z.string().max(5000).optional(),
+      pieceType: z.string().max(40).optional(),
+      sections: z
+        .array(
+          z
+            .object({
+              heading: z.string().max(300).optional(),
+              body: z.string().max(50_000).optional(),
+              items: z.array(z.string().max(2000)).max(40).optional(),
+              faqs: z
+                .array(z.object({ q: z.string().max(500), a: z.string().max(5000) }))
+                .max(30)
+                .optional(),
+              table: z
+                .object({
+                  headers: z.array(z.string().max(120)).max(12),
+                  rows: z.array(z.array(z.string().max(500)).max(12)).max(40),
+                })
+                .optional(),
+              examples: z
+                .array(z.object({ title: z.string().max(200), body: z.string().max(5000) }))
+                .max(20)
+                .optional(),
+              callout: z.string().max(5000).optional(),
+              chart: z.unknown().optional(),
+            })
+            .passthrough(),
+        )
+        .min(1)
+        .max(40),
+      references: z
+        .array(
+          z.object({
+            title: z.string().max(300),
+            url: z.string().max(2000),
+            note: z.string().max(500).optional(),
+          }),
+        )
+        .max(20)
+        .optional(),
+    })
+    .passthrough()
+    .optional(),
 });
 
 const approvalRoutes: FastifyPluginAsync = async (server) => {
@@ -70,7 +117,9 @@ const approvalRoutes: FastifyPluginAsync = async (server) => {
     }
 
     try {
-      const { piece } = await updateApprovalPieceContent(id, parsed.data);
+      const { piece } = await updateApprovalPieceContent(id, parsed.data as Parameters<
+        typeof updateApprovalPieceContent
+      >[1]);
       return { ok: true, piece };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al guardar';

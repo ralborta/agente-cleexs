@@ -1,10 +1,11 @@
 import type { ContentPiece } from '@prisma/client';
-import { renderArticleHtml, type ArticleData } from './agents/teo/article-template';
+import { renderArticleHtml, type ArticleData, type ArticleSection, articleToMarkdown } from './agents/teo/article-template';
 import {
   buildSeoSchemaGraph,
   collectArticleFaqs,
   injectJsonLd,
 } from './agents/teo/aeo-checklist';
+import { sanitizeChartSpec } from './agents/teo/charts';
 import { resolveBrandKit } from './branding/brand-kit';
 import { prisma } from './prisma';
 
@@ -98,6 +99,43 @@ function recoverLead(lead: string, markdown?: string): string {
   return original.startsWith(stored) && original.length > stored.length ? original : lead;
 }
 
+function sanitizeIncomingArticleData(
+  raw: ArticleData,
+  fallback: ArticleData,
+  title: string,
+  pieceType: string,
+): ArticleData {
+  const sections: ArticleSection[] = (raw.sections ?? []).map((section) => ({
+    ...section,
+    heading: section.heading?.slice(0, 300),
+    body: section.body,
+    items: section.items?.slice(0, 40),
+    faqs: section.faqs?.slice(0, 30),
+    examples: section.examples?.slice(0, 20),
+    callout: section.callout?.slice(0, 5000),
+    table: section.table
+      ? {
+          headers: (section.table.headers ?? []).slice(0, 12).map((h) => String(h).slice(0, 120)),
+          rows: (section.table.rows ?? [])
+            .slice(0, 40)
+            .map((row) => (row ?? []).slice(0, 12).map((c) => String(c).slice(0, 500))),
+        }
+      : undefined,
+    chart: section.chart ? sanitizeChartSpec(section.chart) ?? undefined : undefined,
+  }));
+
+  return {
+    ...fallback,
+    ...raw,
+    title,
+    lead: (raw.lead ?? fallback.lead).slice(0, 5000),
+    kicker: (raw.kicker ?? fallback.kicker).slice(0, 120),
+    pieceType: raw.pieceType || pieceType,
+    sections: sections.length ? sections : fallback.sections,
+    references: (raw.references ?? fallback.references)?.slice(0, 20),
+  };
+}
+
 /**
  * Vuelve a generar el HTML de una pieza desde su estructura guardada, aplicando
  * el diseño/branding actual. Sirve para aplicar un template nuevo a piezas ya
@@ -167,7 +205,18 @@ export type UpdateApprovalPieceInput = {
   title?: string;
   excerpt?: string;
   markdown?: string;
+  /** Edición estructurada: preserva tablas, gráficos, FAQs, etc. */
+  articleData?: ArticleData;
 };
+
+function buildExcerptFromLead(lead: string, max = 220): string {
+  const clean = lead.replace(/^Respuesta directa:\s*/i, '').trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  const base = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
+  return `${base.replace(/[\s,;:.–-]+$/, '')}…`;
+}
 
 export async function updateApprovalPieceContent(
   approvalId: string,
@@ -209,18 +258,78 @@ export async function updateApprovalPieceContent(
     markdown,
   };
 
-  // Si el cuerpo no se editó y tenemos la estructura original, re-renderizamos
-  // desde ahí: rebuildPieceHtml solo entiende heading + body, así que usarlo
-  // para un simple cambio de título borraría tablas, gráficos y referencias.
-  const markdownEdited = input.markdown !== undefined && input.markdown !== currentContent.markdown;
+  const structuredIncoming = input.articleData;
+  const markdownEdited =
+    input.markdown !== undefined && input.markdown !== currentContent.markdown;
   const structured = currentContent.articleData;
 
-  // El excerpt es la meta description (recortada): solo puede reemplazar la
-  // entradilla si el usuario la editó a propósito. Si no, cambiar el título
-  // dejaría el artículo con un lead cortado a la mitad.
   const excerptEdited =
     input.excerpt !== undefined && input.excerpt.trim() !== (currentContent.excerpt ?? '').trim();
 
+  if (structuredIncoming?.sections?.length) {
+    const base: ArticleData = structured ?? {
+      kicker: approval.piece.keyword?.trim() || title.split(' ').slice(0, 3).join(' '),
+      title,
+      lead: excerpt || '',
+      sections: structuredIncoming.sections,
+      pieceType: approval.piece.type,
+    };
+    const articleData = sanitizeIncomingArticleData(
+      {
+        ...structuredIncoming,
+        title,
+        lead: structuredIncoming.lead || excerpt || base.lead,
+      },
+      base,
+      title,
+      approval.piece.type,
+    );
+    if (excerptEdited && input.excerpt) {
+      nextContent.excerpt = input.excerpt.trim();
+    } else {
+      nextContent.excerpt = buildExcerptFromLead(articleData.lead) || nextContent.excerpt;
+    }
+    nextContent.articleData = articleData;
+    nextContent.markdown = articleToMarkdown(articleData);
+    let html = renderArticleHtml(articleData, branding);
+    const faqs = collectArticleFaqs(articleData);
+    const schema = buildSeoSchemaGraph({
+      title,
+      description: nextContent.excerpt || articleData.lead,
+      pieceType: approval.piece.type,
+      faqs,
+      brandName: branding.brandName,
+    });
+    html = injectJsonLd(html, schema);
+    nextContent.html = html;
+
+    const slug = input.title ? slugifyTitle(title) : approval.piece.slug ?? currentSeo.slug;
+    const nextSeo = {
+      ...currentSeo,
+      slug,
+      metaTitle: `${title} | ${branding.brandName ?? 'Cleexs'}`,
+      metaDescription: nextContent.excerpt ?? currentSeo.metaDescription,
+      canonical: slug ? `https://cleexs.net/articulos/${slug}` : currentSeo.canonical,
+      schema,
+      faqCount: faqs.length,
+    };
+
+    const piece = await prisma.contentPiece.update({
+      where: { id: approval.pieceId },
+      data: {
+        title,
+        slug,
+        content: nextContent,
+        seoMeta: nextSeo as object,
+      },
+    });
+
+    return { piece, approval };
+  }
+
+  // Si el cuerpo no se editó y tenemos la estructura original, re-renderizamos
+  // desde ahí: rebuildPieceHtml solo entiende heading + body, así que usarlo
+  // para un simple cambio de título borraría tablas, gráficos y referencias.
   if (!markdownEdited && structured?.sections?.length) {
     const articleData: ArticleData = {
       ...structured,
@@ -229,8 +338,12 @@ export async function updateApprovalPieceContent(
     };
     nextContent.articleData = articleData;
     nextContent.html = renderArticleHtml(articleData, branding);
+    nextContent.markdown = articleToMarkdown(articleData);
   } else {
     nextContent.html = rebuildPieceHtml({ ...approval.piece, title }, nextContent, branding);
+    if (markdownEdited) {
+      delete nextContent.articleData;
+    }
   }
 
   const slug = input.title ? slugifyTitle(title) : approval.piece.slug ?? currentSeo.slug;

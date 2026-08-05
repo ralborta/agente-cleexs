@@ -90,6 +90,32 @@ export async function fetchCentroDashboard(workspaceSlug: string) {
   }>(`/api/centro/${workspaceSlug}`);
 }
 
+export type ArticleSectionClient = {
+  heading?: string;
+  body?: string;
+  items?: string[];
+  faqs?: Array<{ q: string; a: string }>;
+  table?: { headers: string[]; rows: string[][] };
+  examples?: Array<{ title: string; body: string }>;
+  callout?: string;
+  chart?: {
+    type: string;
+    title?: string;
+    labels: string[];
+    datasets: Array<{ label: string; data: number[] }>;
+    sourceNote?: string;
+  };
+};
+
+export type ArticleDataClient = {
+  kicker: string;
+  title: string;
+  lead: string;
+  sections: ArticleSectionClient[];
+  pieceType: string;
+  references?: Array<{ title: string; url: string; note?: string }>;
+};
+
 export type Approval = {
   id: string;
   status: string;
@@ -99,7 +125,12 @@ export type Approval = {
     title: string;
     type: string;
     slug: string | null;
-    content: { excerpt?: string; html?: string; markdown?: string } | null;
+    content: {
+      excerpt?: string;
+      html?: string;
+      markdown?: string;
+      articleData?: ArticleDataClient;
+    } | null;
     mission?: { agent?: { name: string; slug: string } | null } | null;
   };
 };
@@ -112,7 +143,12 @@ export async function fetchApprovals(workspace: string) {
 
 export async function updateApprovalPiece(
   approvalId: string,
-  data: { title?: string; excerpt?: string; markdown?: string },
+  data: {
+    title?: string;
+    excerpt?: string;
+    markdown?: string;
+    articleData?: ArticleDataClient;
+  },
 ) {
   return api<{ ok: boolean; piece: Approval['piece'] & { content: Approval['piece']['content'] } }>(
     `/api/approvals/${approvalId}/piece`,

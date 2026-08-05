@@ -35,7 +35,7 @@ const resultsNav = [
 
 /** Operación — aprobaciones, monitor y refrescador. */
 const operationNav = [
-  { href: '/cleexs/aprobaciones', label: 'Aprobaciones', icon: CheckCircle2 },
+  { href: '/cleexs/aprobaciones', label: 'Entregables', icon: CheckCircle2 },
   { href: '/cleexs/monitor', label: 'Monitor', icon: Radio },
 ];
 

@@ -7,12 +7,14 @@ import {
   buttonSecondaryClassName,
   inputClassName,
 } from '@/components/config/settings-section';
+import { StructuredArticleEditor } from '@/components/approvals/structured-article-editor';
 import {
   approvePiece,
   rejectPiece,
   updateApprovalPiece,
   pieceAuthorName,
   type Approval,
+  type ArticleDataClient,
 } from '@/lib/api-client';
 import { TEO_AUTHOR_NAME } from '@/lib/branding';
 
@@ -35,11 +37,17 @@ export function ApprovalReviewCard({
   onError,
   onSuccess,
 }: Props) {
+  const initialStructured = item.piece.content?.articleData?.sections?.length
+    ? item.piece.content.articleData
+    : null;
+
   const [expanded, setExpanded] = useState(false);
   const [tab, setTab] = useState<'preview' | 'edit'>('preview');
   const [title, setTitle] = useState(item.piece.title);
   const [excerpt, setExcerpt] = useState(item.piece.content?.excerpt ?? '');
   const [markdown, setMarkdown] = useState(item.piece.content?.markdown ?? '');
+  const [articleData, setArticleData] = useState<ArticleDataClient | null>(initialStructured);
+  const [useMarkdown, setUseMarkdown] = useState(!initialStructured);
   const [previewHtml, setPreviewHtml] = useState(item.piece.content?.html ?? '');
   const [publishLive, setPublishLive] = useState(true);
   const [reviewNotes, setReviewNotes] = useState('');
@@ -47,11 +55,16 @@ export function ApprovalReviewCard({
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
+    const structured = item.piece.content?.articleData?.sections?.length
+      ? item.piece.content.articleData
+      : null;
     setExpanded(false);
     setTab('preview');
     setTitle(item.piece.title);
     setExcerpt(item.piece.content?.excerpt ?? '');
     setMarkdown(item.piece.content?.markdown ?? '');
+    setArticleData(structured);
+    setUseMarkdown(!structured);
     setPreviewHtml(item.piece.content?.html ?? '');
     setDirty(false);
     setReviewNotes('');
@@ -66,9 +79,23 @@ export function ApprovalReviewCard({
     setSaving(true);
     onError('');
     try {
-      const res = await updateApprovalPiece(item.id, { title, excerpt, markdown });
+      const payload =
+        !useMarkdown && articleData
+          ? {
+              title,
+              excerpt,
+              articleData: { ...articleData, title, lead: articleData.lead },
+            }
+          : { title, excerpt, markdown };
+
+      const res = await updateApprovalPiece(item.id, payload);
       const content = res.piece.content as Approval['piece']['content'];
       setPreviewHtml(content?.html ?? '');
+      if (content?.articleData?.sections?.length) {
+        setArticleData(content.articleData);
+        setUseMarkdown(false);
+      }
+      if (content?.markdown) setMarkdown(content.markdown);
       onUpdated({ ...item.piece, title: res.piece.title, content });
       setDirty(false);
       onSuccess('Borrador actualizado. Revisá el preview antes de publicar.');
@@ -118,6 +145,7 @@ export function ApprovalReviewCard({
 
   const busy = acting || saving;
   const pieceExcerpt = item.piece.content?.excerpt ?? 'Sin extracto';
+  const hasStructure = Boolean(articleData?.sections?.length);
 
   return (
     <article className="rounded-2xl border border-hub-border bg-hub-card p-6 shadow-hub">
@@ -125,6 +153,7 @@ export function ApprovalReviewCard({
         <div className="min-w-0 flex-1">
           <span className="text-xs font-medium uppercase tracking-wide text-cleexs-blue">
             {item.piece.type}
+            {hasStructure ? ' · editable' : ''}
           </span>
           <h3 className="mt-1 text-lg font-semibold text-white">{item.piece.title}</h3>
           <p className="mt-1 text-xs text-hub-muted">
@@ -231,29 +260,80 @@ export function ApprovalReviewCard({
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-200">Extracto / lead</label>
+                  <label className="text-sm font-medium text-slate-200">
+                    Extracto SEO (meta description)
+                  </label>
                   <textarea
                     value={excerpt}
                     onChange={(e) => {
                       setExcerpt(e.target.value);
                       setDirty(true);
                     }}
-                    rows={3}
+                    rows={2}
                     className={`${inputClassName} mt-2 resize-y`}
                   />
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-200">Contenido (Markdown)</label>
-                  <textarea
-                    value={markdown}
-                    onChange={(e) => {
-                      setMarkdown(e.target.value);
-                      setDirty(true);
-                    }}
-                    rows={14}
-                    className={`${inputClassName} mt-2 resize-y font-mono text-xs`}
-                  />
-                </div>
+
+                {hasStructure && !useMarkdown && articleData ? (
+                  <>
+                    <p className="text-xs text-hub-muted">
+                      Editor estructurado: tablas, gráficos y FAQs se conservan al guardar.
+                    </p>
+                    <StructuredArticleEditor
+                      value={articleData}
+                      onChange={(next) => {
+                        setArticleData(next);
+                        setDirty(true);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="text-xs text-hub-muted underline hover:text-slate-300"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            'El Markdown aplana tablas y gráficos. ¿Continuar solo para ajustes avanzados?',
+                          )
+                        ) {
+                          setUseMarkdown(true);
+                        }
+                      }}
+                    >
+                      Cambiar a Markdown (aplana estructura)
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {hasStructure ? (
+                      <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                        Editar en Markdown puede perder tablas y gráficos. Preferí el editor
+                        estructurado.
+                        <button
+                          type="button"
+                          className="ml-2 underline"
+                          onClick={() => setUseMarkdown(false)}
+                        >
+                          Volver al estructurado
+                        </button>
+                      </p>
+                    ) : null}
+                    <div>
+                      <label className="text-sm font-medium text-slate-200">
+                        Contenido (Markdown)
+                      </label>
+                      <textarea
+                        value={markdown}
+                        onChange={(e) => {
+                          setMarkdown(e.target.value);
+                          setDirty(true);
+                        }}
+                        rows={14}
+                        className={`${inputClassName} mt-2 resize-y font-mono text-xs`}
+                      />
+                    </div>
+                  </>
+                )}
+
                 <button
                   type="button"
                   disabled={busy || !dirty}
@@ -298,7 +378,11 @@ export function ApprovalReviewCard({
                     onClick={handleApprove}
                     className={buttonPrimaryClassName}
                   >
-                    {acting ? 'Publicando…' : publishLive ? 'Aprobar y publicar' : 'Aprobar como borrador WP'}
+                    {acting
+                      ? 'Publicando…'
+                      : publishLive
+                        ? 'Aprobar y publicar'
+                        : 'Aprobar como borrador WP'}
                   </button>
                   <button
                     type="button"

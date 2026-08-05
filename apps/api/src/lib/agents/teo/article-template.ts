@@ -489,3 +489,48 @@ export function renderBrandPreviewHtml(kit: BrandKit): string {
 
 /** CSS legacy (Cleexs default) — usado en tests. */
 export const ARTICLE_CSS = buildArticleCss(DEFAULT_BRAND_KIT);
+
+/** Markdown derivado (incluye tablas) para edición/resync sin perder estructura en articleData. */
+export function articleToMarkdown(data: ArticleData): string {
+  const lines = [`# ${data.title}`, '', data.lead, ''];
+  for (const section of data.sections) {
+    if (section.heading) lines.push(`## ${section.heading}`, '');
+    if (section.body) lines.push(section.body, '');
+    if (section.callout) lines.push(`> ${section.callout}`, '');
+    if (section.chart) {
+      lines.push(
+        `*(Gráfico: ${section.chart.title || section.heading || 'ver versión publicada'})*`,
+        '',
+      );
+    }
+    if (section.table?.headers?.length) {
+      const headers = section.table.headers;
+      lines.push(`| ${headers.join(' | ')} |`);
+      lines.push(`| ${headers.map(() => '---').join(' | ')} |`);
+      for (const row of section.table.rows ?? []) {
+        lines.push(`| ${headers.map((_, i) => row[i] ?? '').join(' | ')} |`);
+      }
+      lines.push('');
+    }
+    if (section.examples?.length) {
+      for (const ex of section.examples) {
+        lines.push(`### ${ex.title}`, '', ex.body, '');
+      }
+    }
+    if (section.items?.length) {
+      lines.push(...section.items.map((i) => `- ${i}`), '');
+    }
+    if (section.faqs?.length) {
+      for (const faq of section.faqs) {
+        lines.push(`**${faq.q}**`, '', faq.a, '');
+      }
+    }
+  }
+  if (data.references?.length) {
+    lines.push('## Referencias', '');
+    for (const ref of data.references) {
+      lines.push(`- [${ref.title}](${ref.url})${ref.note ? ` — ${ref.note}` : ''}`);
+    }
+  }
+  return lines.join('\n').trim();
+}
