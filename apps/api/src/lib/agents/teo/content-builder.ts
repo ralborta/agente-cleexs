@@ -3,6 +3,7 @@ import { generateArticleWithLlm, isLlmWriterEnabled } from './llm-writer';
 import { buildProArticleData } from './pro-content-fallback';
 import { enforceAeoChecklist } from './aeo-checklist';
 import { applyFounderVoiceToArticle } from './founder-voice';
+import { buildSvgCover, generateFeaturedCover } from './media-cover';
 import type { BrandKit } from '@agente/shared';
 import type { StrategistPlan } from './types';
 
@@ -291,6 +292,54 @@ export async function runWriterRich(
     founderInjected = voice.injected;
   }
 
+  // Portada: SVG siempre en HTML; DALL·E opcional para featured_media WP.
+  try {
+    const cover = await generateFeaturedCover({
+      title: plan.title,
+      topic: plan.topic,
+      pieceType: plan.pieceType,
+      kicker: articleData.kicker,
+      branding,
+    });
+    const svgForHtml =
+      cover.source === 'dalle'
+        ? buildSvgCover({
+            title: plan.title,
+            kicker: articleData.kicker,
+            pieceType: plan.pieceType,
+            branding,
+            template: cover.template,
+          })
+        : cover;
+    articleData = {
+      ...articleData,
+      featuredImage: {
+        url: svgForHtml.url,
+        alt: cover.alt,
+        template: cover.template,
+        source: cover.source,
+        remoteUrl: cover.source === 'dalle' ? cover.url : undefined,
+      },
+    };
+  } catch (err) {
+    console.warn('[teo-writer] cover falló:', err instanceof Error ? err.message : err);
+    const fallback = buildSvgCover({
+      title: plan.title,
+      kicker: articleData.kicker,
+      pieceType: plan.pieceType,
+      branding,
+    });
+    articleData = {
+      ...articleData,
+      featuredImage: {
+        url: fallback.url,
+        alt: fallback.alt,
+        template: fallback.template,
+        source: fallback.source,
+      },
+    };
+  }
+
   const html = renderArticleHtml(articleData, branding);
   const excerpt = buildExcerpt(articleData.lead);
   const bodyMarkdown = articleToMarkdown(articleData);
@@ -303,5 +352,7 @@ export async function runWriterRich(
     writerMode,
     founderQuoteIds,
     founderInjected,
+    coverTemplate: articleData.featuredImage?.template ?? null,
+    coverSource: articleData.featuredImage?.source ?? null,
   };
 }

@@ -35,6 +35,15 @@ export type ArticleData = {
   ctaLabel?: string;
   /** ISO. Fija la fecha del hero para que un re-render no la mueva. */
   publishedAt?: string;
+  /** Portada generada (SVG data-URI o URL https). */
+  featuredImage?: {
+    url: string;
+    alt: string;
+    template?: string;
+    source?: string;
+    /** URL remota (DALL·E) para subir a WP como featured_media. */
+    remoteUrl?: string;
+  };
 };
 
 function escapeHtml(s: string): string {
@@ -68,6 +77,7 @@ export function buildArticleCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
 .cleexs-article__brand{margin-bottom:20px}
 .cleexs-article__brand img{max-height:48px;width:auto;display:block}
 .cleexs-article__kicker{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:${t.primary};background:${t.primarySoft};padding:4px 10px;border-radius:999px;margin-bottom:12px}
+.cleexs-article__cover{display:block;width:100%;height:auto;border-radius:16px;margin:0 0 20px;object-fit:cover;max-height:340px;border:1px solid #e2e8f0}
 .cleexs-article__lead{font-size:18px;color:#475569;margin:0 0 28px;line-height:1.6}
 .cleexs-article h2{font-size:22px;color:#1e293b;margin:32px 0 12px;padding-bottom:8px;border-bottom:2px solid #e2e8f0}
 .cleexs-article h3{font-size:17px;color:#334155;margin:24px 0 8px}
@@ -199,6 +209,7 @@ body.single-post .entry-header{display:none}
 .cleexs-editorial{font-family:${t.fontFamily};color:#1f2937;line-height:1.75;font-size:17px;max-width:780px;margin:0 auto}
 .cleexs-editorial *{box-sizing:border-box}
 .cleexs-editorial__hero{position:relative;overflow:hidden;background:linear-gradient(135deg,${EDITORIAL_INK} 0%,#061527 55%,#0a2340 100%);border-radius:20px;padding:44px 44px 40px;margin:0 0 44px}
+.cleexs-editorial__cover{display:block;width:100%;height:auto;border-radius:16px;margin:0 0 28px;object-fit:cover;max-height:320px}
 .cleexs-editorial__hero:after{content:"";position:absolute;right:-70px;top:-70px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,${t.primary}59,transparent 70%);pointer-events:none}
 .cleexs-editorial__kicker{position:relative;z-index:1;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#7aa5f5;margin:0 0 18px}
 .cleexs-editorial__title{position:relative;z-index:1;font-size:38px;line-height:1.18;font-weight:800;letter-spacing:-.02em;color:#fff;margin:0 0 24px}
@@ -402,6 +413,11 @@ function renderEditorialArticle(data: ArticleData, kit: BrandKit): string {
   return `<style>${buildEditorialCss(kit)}</style>
 <article class="cleexs-editorial">
   <header class="cleexs-editorial__hero">
+    ${
+      data.featuredImage?.url
+        ? `<img class="cleexs-editorial__cover" src="${escapeHtml(data.featuredImage.url)}" alt="${escapeHtml(data.featuredImage.alt || data.title)}" loading="eager" />`
+        : ''
+    }
     <p class="cleexs-editorial__kicker">${escapeHtml(kicker)}</p>
     <h1 class="cleexs-editorial__title">${escapeHtml(data.title)}</h1>
     <div class="cleexs-editorial__author">
@@ -435,6 +451,11 @@ export function renderArticleHtml(data: ArticleData, kit: BrandKit = DEFAULT_BRA
   return `<style>${css}</style>
 <article class="cleexs-article">
   ${brandHeader(kit)}
+  ${
+    data.featuredImage?.url
+      ? `<img class="cleexs-article__cover" src="${escapeHtml(data.featuredImage.url)}" alt="${escapeHtml(data.featuredImage.alt || data.title)}" loading="eager" />`
+      : ''
+  }
   <span class="cleexs-article__kicker">${escapeHtml(data.kicker)}</span>
   <p class="cleexs-article__lead">${renderInlineLinks(data.lead)}</p>
   ${sectionsHtml}

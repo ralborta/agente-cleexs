@@ -20,6 +20,7 @@ export type WordPressPostPayload = {
   status?: 'draft' | 'publish' | 'pending' | 'private';
   slug?: string;
   categories?: number[];
+  featuredMediaId?: number;
   seoMeta?: {
     metaTitle?: string | null;
     metaDescription?: string | null;
@@ -178,6 +179,7 @@ export async function createWordPressPost(
 
   if (payload.excerpt) body.excerpt = payload.excerpt;
   if (payload.slug) body.slug = payload.slug;
+  if (payload.featuredMediaId) body.featured_media = payload.featuredMediaId;
   if (payload.categories?.length) {
     body.categories = payload.categories;
   } else if (config.defaultCategoryId) {
@@ -255,6 +257,10 @@ export async function updateWordPressPost(
   payload: Partial<WordPressPostPayload>,
 ): Promise<WordPressPostResponse> {
   const body: Record<string, unknown> = { ...payload };
+  if (payload.featuredMediaId) {
+    body.featured_media = payload.featuredMediaId;
+    delete body.featuredMediaId;
+  }
   if (payload.seoMeta) {
     Object.assign(
       body,
@@ -276,6 +282,79 @@ export async function updateWordPressPost(
     }
     return post;
   });
+}
+
+/** Sube un archivo a la biblioteca de medios de WP. */
+export async function uploadWordPressMedia(
+  config: WordPressConfig,
+  input: {
+    buffer: Buffer;
+    filename: string;
+    contentType: string;
+    alt?: string;
+    title?: string;
+  },
+): Promise<{ id: number; sourceUrl: string }> {
+  const url = `${config.baseUrl}/wp-json/wp/v2/media`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: basicAuthHeader(config.username, config.appPassword),
+      'Content-Disposition': `attachment; filename="${input.filename.replace(/"/g, '')}"`,
+      'Content-Type': input.contentType,
+      Accept: 'application/json',
+    },
+    body: input.buffer,
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`WordPress media ${res.status}: ${body.slice(0, 300)}`);
+  }
+
+  const data = (await res.json()) as { id: number; source_url?: string };
+  if (input.alt || input.title) {
+    try {
+      await wpFetch(config, `/media/${data.id}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          alt_text: input.alt ?? '',
+          title: input.title ?? input.filename,
+        }),
+      });
+    } catch {
+      // no crítico
+    }
+  }
+
+  return { id: data.id, sourceUrl: data.source_url ?? '' };
+}
+
+/**
+ * Resuelve bytes de una portada (SVG data-URI o URL remota DALL·E).
+ */
+export async function resolveCoverUploadBuffer(coverUrl: string): Promise<{
+  buffer: Buffer;
+  contentType: string;
+  ext: string;
+} | null> {
+  if (coverUrl.startsWith('data:image/svg+xml;base64,')) {
+    const b64 = coverUrl.slice('data:image/svg+xml;base64,'.length);
+    return {
+      buffer: Buffer.from(b64, 'base64'),
+      contentType: 'image/svg+xml',
+      ext: 'svg',
+    };
+  }
+  if (coverUrl.startsWith('https://')) {
+    const res = await fetch(coverUrl, { signal: AbortSignal.timeout(60_000) });
+    if (!res.ok) return null;
+    const buffer = Buffer.from(await res.arrayBuffer());
+    const contentType = res.headers.get('content-type')?.split(';')[0] || 'image/png';
+    const ext = contentType.includes('jpeg') ? 'jpg' : contentType.includes('webp') ? 'webp' : 'png';
+    return { buffer, contentType, ext };
+  }
+  return null;
 }
 
 export type PieceContent = {

@@ -256,9 +256,14 @@ export async function executeMission(missionId: string) {
       agentId: mission.agentId,
       missionId,
       role: 'writer',
-      message: draft.founderInjected
-        ? `Borrador "${plan.title}" con ${draft.founderInjected} voz(es) del founder`
-        : `Borrador "${plan.title}" listo para revisión`,
+      message: [
+        draft.founderInjected
+          ? `Borrador "${plan.title}" con ${draft.founderInjected} voz(es) del founder`
+          : `Borrador "${plan.title}" listo para revisión`,
+        draft.coverTemplate ? `· portada ${draft.coverTemplate}` : null,
+      ]
+        .filter(Boolean)
+        .join(' '),
     });
     await completeMissionStep(stepWriter.id, draft);
 

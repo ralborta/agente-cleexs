@@ -9,10 +9,12 @@ import {
   findOrCreateCategory,
   isWordPressConfigured,
   pieceContentToHtml,
+  resolveCoverUploadBuffer,
   resolveWordPressConfig,
   resolveWordPressPublicUrl,
   testWordPressConnection,
   updateWordPressPost,
+  uploadWordPressMedia,
 } from './wordpress';
 
 const DEFAULT_CATEGORY = 'Artículos';
@@ -36,6 +38,37 @@ function seoFromPiece(
     metaDescription: seoMeta?.metaDescription ?? excerpt,
     focusKeyword: piece.keyword ?? undefined,
   };
+}
+
+async function uploadFeaturedCoverForPiece(
+  config: NonNullable<ReturnType<typeof resolveWordPressConfig>>,
+  piece: Pick<ContentPiece, 'id' | 'title' | 'content'>,
+): Promise<number | null> {
+  const content = piece.content as {
+    articleData?: {
+      featuredImage?: { url?: string; remoteUrl?: string; alt?: string; source?: string };
+    };
+  } | null;
+  const cover = content?.articleData?.featuredImage;
+  if (!cover) return null;
+
+  // Preferir PNG/JPG de DALL·E; si no, intentar SVG (algunos hosts lo rechazan).
+  const preferredUrl = cover.remoteUrl || cover.url;
+  if (!preferredUrl) return null;
+
+  const resolved = await resolveCoverUploadBuffer(preferredUrl);
+  if (!resolved) return null;
+
+  // Si es SVG y el host suele bloquearlo, igual intentamos; fallará soft.
+  const filename = `teo-cover-${piece.id.slice(0, 8)}.${resolved.ext}`;
+  const media = await uploadWordPressMedia(config, {
+    buffer: resolved.buffer,
+    filename,
+    contentType: resolved.contentType,
+    alt: cover.alt || piece.title,
+    title: `Portada — ${piece.title}`.slice(0, 120),
+  });
+  return media.id;
 }
 
 /** Publica en WP y persiste Publication / refresco — usado por aprobaciones y autopublicación. */
@@ -164,6 +197,16 @@ export async function publishPieceToWordPress(
     }
   }
 
+  let featuredMediaId: number | undefined;
+  try {
+    featuredMediaId = await uploadFeaturedCoverForPiece(config, piece) ?? undefined;
+  } catch (err) {
+    console.warn(
+      '[wordpress] featured cover omitida:',
+      err instanceof Error ? err.message : err,
+    );
+  }
+
   const wpPost = await createWordPressPost(config, {
     title: piece.title,
     content: pieceContentToHtml(content),
@@ -171,6 +214,7 @@ export async function publishPieceToWordPress(
     slug,
     status: wpStatus,
     categories: categoryId ? [categoryId] : undefined,
+    featuredMediaId,
     seoMeta: seoFromPiece(piece, content?.excerpt ?? seoMeta?.metaDescription),
   });
 
