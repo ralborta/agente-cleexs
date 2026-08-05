@@ -52,7 +52,17 @@ export type BrandCta = {
   headline?: string;
   body?: string;
   label?: string;
+  /** Base del diagnóstico, ej. https://app.cleexs.net/diagnostico/crear?url= */
   url?: string;
+  /** Color del botón (hex). Si falta, usa blanco / primary según template. */
+  buttonColor?: string;
+  /**
+   * Si true (default para URLs de diagnóstico), muestra input de sitio
+   * y abre el destino con ?url= prefilled.
+   */
+  urlInput?: boolean;
+  /** Placeholder del input, ej. https://tu-empresa.com */
+  placeholder?: string;
 };
 
 /** Kit de marca por workspace — parametriza plantillas de artículo en WordPress. */
@@ -76,8 +86,11 @@ export const DEFAULT_BRAND_KIT: BrandKit = {
   authorLine: 'Por Teo · Agente de contenido Cleexs',
   cta: {
     headline: '¿Querés medir tu visibilidad en Google e IA?',
-    body: 'Cleexs analiza cómo te ven ChatGPT, Google y tus competidores.',
+    body: 'Pegá la URL de tu sitio y Cleexs analiza cómo te ven ChatGPT, Google y tus competidores.',
     label: 'Checkeá tu visibilidad gratis',
     url: 'https://app.cleexs.net/diagnostico/crear?url=',
+    buttonColor: '#FFFFFF',
+    urlInput: true,
+    placeholder: 'https://tu-empresa.com',
   },
 };

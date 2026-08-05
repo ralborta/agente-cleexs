@@ -19,7 +19,10 @@ const brandCtaSchema = z.object({
   headline: z.string().max(200).optional(),
   body: z.string().max(500).optional(),
   label: z.string().max(80).optional(),
-  url: z.string().url().max(500).optional().or(z.literal('')),
+  url: z.string().max(500).optional().or(z.literal('')),
+  buttonColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  urlInput: z.boolean().optional(),
+  placeholder: z.string().max(120).optional(),
 });
 
 const brandingSchema = z.object({

@@ -41,6 +41,21 @@ function sanitizeUrl(value: string | undefined): string | undefined {
   return undefined;
 }
 
+/** Permite bases tipo .../diagnostico/crear?url= (query vacía). */
+function sanitizeCtaUrl(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return trimmed;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
 function sanitizeTemplateId(value: string | undefined): BrandTemplateId {
   if (value && (BRAND_TEMPLATE_IDS as readonly string[]).includes(value)) {
     return value as BrandTemplateId;
@@ -78,7 +93,17 @@ export function resolveBrandKit(
       headline: raw.cta?.headline?.trim() || DEFAULT_BRAND_KIT.cta?.headline,
       body: raw.cta?.body?.trim() || DEFAULT_BRAND_KIT.cta?.body?.replace(/Cleexs/g, brandName),
       label: raw.cta?.label?.trim() || DEFAULT_BRAND_KIT.cta?.label,
-      url: sanitizeUrl(raw.cta?.url) || DEFAULT_BRAND_KIT.cta?.url,
+      url: sanitizeCtaUrl(raw.cta?.url) || DEFAULT_BRAND_KIT.cta?.url,
+      buttonColor: sanitizeColor(
+        raw.cta?.buttonColor,
+        DEFAULT_BRAND_KIT.cta?.buttonColor || '#FFFFFF',
+      ),
+      urlInput:
+        typeof raw.cta?.urlInput === 'boolean'
+          ? raw.cta.urlInput
+          : DEFAULT_BRAND_KIT.cta?.urlInput ?? true,
+      placeholder:
+        raw.cta?.placeholder?.trim() || DEFAULT_BRAND_KIT.cta?.placeholder || 'https://tu-empresa.com',
     },
   };
 }

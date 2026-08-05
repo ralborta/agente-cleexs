@@ -184,11 +184,51 @@ export function BrandKitPanel({
                 />
               </div>
               <div>
-                <FieldLabel>URL destino</FieldLabel>
+                <FieldLabel hint="Color hex del botón">Color botón</FieldLabel>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={branding.cta?.buttonColor ?? '#FFFFFF'}
+                    onChange={(e) => patchCta({ buttonColor: e.target.value })}
+                    className="h-10 w-12 cursor-pointer rounded border border-hub-border bg-transparent"
+                  />
+                  <input
+                    value={branding.cta?.buttonColor ?? ''}
+                    onChange={(e) => patchCta({ buttonColor: e.target.value })}
+                    className={inputClassName}
+                    placeholder="#FFFFFF"
+                  />
+                </div>
+              </div>
+            </div>
+            <div>
+              <FieldLabel hint="Base del diagnóstico. Con input activo se completa ?url= al enviar.">
+                URL destino
+              </FieldLabel>
+              <input
+                value={branding.cta?.url ?? ''}
+                onChange={(e) => patchCta({ url: e.target.value })}
+                className={inputClassName}
+                placeholder="https://app.cleexs.net/diagnostico/crear?url="
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex cursor-pointer items-center gap-3 text-sm text-slate-200">
                 <input
-                  value={branding.cta?.url ?? ''}
-                  onChange={(e) => patchCta({ url: e.target.value })}
+                  type="checkbox"
+                  checked={branding.cta?.urlInput !== false}
+                  onChange={(e) => patchCta({ urlInput: e.target.checked })}
+                  className="h-4 w-4 rounded border-hub-border bg-[#0b1220] text-cleexs-blue"
+                />
+                Input de URL (diagnóstico prefilled)
+              </label>
+              <div>
+                <FieldLabel>Placeholder del input</FieldLabel>
+                <input
+                  value={branding.cta?.placeholder ?? ''}
+                  onChange={(e) => patchCta({ placeholder: e.target.value })}
                   className={inputClassName}
+                  placeholder="https://tu-empresa.com"
                 />
               </div>
             </div>

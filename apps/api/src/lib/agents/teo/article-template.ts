@@ -71,6 +71,8 @@ export function buildArticleCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
       ? t.primary
       : `linear-gradient(135deg,${t.primary},${t.secondary})`;
   const ctaTextSoft = t.templateId === 'minimal' ? '#f8fafc' : t.primaryText;
+  const ctaButtonBg = kit.cta?.buttonColor || '#FFFFFF';
+  const ctaButtonFg = contrastText(ctaButtonBg, t.primary);
 
   return `
 .cleexs-article{font-family:${t.fontFamily};color:#0f172a;line-height:1.65;max-width:720px;margin:0 auto}
@@ -94,7 +96,10 @@ export function buildArticleCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
 .cleexs-cta{background:${ctaBg};color:#fff;border-radius:16px;padding:28px 32px;margin:40px 0;text-align:center}
 .cleexs-cta h3{color:#fff;margin:0 0 8px;font-size:20px}
 .cleexs-cta p{color:${ctaTextSoft};margin:0 0 16px;font-size:15px}
-.cleexs-cta a{display:inline-block;background:#fff;color:${t.primary};font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none}
+.cleexs-cta a,.cleexs-cta button{display:inline-block;background:${ctaButtonBg};color:${ctaButtonFg};font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none;border:none;cursor:pointer;font-size:15px;font-family:inherit}
+.cleexs-cta__form{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:stretch;max-width:520px;margin:0 auto}
+.cleexs-cta__form input[type="url"]{flex:1 1 220px;min-width:0;border:none;border-radius:10px;padding:12px 14px;font-size:15px;color:#0f172a;background:#fff}
+.cleexs-cta__hint{margin:10px 0 0;font-size:12px;opacity:.85;color:${ctaTextSoft}}
 .cleexs-meta{font-size:13px;color:#94a3b8;margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0}
 .cleexs-chart{margin:24px 0;text-align:center}
 .cleexs-chart img{max-width:100%;height:auto;border-radius:12px;border:1px solid #e2e8f0}
@@ -118,16 +123,73 @@ export function buildArticleCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
 `.replace(/\s+/g, ' ').trim();
 }
 
+function contrastText(bgHex: string, fallback: string): string {
+  const hex = bgHex.replace('#', '');
+  if (hex.length !== 6) return fallback;
+  const r = Number.parseInt(hex.slice(0, 2), 16);
+  const g = Number.parseInt(hex.slice(2, 4), 16);
+  const b = Number.parseInt(hex.slice(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.65 ? fallback : '#ffffff';
+}
+
+/** Resuelve action GET + si debe mostrarse input de URL. */
+export function resolveCtaDestination(rawUrl: string): {
+  action: string;
+  paramName: string;
+  useUrlInput: boolean;
+  fallbackHref: string;
+} {
+  const fallbackHref = rawUrl || '#';
+  try {
+    const u = new URL(rawUrl);
+    const looksDiagnostic =
+      u.pathname.includes('diagnostico') ||
+      u.searchParams.has('url') ||
+      /[?&]url=?$/i.test(rawUrl) ||
+      rawUrl.includes('?url=');
+    if (looksDiagnostic) {
+      return {
+        action: `${u.origin}${u.pathname}`,
+        paramName: 'url',
+        useUrlInput: true,
+        fallbackHref,
+      };
+    }
+  } catch {
+    // ignore
+  }
+  return {
+    action: fallbackHref,
+    paramName: 'url',
+    useUrlInput: false,
+    fallbackHref,
+  };
+}
+
 function ctaBlock(data: ArticleData, kit: BrandKit) {
   const url = data.ctaUrl || kit.cta?.url || DEFAULT_BRAND_KIT.cta?.url || '#';
   const label = data.ctaLabel || kit.cta?.label || DEFAULT_BRAND_KIT.cta?.label || 'Contactanos';
   const headline = kit.cta?.headline || DEFAULT_BRAND_KIT.cta?.headline || '';
   const body = kit.cta?.body || DEFAULT_BRAND_KIT.cta?.body || '';
+  const placeholder =
+    kit.cta?.placeholder || DEFAULT_BRAND_KIT.cta?.placeholder || 'https://tu-empresa.com';
+  const dest = resolveCtaDestination(url);
+  const preferInput = kit.cta?.urlInput !== false && dest.useUrlInput;
+
+  const actionHtml = preferInput
+    ? `<form class="cleexs-cta__form" action="${escapeHtml(dest.action)}" method="get" target="_blank" rel="noopener">
+  <input type="url" name="${escapeHtml(dest.paramName)}" placeholder="${escapeHtml(placeholder)}" required autocomplete="url" />
+  <button type="submit">${escapeHtml(label)}</button>
+</form>
+<p class="cleexs-cta__hint">Abrimos el diagnóstico con tu URL ya cargada.</p>`
+    : `<a href="${escapeHtml(dest.fallbackHref)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
+
   return `
 <aside class="cleexs-cta">
   <h3>${escapeHtml(headline)}</h3>
   <p>${escapeHtml(body)}</p>
-  <a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>
+  ${actionHtml}
 </aside>`;
 }
 
@@ -202,6 +264,8 @@ const EDITORIAL_INK = '#04182b';
 
 export function buildEditorialCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
   const t = brandCssTokens(kit);
+  const ctaBtn = kit.cta?.buttonColor || t.primary;
+  const ctaBtnFg = contrastText(ctaBtn, '#0f172a');
   // El hero ya muestra título, autor y fecha: se oculta la cabecera del tema
   // (Astra imprime .entry-header) para que no aparezcan dos veces.
   return `
@@ -258,7 +322,10 @@ body.single-post .entry-header{display:none}
 .cleexs-editorial__cta{background:linear-gradient(135deg,${EDITORIAL_INK},#0a2340);border-radius:18px;padding:34px 32px;margin:36px 0 0;text-align:center}
 .cleexs-editorial__cta h3{margin:0 0 8px;font-size:21px;font-weight:700;color:#fff}
 .cleexs-editorial__cta p{margin:0 0 20px;font-size:15px;color:#b9cbe3}
-.cleexs-editorial__cta a{display:inline-block;background:${t.primary};color:#fff;font-weight:700;padding:13px 28px;border-radius:10px;text-decoration:none}
+.cleexs-editorial__cta a,.cleexs-editorial__cta button{display:inline-block;background:${ctaBtn};color:${ctaBtnFg};font-weight:700;padding:13px 28px;border-radius:10px;text-decoration:none;border:none;cursor:pointer;font-size:15px;font-family:inherit}
+.cleexs-editorial__cta .cleexs-cta__form{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:stretch;max-width:520px;margin:0 auto}
+.cleexs-editorial__cta .cleexs-cta__form input[type="url"]{flex:1 1 220px;min-width:0;border:none;border-radius:10px;padding:12px 14px;font-size:15px;color:#0f172a;background:#fff}
+.cleexs-editorial__cta .cleexs-cta__hint{margin:12px 0 0;font-size:12px;color:#94a3b8}
 .cleexs-editorial .cleexs-ecosystem{margin:32px 0 0;padding:24px 26px;background:#f7f9fc;border:1px solid #e8ecf3;border-radius:16px}
 .cleexs-editorial .cleexs-ecosystem h2{font-size:16px;margin:0 0 6px}
 .cleexs-editorial .cleexs-ecosystem p{font-size:14px;color:#64748b;margin:0}
@@ -409,6 +476,17 @@ function renderEditorialArticle(data: ArticleData, kit: BrandKit): string {
   const ctaLabel = data.ctaLabel || kit.cta?.label || DEFAULT_BRAND_KIT.cta?.label || 'Contactanos';
   const ctaHeadline = kit.cta?.headline || DEFAULT_BRAND_KIT.cta?.headline || '';
   const ctaBody = kit.cta?.body || DEFAULT_BRAND_KIT.cta?.body || '';
+  const placeholder =
+    kit.cta?.placeholder || DEFAULT_BRAND_KIT.cta?.placeholder || 'https://tu-empresa.com';
+  const dest = resolveCtaDestination(ctaUrl);
+  const preferInput = kit.cta?.urlInput !== false && dest.useUrlInput;
+  const ctaAction = preferInput
+    ? `<form class="cleexs-cta__form" action="${escapeHtml(dest.action)}" method="get" target="_blank" rel="noopener">
+  <input type="url" name="${escapeHtml(dest.paramName)}" placeholder="${escapeHtml(placeholder)}" required autocomplete="url" />
+  <button type="submit">${escapeHtml(ctaLabel)}</button>
+</form>
+<p class="cleexs-cta__hint">Abrimos el diagnóstico con tu URL ya cargada.</p>`
+    : `<a href="${escapeHtml(dest.fallbackHref)}" target="_blank" rel="noopener">${escapeHtml(ctaLabel)}</a>`;
 
   return `<style>${buildEditorialCss(kit)}</style>
 <article class="cleexs-editorial">
@@ -434,7 +512,7 @@ function renderEditorialArticle(data: ArticleData, kit: BrandKit): string {
   <aside class="cleexs-editorial__cta">
     <h3>${escapeHtml(ctaHeadline)}</h3>
     <p>${escapeHtml(ctaBody)}</p>
-    <a href="${escapeHtml(ctaUrl)}" target="_blank" rel="noopener">${escapeHtml(ctaLabel)}</a>
+    ${ctaAction}
   </aside>
   <p class="cleexs-meta">${escapeHtml(formatAuthorLine(kit))}</p>
 </article>`;
