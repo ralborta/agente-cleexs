@@ -4,6 +4,10 @@ import {
   markOpportunityInProgress,
   pickNextOpportunityTopic,
 } from './keyword-opportunities';
+import {
+  markQuestionInProgress,
+  pickNextQuestion,
+} from './keyword-questions';
 
 const ECOSYSTEM_TYPES = ['pillar', 'faq', 'checklist', 'comparison', 'how_to'] as const;
 
@@ -14,6 +18,7 @@ type TeoConfigInput = {
 export type StrategicHints = Partial<StrategistPlan> & {
   rationale?: string;
   opportunityId?: string;
+  questionId?: string;
 };
 
 function normalizeTopic(value: string): string {
@@ -106,6 +111,33 @@ export async function getStrategicPlanHints(
       select: { type: true },
     });
     const existingTypes = new Set(piecesForOp.map((p) => p.type));
+
+    // Si falta FAQ en el cluster y hay pregunta real priorizada → FAQ desde pregunta.
+    const question = await pickNextQuestion(workspace.id);
+    const wantsFaqFromQuestion =
+      question &&
+      question.cluster === opportunity.cluster &&
+      !existingTypes.has('faq') &&
+      question.businessFit >= 55;
+
+    if (wantsFaqFromQuestion && question) {
+      await markOpportunityInProgress(workspace.id, opportunity.opportunityId).catch(() => undefined);
+      await markQuestionInProgress(workspace.id, question.questionId).catch(() => undefined);
+      const topic =
+        opportunity.cluster.replace(/^cluster:\s*/i, '').trim() || opportunity.topic;
+      return {
+        topic,
+        pieceType: 'faq',
+        title: question.question.replace(/^\¿/, 'FAQ: ').replace(/\?$/, '') || buildTitle('faq', topic),
+        keyword: opportunity.keyword,
+        depth: 'standard' as const,
+        objective: `Responder la pregunta real "${question.question}" (cluster ${question.cluster}, etapa ${question.stage}). Incluir FAQPage-ready Q&A.`,
+        rationale: `Pregunta priorizada (fit ${question.businessFit}) + oportunidad ${opportunity.stage}`,
+        opportunityId: opportunity.opportunityId,
+        questionId: question.questionId,
+      };
+    }
+
     const signal =
       opportunity.stage === 'bofu'
         ? ('zero_clicks' as const)
@@ -125,6 +157,23 @@ export async function getStrategicPlanHints(
       objective: `Generar pieza tipo ${pieceType} sobre "${opportunity.topic}" desde oportunidad ${opportunity.stage.toUpperCase()} (cluster: ${opportunity.cluster}).`,
       rationale: `Oportunidad priorizada (${opportunity.stage}): ${opportunity.cluster}`,
       opportunityId: opportunity.opportunityId,
+    };
+  }
+
+  // Sin keyword en cola: si hay pregunta fuerte, Teo escribe FAQ solo.
+  const loneQuestion = await pickNextQuestion(workspace.id);
+  if (loneQuestion) {
+    await markQuestionInProgress(workspace.id, loneQuestion.questionId).catch(() => undefined);
+    const topic = loneQuestion.cluster.replace(/^cluster:\s*/i, '').trim() || loneQuestion.question;
+    return {
+      topic,
+      pieceType: 'faq',
+      title: loneQuestion.question,
+      keyword: topic,
+      depth: 'standard' as const,
+      objective: `Responder la pregunta real "${loneQuestion.question}" del cluster ${loneQuestion.cluster}.`,
+      rationale: `Pregunta AnswerThePublic-like (fit ${loneQuestion.businessFit})`,
+      questionId: loneQuestion.questionId,
     };
   }
 

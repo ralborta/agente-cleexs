@@ -6,11 +6,15 @@ import { CentroShell } from '@/components/shell/centro-shell';
 import {
   deleteOpportunity,
   fetchOpportunities,
+  generateOpportunityQuestions,
   ingestOpportunitySeeds,
+  updateKeywordQuestion,
   updateOpportunity,
   type FunnelStage,
   type KeywordOpportunity,
   type KeywordOpportunityStatus,
+  type KeywordQuestion,
+  type KeywordQuestionStatus,
 } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
@@ -40,8 +44,17 @@ const STATUS_LABEL: Record<KeywordOpportunityStatus, string> = {
   discarded: 'Descartada',
 };
 
+const QUESTION_STATUS: Record<KeywordQuestionStatus, string> = {
+  idea: 'Idea',
+  queued: 'En cola',
+  in_progress: 'En curso',
+  covered: 'Cubierta',
+  discarded: 'Descartada',
+};
+
 export default function OportunidadesPage() {
   const [rows, setRows] = useState<KeywordOpportunity[]>([]);
+  const [questions, setQuestions] = useState<KeywordQuestion[]>([]);
   const [summary, setSummary] = useState<{
     total: number;
     byStage: { tofu: number; mofu: number; bofu: number };
@@ -52,6 +65,7 @@ export default function OportunidadesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [expanding, setExpanding] = useState(false);
+  const [generatingQs, setGeneratingQs] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -64,6 +78,7 @@ export default function OportunidadesPage() {
         status: statusFilter || undefined,
       });
       setRows(res.opportunities);
+      setQuestions(res.questions ?? []);
       setSummary(res.summary);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar oportunidades');
@@ -75,6 +90,14 @@ export default function OportunidadesPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const openQuestions = useMemo(
+    () =>
+      [...questions]
+        .filter((q) => q.status !== 'discarded')
+        .sort((a, b) => b.priority - a.priority || b.businessFit - a.businessFit),
+    [questions],
+  );
 
   const grouped = useMemo(() => {
     const map = new Map<string, KeywordOpportunity[]>();
@@ -115,6 +138,7 @@ export default function OportunidadesPage() {
     try {
       const res = await ingestOpportunitySeeds('cleexs', seeds, true);
       setRows(res.opportunities);
+      setQuestions(res.questions ?? []);
       setSummary(res.summary);
       setMessage(
         `Listo: ${res.created} keywords nuevas (${res.skipped} ya existían). Fuente: ${res.source === 'llm' ? 'LLM' : 'reglas'}.`,
@@ -126,12 +150,40 @@ export default function OportunidadesPage() {
     }
   }
 
+  async function handleGenerateQuestions() {
+    setGeneratingQs(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await generateOpportunityQuestions('cleexs');
+      setQuestions(res.questions ?? []);
+      setMessage(
+        res.created > 0
+          ? `Teo generó ${res.created} preguntas (${res.clusters} clusters, ${res.source}).`
+          : 'Sin preguntas nuevas (ya había suficientes o se alcanzó el tope).',
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al generar preguntas');
+    } finally {
+      setGeneratingQs(false);
+    }
+  }
+
   async function setStatus(id: string, status: KeywordOpportunityStatus) {
     try {
       await updateOpportunity(id, { status });
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo actualizar');
+    }
+  }
+
+  async function setQuestionStatus(id: string, status: KeywordQuestionStatus) {
+    try {
+      await updateKeywordQuestion(id, { status });
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo actualizar la pregunta');
     }
   }
 
@@ -153,8 +205,8 @@ export default function OportunidadesPage() {
           </p>
           <h2 className="mt-1 text-3xl font-semibold text-white">Oportunidades</h2>
           <p className="mt-2 max-w-2xl text-sm text-hub-muted">
-            Teo genera, scorea con GSC y prioriza solo. Esta pantalla es el radar: mirás el ranking,
-            descartás lo que no sirve. No hace falta encolar ni recalcular demanda a mano.
+            Teo genera keywords, scorea con GSC y arma preguntas reales por cluster. Esta pantalla es
+            el radar: mirás ranking y FAQ map, descartás lo que no sirve.
           </p>
         </div>
         <button
@@ -168,9 +220,8 @@ export default function OportunidadesPage() {
 
       <div className="mb-4 rounded-xl border border-cleexs-blue/25 bg-cleexs-blue/10 px-4 py-3 text-sm text-blue-100">
         <strong className="font-semibold text-white">Autónomo:</strong> el scheduler arma el cloud,
-        importa queries reales de Search Console, recalcula demanda/prioridad (~cada 12h) y escribe
-        primero las de mayor score. <em>Encolar</em> solo fuerza una keyword; <em>Descartar</em> la
-        saca del radar.
+        importa GSC, genera preguntas estilo AnswerThePublic (~semanal) y escribe primero las de mayor
+        score. Si falta FAQ en un cluster, usa una pregunta real. <em>Descartar</em> saca del radar.
       </div>
 
       {message ? (
@@ -209,16 +260,92 @@ export default function OportunidadesPage() {
             {expanding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             {expanding ? 'Generando cloud…' : 'Forzar expansión ahora'}
           </button>
+          <button
+            type="button"
+            disabled={generatingQs}
+            onClick={handleGenerateQuestions}
+            className="inline-flex items-center gap-2 rounded-xl border border-hub-border px-4 py-2.5 text-sm text-slate-200 disabled:opacity-60"
+          >
+            {generatingQs ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {generatingQs ? 'Generando preguntas…' : 'Forzar preguntas ahora'}
+          </button>
         </div>
       </section>
 
       {summary ? (
-        <div className="mb-6 grid gap-3 sm:grid-cols-4">
-          <Stat label="Total" value={summary.total} />
+        <div className="mb-6 grid gap-3 sm:grid-cols-5">
+          <Stat label="Total KW" value={summary.total} />
           <Stat label="TOFU" value={summary.byStage.tofu} />
           <Stat label="MOFU" value={summary.byStage.mofu} />
           <Stat label="BOFU" value={summary.byStage.bofu} />
+          <Stat label="Preguntas" value={openQuestions.length} />
         </div>
+      ) : null}
+
+      {!loading && openQuestions.length > 0 ? (
+        <section className="mb-6 overflow-hidden rounded-2xl border border-hub-border bg-hub-card">
+          <div className="border-b border-hub-border px-4 py-3">
+            <h3 className="text-sm font-semibold text-white">Preguntas reales (FAQ map)</h3>
+            <p className="text-xs text-hub-muted">
+              Teo las genera solo por cluster. Alimentan piezas FAQ cuando falta cobertura.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-[#0b1220]/60 text-xs uppercase tracking-wide text-hub-muted">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Pregunta</th>
+                  <th className="px-4 py-3 font-medium">Cluster</th>
+                  <th className="px-4 py-3 font-medium">Etapa</th>
+                  <th className="px-4 py-3 font-medium">Negocio</th>
+                  <th className="px-4 py-3 font-medium">Prioridad</th>
+                  <th className="px-4 py-3 font-medium">Estado</th>
+                  <th className="px-4 py-3 font-medium">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {openQuestions.slice(0, 60).map((q) => {
+                  const stage = STAGE_META[q.stage];
+                  return (
+                    <tr key={q.id} className="border-t border-hub-border/70">
+                      <td className="px-4 py-3 text-slate-100">
+                        <div className="font-medium">{q.question}</div>
+                        <div className="text-xs text-hub-muted">
+                          {q.intentLabel ?? q.intent ?? '—'} · {q.source}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-300">{q.cluster}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={cn(
+                            'inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1',
+                            stage.className,
+                          )}
+                        >
+                          {stage.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 tabular-nums text-slate-200">{q.businessFit}</td>
+                      <td className="px-4 py-3 tabular-nums text-slate-100">{q.priority}</td>
+                      <td className="px-4 py-3 text-slate-300">{QUESTION_STATUS[q.status]}</td>
+                      <td className="px-4 py-3">
+                        {q.status !== 'discarded' ? (
+                          <button
+                            type="button"
+                            onClick={() => setQuestionStatus(q.id, 'discarded')}
+                            className="rounded-lg border border-hub-border px-2.5 py-1 text-xs text-slate-400"
+                          >
+                            Descartar
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
       ) : null}
 
       <div className="mb-4 flex flex-wrap gap-3">
@@ -282,7 +409,10 @@ export default function OportunidadesPage() {
                             <div className="font-medium">{row.keyword}</div>
                             <div className="text-xs text-hub-muted">semilla: {row.seedKeyword}</div>
                             {row.scoreReason ? (
-                              <div className="mt-1 max-w-xs text-[11px] leading-snug text-hub-muted/90" title={row.scoreReason}>
+                              <div
+                                className="mt-1 max-w-xs text-[11px] leading-snug text-hub-muted/90"
+                                title={row.scoreReason}
+                              >
                                 {row.scoreReason}
                               </div>
                             ) : null}

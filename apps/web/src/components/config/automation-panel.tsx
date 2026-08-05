@@ -37,6 +37,9 @@ export function AutomationPanel({ automation, onTickComplete }: Props) {
           `demanda GSC (score ${res.result.demand!.scored}, +${res.result.demand!.imported})`,
         );
       }
+      if ((res.result.questions?.created ?? 0) > 0) {
+        parts.push(`+${res.result.questions!.created} pregunta(s)`);
+      }
       if (res.result.missions.spawned > 0) {
         parts.push(`${res.result.missions.spawned} misión(es) autónoma(s)`);
       }

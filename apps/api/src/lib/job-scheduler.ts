@@ -6,6 +6,7 @@ import { tickRefresherScans } from './refresher-scan';
 import { getStrategicPlanHints } from './agents/teo/strategist-metrics';
 import { tickOpportunityCloud } from './agents/teo/keyword-opportunities';
 import { tickDemandScoring } from './agents/teo/demand-scoring';
+import { tickQuestionCloud } from './agents/teo/keyword-questions';
 import { buildMissionObjective } from './agents/teo/mission-plan';
 import { logAgentActivity } from './agent-helpers';
 
@@ -123,10 +124,11 @@ export async function tickAutonomousMissions() {
 export async function runSchedulerTick() {
   const opportunities = await tickOpportunityCloud();
   const demand = await tickDemandScoring();
+  const questions = await tickQuestionCloud();
   const metrics = await tickMetricsSync();
   const refresher = await tickRefresherScans();
   const missions = await tickAutonomousMissions();
-  return { opportunities, demand, missions, metrics, refresher };
+  return { opportunities, demand, questions, missions, metrics, refresher };
 }
 
 export function startAutonomousScheduler() {
@@ -134,7 +136,7 @@ export function startAutonomousScheduler() {
 
   const tick = () => {
     runSchedulerTick()
-      .then(({ opportunities, demand, missions, metrics, refresher }) => {
+      .then(({ opportunities, demand, questions, missions, metrics, refresher }) => {
         if (opportunities.created > 0) {
           console.log(
             `[scheduler] Cloud oportunidades: +${opportunities.created} en ${opportunities.workspaces} workspace(s)`,
@@ -143,6 +145,11 @@ export function startAutonomousScheduler() {
         if (demand.imported > 0 || demand.scored > 0) {
           console.log(
             `[scheduler] Demanda GSC: scored=${demand.scored} imported=${demand.imported}`,
+          );
+        }
+        if (questions.created > 0) {
+          console.log(
+            `[scheduler] Preguntas: +${questions.created} en ${questions.workspaces} workspace(s)`,
           );
         }
         if (missions.spawned > 0) {

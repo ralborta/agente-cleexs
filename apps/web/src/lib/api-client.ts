@@ -332,6 +332,7 @@ export async function triggerSchedulerTick(workspace: string) {
     result: {
       opportunities?: { created: number; workspaces: number };
       demand?: { workspaces: number; scored: number; imported: number };
+      questions?: { workspaces: number; created: number };
       missions: { spawned: number; missionIds: string[] };
       metrics: { synced: number; workspaces: string[] };
       refresher: { missionsSpawned: number; candidates: number };
@@ -520,14 +521,43 @@ export type KeywordOpportunity = {
   updatedAt: string;
 };
 
+export type KeywordQuestionStatus =
+  | 'idea'
+  | 'queued'
+  | 'in_progress'
+  | 'covered'
+  | 'discarded';
+
+export type KeywordQuestion = {
+  id: string;
+  cluster: string;
+  question: string;
+  stage: FunnelStage;
+  intent: string | null;
+  intentLabel: string | null;
+  businessFit: number;
+  priority: number;
+  status: KeywordQuestionStatus;
+  source: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type OpportunitiesResponse = {
   workspace: string;
   opportunities: KeywordOpportunity[];
+  questions: KeywordQuestion[];
   seeds: string[];
   clusters: string[];
   summary: {
     total: number;
     byStage: { tofu: number; mofu: number; bofu: number };
+    byStatus: Record<string, number>;
+  };
+  questionsSummary?: {
+    total: number;
+    byCluster: Record<string, number>;
     byStatus: Record<string, number>;
   };
 };
@@ -572,6 +602,33 @@ export async function updateOpportunity(
   return api<{ ok: boolean; opportunity: KeywordOpportunity }>(`/api/opportunities/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
+  });
+}
+
+export async function updateKeywordQuestion(
+  id: string,
+  data: Partial<{
+    status: KeywordQuestionStatus;
+    priority: number;
+    notes: string | null;
+  }>,
+) {
+  return api<{ ok: boolean; question: KeywordQuestion }>(`/api/opportunities/questions/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function generateOpportunityQuestions(workspace: string) {
+  return api<{
+    ok: boolean;
+    created: number;
+    clusters: number;
+    source: string;
+    questions: KeywordQuestion[];
+  }>('/api/opportunities/questions/generate', {
+    method: 'POST',
+    body: JSON.stringify({ workspace }),
   });
 }
 

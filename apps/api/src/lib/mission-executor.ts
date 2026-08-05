@@ -23,6 +23,10 @@ import {
   markOpportunityCovered,
   releaseOpportunity,
 } from './agents/teo/keyword-opportunities';
+import {
+  markQuestionCovered,
+  releaseQuestion,
+} from './agents/teo/keyword-questions';
 
 const runningMissions = new Set<string>();
 
@@ -59,6 +63,7 @@ export async function executeMission(missionId: string) {
 
   runningMissions.add(missionId);
   let opportunityId: string | undefined;
+  let questionId: string | undefined;
   let workspaceIdForOpportunity: string | undefined;
 
   try {
@@ -139,6 +144,7 @@ export async function executeMission(missionId: string) {
         : await getStrategicPlanHints(mission.workspace.slug, teoConfig, missionCount);
 
     opportunityId = metricsHints.opportunityId;
+    questionId = metricsHints.questionId;
 
     if (metricsHints.rationale && !refreshSource) {
       await logAgentActivity({
@@ -327,6 +333,9 @@ export async function executeMission(missionId: string) {
     if (opportunityId) {
       await markOpportunityCovered(mission.workspaceId, opportunityId).catch(() => undefined);
     }
+    if (questionId) {
+      await markQuestionCovered(mission.workspaceId, questionId).catch(() => undefined);
+    }
 
     await prisma.mission.update({
       where: { id: missionId },
@@ -352,6 +361,9 @@ export async function executeMission(missionId: string) {
   } catch (err) {
     if (opportunityId && workspaceIdForOpportunity) {
       await releaseOpportunity(workspaceIdForOpportunity, opportunityId).catch(() => undefined);
+    }
+    if (questionId && workspaceIdForOpportunity) {
+      await releaseQuestion(workspaceIdForOpportunity, questionId).catch(() => undefined);
     }
     throw err;
   } finally {

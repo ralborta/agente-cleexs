@@ -7,6 +7,11 @@ import {
   listKeywordOpportunities,
   updateKeywordOpportunity,
 } from '../lib/agents/teo/keyword-opportunities';
+import {
+  generateQuestionsForWorkspace,
+  listKeywordQuestions,
+  updateKeywordQuestion,
+} from '../lib/agents/teo/keyword-questions';
 
 const seedSchema = z.object({
   workspace: z.string().min(1),
@@ -21,6 +26,12 @@ const updateSchema = z.object({
   cluster: z.string().min(1).max(160).optional(),
   stage: z.enum(['tofu', 'mofu', 'bofu']).optional(),
   intentLabel: z.string().max(200).nullable().optional(),
+});
+
+const questionUpdateSchema = z.object({
+  status: z.enum(['idea', 'queued', 'in_progress', 'covered', 'discarded']).optional(),
+  priority: z.number().int().min(0).max(100).optional(),
+  notes: z.string().max(2000).nullable().optional(),
 });
 
 async function resolveWorkspace(slug: string) {
@@ -58,15 +69,18 @@ const opportunityRoutes: FastifyPluginAsync = async (server) => {
     const denied = assertWorkspaceAccess(request.authUser, workspace.id, reply);
     if (denied) return denied;
 
-    const result = await listKeywordOpportunities({
-      workspaceId: workspace.id,
-      status: q.status as never,
-      stage: q.stage as never,
-      cluster: q.cluster,
-      seedKeyword: q.seed,
-    });
+    const [result, questions] = await Promise.all([
+      listKeywordOpportunities({
+        workspaceId: workspace.id,
+        status: q.status as never,
+        stage: q.stage as never,
+        cluster: q.cluster,
+        seedKeyword: q.seed,
+      }),
+      listKeywordQuestions(workspace.id),
+    ]);
 
-    return { workspace: q.workspace, ...result };
+    return { workspace: q.workspace, ...result, ...questions };
   });
 
   /** Carga semillas y genera cloud TOFU/MOFU/BOFU. */
@@ -91,10 +105,53 @@ const opportunityRoutes: FastifyPluginAsync = async (server) => {
         expand: parsed.data.expand,
       });
       const list = await listKeywordOpportunities({ workspaceId: workspace.id });
-      return { ok: true, ...result, ...list };
+      const questions = await listKeywordQuestions(workspace.id);
+      return { ok: true, ...result, ...list, ...questions };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al generar oportunidades';
       return reply.status(400).send({ error: message });
+    }
+  });
+
+  /** Override opcional: forzar generación de preguntas ahora. */
+  server.post('/questions/generate', async (request, reply) => {
+    const body = (request.body as { workspace?: string }) ?? {};
+    if (!body.workspace) return reply.status(400).send({ error: 'workspace requerido' });
+
+    const workspace = await resolveWorkspace(body.workspace);
+    if (!workspace) return reply.status(404).send({ error: 'Workspace no encontrado' });
+
+    const denied = assertWorkspaceAccess(request.authUser, workspace.id, reply);
+    if (denied) return denied;
+
+    if (!request.authUser || !['admin', 'editor'].includes(request.authUser.role)) {
+      return reply.status(403).send({ error: 'Permiso insuficiente' });
+    }
+
+    const result = await generateQuestionsForWorkspace(workspace.id, { force: true });
+    const questions = await listKeywordQuestions(workspace.id);
+    return { ok: true, ...result, ...questions };
+  });
+
+  server.patch('/questions/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const parsed = questionUpdateSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Datos inválidos', details: parsed.error.flatten() });
+    }
+
+    const authUser = request.authUser;
+    if (!authUser || !['admin', 'editor'].includes(authUser.role)) {
+      return reply.status(403).send({ error: 'Permiso insuficiente' });
+    }
+
+    try {
+      const question = await updateKeywordQuestion(authUser.workspaceId, id, parsed.data);
+      return { ok: true, question };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al actualizar';
+      const status = message.includes('no encontrada') ? 404 : 400;
+      return reply.status(status).send({ error: message });
     }
   });
 

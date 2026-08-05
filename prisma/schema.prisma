@@ -31,6 +31,7 @@ model Workspace {
   integrations  Integration[]
   metrics       MetricSnapshot[]
   opportunities KeywordOpportunity[]
+  questions     KeywordQuestion[]
 
   @@map("workspaces")
 }
@@ -415,6 +416,40 @@ model KeywordOpportunity {
   @@index([workspaceId, priority])
   @@index([workspaceId, demandScore])
   @@map("keyword_opportunities")
+}
+
+enum KeywordQuestionStatus {
+  idea
+  queued
+  in_progress
+  covered
+  discarded
+}
+
+/// Preguntas reales por cluster (AnswerThePublic-like) — Sprint 1.3
+model KeywordQuestion {
+  id           String                @id @default(uuid())
+  workspaceId  String                @map("workspace_id")
+  cluster      String
+  question     String
+  stage        FunnelStage           @default(tofu)
+  intent       String?
+  intentLabel  String?               @map("intent_label")
+  businessFit  Int                   @default(50) @map("business_fit")
+  priority     Int                   @default(0)
+  status       KeywordQuestionStatus @default(idea)
+  source       String                @default("llm")
+  notes        String?               @db.Text
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, question])
+  @@index([workspaceId, status])
+  @@index([workspaceId, cluster])
+  @@index([workspaceId, priority])
+  @@map("keyword_questions")
 }
 
 // ============================================
