@@ -79,5 +79,7 @@ export function isPublicApiPath(pathname: string): boolean {
   if (pathname.startsWith('/api/webhooks/')) return true;
   if (pathname.startsWith('/api/cron/')) return true;
   if (pathname.startsWith('/api/voice/public/')) return true;
+  // Solo el pixel público; /api/events/cta-stats requiere auth.
+  if (pathname === '/api/events/cta') return true;
   return false;
 }

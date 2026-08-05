@@ -105,6 +105,24 @@ export function resolveBrandKit(
       placeholder:
         raw.cta?.placeholder?.trim() || DEFAULT_BRAND_KIT.cta?.placeholder || 'https://tu-empresa.com',
     },
+    ctaB: raw.ctaB
+      ? {
+          headline: raw.ctaB.headline?.trim() || undefined,
+          body: raw.ctaB.body?.trim() || undefined,
+          label: raw.ctaB.label?.trim() || undefined,
+          url: sanitizeCtaUrl(raw.ctaB.url),
+          buttonColor: raw.ctaB.buttonColor
+            ? sanitizeColor(raw.ctaB.buttonColor, '#FFFFFF')
+            : undefined,
+          urlInput:
+            typeof raw.ctaB.urlInput === 'boolean' ? raw.ctaB.urlInput : undefined,
+          placeholder: raw.ctaB.placeholder?.trim() || undefined,
+        }
+      : undefined,
+    ctaAbEnabled:
+      typeof raw.ctaAbEnabled === 'boolean'
+        ? raw.ctaAbEnabled
+        : Boolean(raw.ctaB && (raw.ctaB.headline || raw.ctaB.label || raw.ctaB.body)),
   };
 }
 

@@ -34,6 +34,8 @@ const brandingSchema = z.object({
   logoUrl: z.string().url().max(500).optional().or(z.literal('')),
   authorLine: z.string().max(200).optional(),
   cta: brandCtaSchema.optional(),
+  ctaB: brandCtaSchema.optional(),
+  ctaAbEnabled: z.boolean().optional(),
 });
 
 const updateConfigSchema = z.object({
@@ -145,6 +147,21 @@ const configRoutes: FastifyPluginAsync = async (server) => {
                 : {}),
               ...(parsed.data.branding.cta ?? {}),
             },
+            ...(parsed.data.branding.ctaB !== undefined
+              ? {
+                  ctaB: {
+                    ...(existing?.branding &&
+                    typeof existing.branding === 'object' &&
+                    (existing.branding as { ctaB?: object }).ctaB
+                      ? (existing.branding as { ctaB: object }).ctaB
+                      : {}),
+                    ...parsed.data.branding.ctaB,
+                  },
+                }
+              : {}),
+            ...(parsed.data.branding.ctaAbEnabled !== undefined
+              ? { ctaAbEnabled: parsed.data.branding.ctaAbEnabled }
+              : {}),
           }
         : undefined;
 

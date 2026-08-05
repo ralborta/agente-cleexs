@@ -35,6 +35,8 @@ export type ArticleData = {
   ctaLabel?: string;
   /** ISO. Fija la fecha del hero para que un re-render no la mueva. */
   publishedAt?: string;
+  /** Variante A/B del CTA (sticky por pieza). */
+  ctaVariant?: 'A' | 'B';
   /** Portada generada (SVG data-URI o URL https). */
   featuredImage?: {
     url: string;
@@ -167,26 +169,104 @@ export function resolveCtaDestination(rawUrl: string): {
   };
 }
 
-function ctaBlock(data: ArticleData, kit: BrandKit) {
-  const url = data.ctaUrl || kit.cta?.url || DEFAULT_BRAND_KIT.cta?.url || '#';
-  const label = data.ctaLabel || kit.cta?.label || DEFAULT_BRAND_KIT.cta?.label || 'Contactanos';
-  const headline = kit.cta?.headline || DEFAULT_BRAND_KIT.cta?.headline || '';
-  const body = kit.cta?.body || DEFAULT_BRAND_KIT.cta?.body || '';
-  const placeholder =
-    kit.cta?.placeholder || DEFAULT_BRAND_KIT.cta?.placeholder || 'https://tu-empresa.com';
+export type RenderArticleOpts = {
+  pieceId?: string;
+  workspaceSlug?: string;
+  trackBaseUrl?: string;
+};
+
+function hashPieceVariant(pieceId: string): 'A' | 'B' {
+  let h = 0;
+  for (let i = 0; i < pieceId.length; i += 1) h = (h * 31 + pieceId.charCodeAt(i)) | 0;
+  return Math.abs(h) % 2 === 0 ? 'A' : 'B';
+}
+
+export function assignCtaVariant(
+  data: ArticleData,
+  kit: BrandKit,
+  pieceId?: string,
+): 'A' | 'B' {
+  if (data.ctaVariant === 'A' || data.ctaVariant === 'B') return data.ctaVariant;
+  const hasB = Boolean(kit.ctaB && (kit.ctaB.headline || kit.ctaB.label || kit.ctaB.body || kit.ctaB.url));
+  if (!hasB || kit.ctaAbEnabled === false) return 'A';
+  if (!pieceId) return 'A';
+  return hashPieceVariant(pieceId);
+}
+
+function resolveVariantCta(kit: BrandKit, variant: 'A' | 'B') {
+  const base = {
+    headline: kit.cta?.headline || DEFAULT_BRAND_KIT.cta?.headline || '',
+    body: kit.cta?.body || DEFAULT_BRAND_KIT.cta?.body || '',
+    label: kit.cta?.label || DEFAULT_BRAND_KIT.cta?.label || 'Contactanos',
+    url: kit.cta?.url || DEFAULT_BRAND_KIT.cta?.url || '#',
+    buttonColor: kit.cta?.buttonColor || DEFAULT_BRAND_KIT.cta?.buttonColor,
+    urlInput: kit.cta?.urlInput !== false,
+    placeholder: kit.cta?.placeholder || DEFAULT_BRAND_KIT.cta?.placeholder || 'https://tu-empresa.com',
+  };
+  if (variant !== 'B' || !kit.ctaB) return base;
+  return {
+    headline: kit.ctaB.headline?.trim() || base.headline,
+    body: kit.ctaB.body?.trim() || base.body,
+    label: kit.ctaB.label?.trim() || base.label,
+    url: kit.ctaB.url?.trim() || base.url,
+    buttonColor: kit.ctaB.buttonColor || base.buttonColor,
+    urlInput: typeof kit.ctaB.urlInput === 'boolean' ? kit.ctaB.urlInput : base.urlInput,
+    placeholder: kit.ctaB.placeholder?.trim() || base.placeholder,
+  };
+}
+
+function buildTrackPixel(
+  opts: RenderArticleOpts | undefined,
+  variant: 'A' | 'B',
+  eventType: 'click' | 'submit',
+): string {
+  const base = (opts?.trackBaseUrl || process.env.API_PUBLIC_URL || '').replace(/\/$/, '');
+  if (!base || !opts?.workspaceSlug) return '';
+  const params = new URLSearchParams({
+    workspace: opts.workspaceSlug,
+    variant,
+    type: eventType,
+  });
+  if (opts.pieceId) params.set('pieceId', opts.pieceId);
+  const src = `${base}/api/events/cta?${params.toString()}`;
+  return `try{new Image().src='${src.replace(/'/g, "\\'")}&_='+Date.now()}catch(e){}`;
+}
+
+function buildCtaActionHtml(
+  data: ArticleData,
+  kit: BrandKit,
+  variant: 'A' | 'B',
+  opts?: RenderArticleOpts,
+): { headline: string; body: string; actionHtml: string } {
+  const cta = resolveVariantCta(kit, variant);
+  const url = data.ctaUrl || cta.url;
+  const label = data.ctaLabel || cta.label;
   const dest = resolveCtaDestination(url);
-  const preferInput = kit.cta?.urlInput !== false && dest.useUrlInput;
+  const preferInput = cta.urlInput !== false && dest.useUrlInput;
+  const trackSubmit = buildTrackPixel(opts, variant, 'submit');
+  const trackClick = buildTrackPixel(opts, variant, 'click');
 
   const actionHtml = preferInput
-    ? `<form class="cleexs-cta__form" action="${escapeHtml(dest.action)}" method="get" target="_blank" rel="noopener">
-  <input type="url" name="${escapeHtml(dest.paramName)}" placeholder="${escapeHtml(placeholder)}" required autocomplete="url" />
+    ? `<form class="cleexs-cta__form" action="${escapeHtml(dest.action)}" method="get" target="_blank" rel="noopener"${
+        trackSubmit ? ` onsubmit="${trackSubmit}"` : ''
+      }>
+  <input type="url" name="${escapeHtml(dest.paramName)}" placeholder="${escapeHtml(cta.placeholder)}" required autocomplete="url" />
   <button type="submit">${escapeHtml(label)}</button>
 </form>
-<p class="cleexs-cta__hint">Abrimos el diagnóstico con tu URL ya cargada.</p>`
-    : `<a href="${escapeHtml(dest.fallbackHref)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
+<p class="cleexs-cta__hint">Abrimos el diagnóstico con tu URL ya cargada. · variante ${variant}</p>`
+    : `<a href="${escapeHtml(dest.fallbackHref)}" target="_blank" rel="noopener"${
+        trackClick ? ` onclick="${trackClick}"` : ''
+      }>${escapeHtml(label)}</a>`;
 
+  return { headline: cta.headline, body: cta.body, actionHtml };
+}
+
+function ctaBlock(data: ArticleData, kit: BrandKit, opts?: RenderArticleOpts) {
+  const variant = assignCtaVariant(data, kit, opts?.pieceId);
+  data.ctaVariant = variant;
+  const { headline, body, actionHtml } = buildCtaActionHtml(data, kit, variant, opts);
   return `
-<aside class="cleexs-cta">
+<aside class="cleexs-cta" data-cta-variant="${variant}">
   <h3>${escapeHtml(headline)}</h3>
   <p>${escapeHtml(body)}</p>
   ${actionHtml}
@@ -441,7 +521,11 @@ function renderEditorialSection(section: ArticleSection, index: number, pieceTyp
   return `<section class="cleexs-editorial__section">${parts.join('')}</section>`;
 }
 
-function renderEditorialArticle(data: ArticleData, kit: BrandKit): string {
+function renderEditorialArticle(
+  data: ArticleData,
+  kit: BrandKit,
+  opts?: RenderArticleOpts,
+): string {
   const author = parseAuthor(kit);
   const kicker = [data.kicker, formatHeroDate(data.publishedAt)].filter(Boolean).join(' · ');
   const avatar = kit.logoUrl
@@ -472,21 +556,9 @@ function renderEditorialArticle(data: ArticleData, kit: BrandKit): string {
         .join('')}</ol></section>`
     : '';
 
-  const ctaUrl = data.ctaUrl || kit.cta?.url || DEFAULT_BRAND_KIT.cta?.url || '#';
-  const ctaLabel = data.ctaLabel || kit.cta?.label || DEFAULT_BRAND_KIT.cta?.label || 'Contactanos';
-  const ctaHeadline = kit.cta?.headline || DEFAULT_BRAND_KIT.cta?.headline || '';
-  const ctaBody = kit.cta?.body || DEFAULT_BRAND_KIT.cta?.body || '';
-  const placeholder =
-    kit.cta?.placeholder || DEFAULT_BRAND_KIT.cta?.placeholder || 'https://tu-empresa.com';
-  const dest = resolveCtaDestination(ctaUrl);
-  const preferInput = kit.cta?.urlInput !== false && dest.useUrlInput;
-  const ctaAction = preferInput
-    ? `<form class="cleexs-cta__form" action="${escapeHtml(dest.action)}" method="get" target="_blank" rel="noopener">
-  <input type="url" name="${escapeHtml(dest.paramName)}" placeholder="${escapeHtml(placeholder)}" required autocomplete="url" />
-  <button type="submit">${escapeHtml(ctaLabel)}</button>
-</form>
-<p class="cleexs-cta__hint">Abrimos el diagnóstico con tu URL ya cargada.</p>`
-    : `<a href="${escapeHtml(dest.fallbackHref)}" target="_blank" rel="noopener">${escapeHtml(ctaLabel)}</a>`;
+  const variant = assignCtaVariant(data, kit, opts?.pieceId);
+  data.ctaVariant = variant;
+  const { headline, body, actionHtml } = buildCtaActionHtml(data, kit, variant, opts);
 
   return `<style>${buildEditorialCss(kit)}</style>
 <article class="cleexs-editorial">
@@ -509,18 +581,22 @@ function renderEditorialArticle(data: ArticleData, kit: BrandKit): string {
   </header>
   ${sectionsHtml}
   ${references}
-  <aside class="cleexs-editorial__cta">
-    <h3>${escapeHtml(ctaHeadline)}</h3>
-    <p>${escapeHtml(ctaBody)}</p>
-    ${ctaAction}
+  <aside class="cleexs-editorial__cta" data-cta-variant="${variant}">
+    <h3>${escapeHtml(headline)}</h3>
+    <p>${escapeHtml(body)}</p>
+    ${actionHtml}
   </aside>
   <p class="cleexs-meta">${escapeHtml(formatAuthorLine(kit))}</p>
 </article>`;
 }
 
-export function renderArticleHtml(data: ArticleData, kit: BrandKit = DEFAULT_BRAND_KIT): string {
+export function renderArticleHtml(
+  data: ArticleData,
+  kit: BrandKit = DEFAULT_BRAND_KIT,
+  opts?: RenderArticleOpts,
+): string {
   if (kit.templateId === 'editorial') {
-    return renderEditorialArticle(data, kit);
+    return renderEditorialArticle(data, kit, opts);
   }
 
   const sectionsHtml = data.sections.map((s) => renderSection(s, data.pieceType)).join('\n');
@@ -538,7 +614,7 @@ export function renderArticleHtml(data: ArticleData, kit: BrandKit = DEFAULT_BRA
   <p class="cleexs-article__lead">${renderInlineLinks(data.lead)}</p>
   ${sectionsHtml}
   ${referencesHtml}
-  ${ctaBlock(data, kit)}
+  ${ctaBlock(data, kit, opts)}
   <p class="cleexs-meta">${escapeHtml(formatAuthorLine(kit))}</p>
 </article>`;
 }

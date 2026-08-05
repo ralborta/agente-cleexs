@@ -75,6 +75,10 @@ export type BrandKit = {
   logoUrl?: string;
   authorLine?: string;
   cta?: BrandCta;
+  /** Variante B para A/B del bloque CTA. */
+  ctaB?: BrandCta;
+  /** Si hay ctaB, habilita rotación A/B (default true). */
+  ctaAbEnabled?: boolean;
 };
 
 export const DEFAULT_BRAND_KIT: BrandKit = {

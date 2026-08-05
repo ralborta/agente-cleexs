@@ -226,7 +226,7 @@ export async function runWriterRich(
   research: Research,
   tone?: string | null,
   branding?: BrandKit,
-  opts?: { workspaceId?: string },
+  opts?: { workspaceId?: string; workspaceSlug?: string; pieceId?: string },
 ) {
   // Todas las piezas pasan por el LLM real, no solo las "pro"/pilar. El fallback
   // estático (buildProArticleData) es la red de seguridad si no hay API key o falla OpenAI,
@@ -310,7 +310,12 @@ export async function runWriterRich(
     };
   }
 
-  const html = renderArticleHtml(articleData, branding);
+  const html = renderArticleHtml(articleData, branding ?? undefined, {
+    pieceId: opts?.pieceId,
+    workspaceSlug: opts?.workspaceSlug,
+    trackBaseUrl: process.env.API_PUBLIC_URL,
+  });
+  // renderArticleHtml asigna ctaVariant sticky en articleData
   const excerpt = buildExcerpt(articleData.lead);
   const bodyMarkdown = articleToMarkdown(articleData);
 

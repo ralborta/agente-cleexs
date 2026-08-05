@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Eye, Palette } from 'lucide-react';
 import {
   FieldLabel,
@@ -10,6 +10,7 @@ import {
 } from '@/components/config/settings-section';
 import {
   fetchBrandPreview,
+  fetchCtaAbStats,
   type BrandKit,
   type BrandTemplateId,
 } from '@/lib/api-client';
@@ -30,6 +31,15 @@ export function BrandKitPanel({
 }: Props) {
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [abStats, setAbStats] = useState<{
+    byVariant: {
+      A: { click: number; submit: number; total: number };
+      B: { click: number; submit: number; total: number };
+    };
+    winner: 'A' | 'B' | null;
+    total: number;
+    days: number;
+  } | null>(null);
 
   async function loadPreview() {
     setPreviewLoading(true);
@@ -43,9 +53,19 @@ export function BrandKitPanel({
     }
   }
 
+  const loadAbStats = useCallback(async () => {
+    try {
+      const res = await fetchCtaAbStats('cleexs', 30);
+      setAbStats(res);
+    } catch {
+      setAbStats(null);
+    }
+  }, []);
+
   useEffect(() => {
     loadPreview();
-  }, [previewVersion]);
+    loadAbStats();
+  }, [previewVersion, loadAbStats]);
 
   function patch(partial: Partial<BrandKit>) {
     onChange({ ...branding, ...partial });
@@ -53,6 +73,10 @@ export function BrandKitPanel({
 
   function patchCta(partial: NonNullable<BrandKit['cta']>) {
     onChange({ ...branding, cta: { ...branding.cta, ...partial } });
+  }
+
+  function patchCtaB(partial: NonNullable<BrandKit['ctaB']>) {
+    onChange({ ...branding, ctaB: { ...branding.ctaB, ...partial }, ctaAbEnabled: true });
   }
 
   return (
@@ -232,6 +256,94 @@ export function BrandKitPanel({
                 />
               </div>
             </div>
+          </div>
+
+          <div className="space-y-4 rounded-xl border border-hub-border/70 bg-[#0b1220]/40 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium text-white">CTA variante B (A/B)</p>
+              <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={branding.ctaAbEnabled !== false && Boolean(branding.ctaB)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      patch({
+                        ctaAbEnabled: true,
+                        ctaB: branding.ctaB ?? {
+                          headline: '¿Listo para ver cómo te ven ChatGPT y Google?',
+                          body: 'Escribí tu URL y medí tu visibilidad en minutos.',
+                          label: 'Probar diagnóstico gratis',
+                        },
+                      });
+                    } else {
+                      patch({ ctaAbEnabled: false });
+                    }
+                  }}
+                  className="h-4 w-4 rounded border-hub-border bg-[#0b1220] text-cleexs-blue"
+                />
+                Activar A/B
+              </label>
+            </div>
+            <p className="text-xs text-hub-muted">
+              Teo asigna A o B por artículo (sticky). Los clics/envíos se miden con un pixel en
+              la API.
+            </p>
+            <div>
+              <FieldLabel>Título B</FieldLabel>
+              <input
+                value={branding.ctaB?.headline ?? ''}
+                onChange={(e) => patchCtaB({ headline: e.target.value })}
+                className={inputClassName}
+                disabled={branding.ctaAbEnabled === false}
+              />
+            </div>
+            <div>
+              <FieldLabel>Texto B</FieldLabel>
+              <textarea
+                value={branding.ctaB?.body ?? ''}
+                onChange={(e) => patchCtaB({ body: e.target.value })}
+                rows={2}
+                className={`${inputClassName} resize-y`}
+                disabled={branding.ctaAbEnabled === false}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <FieldLabel>Botón B</FieldLabel>
+                <input
+                  value={branding.ctaB?.label ?? ''}
+                  onChange={(e) => patchCtaB({ label: e.target.value })}
+                  className={inputClassName}
+                  disabled={branding.ctaAbEnabled === false}
+                />
+              </div>
+              <div>
+                <FieldLabel>Color botón B</FieldLabel>
+                <input
+                  type="color"
+                  value={branding.ctaB?.buttonColor ?? branding.cta?.buttonColor ?? '#FFFFFF'}
+                  onChange={(e) => patchCtaB({ buttonColor: e.target.value })}
+                  className="h-10 w-full cursor-pointer rounded border border-hub-border bg-transparent"
+                  disabled={branding.ctaAbEnabled === false}
+                />
+              </div>
+            </div>
+            {abStats ? (
+              <div className="rounded-lg border border-hub-border/60 bg-hub-bg/40 p-3 text-xs text-slate-300">
+                <p className="font-medium text-white">
+                  Resultados {abStats.days}d
+                  {abStats.winner ? ` · ganadora: ${abStats.winner}` : ' · sin datos aún'}
+                </p>
+                <p className="mt-1">
+                  A: {abStats.byVariant.A.submit} envíos / {abStats.byVariant.A.click} clics (
+                  {abStats.byVariant.A.total})
+                </p>
+                <p>
+                  B: {abStats.byVariant.B.submit} envíos / {abStats.byVariant.B.click} clics (
+                  {abStats.byVariant.B.total})
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </SettingsSection>

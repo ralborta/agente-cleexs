@@ -34,6 +34,7 @@ model Workspace {
   questions     KeywordQuestion[]
   founderNotes  FounderVoiceNote[]
   founderInvites FounderVoiceInvite[]
+  ctaEvents     CtaEvent[]
 
   @@map("workspaces")
 }
@@ -496,6 +497,26 @@ model FounderVoiceInvite {
 
   @@index([workspaceId, expiresAt])
   @@map("founder_voice_invites")
+}
+
+// ============================================
+// CTA A/B (Sprint 4.2)
+// ============================================
+
+model CtaEvent {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  pieceId     String?  @map("piece_id")
+  url         String?
+  variant     String   // A | B
+  eventType   String   @map("event_type") // click | submit
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId, variant, createdAt])
+  @@index([workspaceId, url])
+  @@map("cta_events")
 }
 
 // ============================================

@@ -1,4 +1,5 @@
 import type { ContentPieceType } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { prisma } from './prisma';
 import {
   completeMissionStep,
@@ -236,8 +237,11 @@ export async function executeMission(missionId: string) {
       }
     }
 
+    const pieceId = randomUUID();
     const draft = await runWriter(plan, research, teoConfig.tone, branding, {
       workspaceId: mission.workspaceId,
+      workspaceSlug: mission.workspace.slug,
+      pieceId,
     });
     const stepWriter = await createMissionStep({
       missionId,
@@ -313,6 +317,7 @@ export async function executeMission(missionId: string) {
     // --- Pieza + aprobación ---
     const piece = await prisma.contentPiece.create({
       data: {
+        id: pieceId,
         workspaceId: mission.workspaceId,
         missionId,
         clusterId: cluster.id,

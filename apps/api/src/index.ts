@@ -17,6 +17,7 @@ import integrationRoutes from './routes/integrations';
 import webhookRoutes from './routes/webhooks';
 import whatsappRoutes from './routes/whatsapp';
 import authRoutes from './routes/auth';
+import eventsRoutes from './routes/events';
 import authGuardPlugin from './plugins/auth-guard';
 import { startAutonomousScheduler } from './lib/job-scheduler';
 
@@ -59,6 +60,7 @@ async function bootstrap() {
   await server.register(integrationRoutes, { prefix: '/api/integrations' });
   await server.register(webhookRoutes, { prefix: '/api/webhooks' });
   await server.register(whatsappRoutes, { prefix: '/api/whatsapp' });
+  await server.register(eventsRoutes, { prefix: '/api/events' });
 
   const port = Number(process.env.API_PORT || 4000);
   const host = '0.0.0.0';

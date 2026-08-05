@@ -366,6 +366,19 @@ export async function fetchBrandPreview(workspace: string) {
   );
 }
 
+export async function fetchCtaAbStats(workspace: string, days = 30) {
+  return api<{
+    workspace: string;
+    days: number;
+    byVariant: {
+      A: { click: number; submit: number; total: number };
+      B: { click: number; submit: number; total: number };
+    };
+    winner: 'A' | 'B' | null;
+    total: number;
+  }>(`/api/events/cta-stats?workspace=${workspace}&days=${days}`);
+}
+
 export async function updateTeoConfig(
   workspace: string,
   data: Partial<Pick<AgentConfig, 'tone' | 'topics' | 'frequency' | 'autoPublish'>> & {

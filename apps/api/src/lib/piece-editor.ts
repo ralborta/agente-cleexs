@@ -9,6 +9,18 @@ import { sanitizeChartSpec } from './agents/teo/charts';
 import { resolveBrandKit } from './branding/brand-kit';
 import { prisma } from './prisma';
 
+function renderWithTracking(
+  articleData: ArticleData,
+  branding: ReturnType<typeof resolveBrandKit>,
+  opts: { pieceId?: string; workspaceSlug?: string },
+) {
+  return renderArticleHtml(articleData, branding, {
+    pieceId: opts.pieceId,
+    workspaceSlug: opts.workspaceSlug,
+    trackBaseUrl: process.env.API_PUBLIC_URL,
+  });
+}
+
 export function slugifyTitle(title: string): string {
   return title
     .toLowerCase()
@@ -77,7 +89,7 @@ export function rebuildPieceHtml(
     pieceType: piece.type,
   };
 
-  return renderArticleHtml(articleData, branding);
+  return renderWithTracking(articleData, branding, {});
 }
 
 function extractLeadFromMarkdown(markdown?: string): string | null {
@@ -133,6 +145,7 @@ function sanitizeIncomingArticleData(
     pieceType: raw.pieceType || pieceType,
     sections: sections.length ? sections : fallback.sections,
     references: (raw.references ?? fallback.references)?.slice(0, 20),
+    ctaVariant: raw.ctaVariant === 'B' || raw.ctaVariant === 'A' ? raw.ctaVariant : fallback.ctaVariant,
   };
 }
 
@@ -175,7 +188,10 @@ export async function rerenderPieceFromArticleData(
     lead: recoverLead(content.articleData.lead, content.markdown),
     publishedAt: content.articleData.publishedAt ?? piece.createdAt.toISOString(),
   };
-  let html = renderArticleHtml(articleData, branding);
+  let html = renderWithTracking(articleData, branding, {
+    pieceId: piece.id,
+    workspaceSlug: piece.workspace.slug,
+  });
   const faqs = collectArticleFaqs(articleData);
   const schema = buildSeoSchemaGraph({
     title: piece.title,
@@ -291,7 +307,10 @@ export async function updateApprovalPieceContent(
     }
     nextContent.articleData = articleData;
     nextContent.markdown = articleToMarkdown(articleData);
-    let html = renderArticleHtml(articleData, branding);
+    let html = renderWithTracking(articleData, branding, {
+      pieceId: approval.pieceId,
+      workspaceSlug: approval.workspace.slug,
+    });
     const faqs = collectArticleFaqs(articleData);
     const schema = buildSeoSchemaGraph({
       title,
@@ -337,7 +356,10 @@ export async function updateApprovalPieceContent(
       lead: excerptEdited ? input.excerpt!.trim() : structured.lead,
     };
     nextContent.articleData = articleData;
-    nextContent.html = renderArticleHtml(articleData, branding);
+    nextContent.html = renderWithTracking(articleData, branding, {
+      pieceId: approval.pieceId,
+      workspaceSlug: approval.workspace.slug,
+    });
     nextContent.markdown = articleToMarkdown(articleData);
   } else {
     nextContent.html = rebuildPieceHtml({ ...approval.piece, title }, nextContent, branding);
