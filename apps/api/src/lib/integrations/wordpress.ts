@@ -331,20 +331,26 @@ export async function uploadWordPressMedia(
 }
 
 /**
- * Resuelve bytes de una portada (SVG data-URI o URL remota DALL·E).
+ * Resuelve bytes de una portada (SVG/PNG data-URI o URL remota).
  */
 export async function resolveCoverUploadBuffer(coverUrl: string): Promise<{
   buffer: Buffer;
   contentType: string;
   ext: string;
 } | null> {
-  if (coverUrl.startsWith('data:image/svg+xml;base64,')) {
-    const b64 = coverUrl.slice('data:image/svg+xml;base64,'.length);
-    return {
-      buffer: Buffer.from(b64, 'base64'),
-      contentType: 'image/svg+xml',
-      ext: 'svg',
-    };
+  const dataUri = /^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i.exec(coverUrl);
+  if (dataUri) {
+    const contentType = dataUri[1].toLowerCase();
+    const buffer = Buffer.from(dataUri[2], 'base64');
+    const ext =
+      contentType.includes('svg')
+        ? 'svg'
+        : contentType.includes('jpeg') || contentType.includes('jpg')
+          ? 'jpg'
+          : contentType.includes('webp')
+            ? 'webp'
+            : 'png';
+    return { buffer, contentType, ext };
   }
   if (coverUrl.startsWith('https://')) {
     const res = await fetch(coverUrl, { signal: AbortSignal.timeout(60_000) });

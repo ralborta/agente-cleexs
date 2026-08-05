@@ -1,6 +1,6 @@
 /**
  * Sprint 2.3 — imagen destacada por artículo.
- * 3 templates SVG (siempre) + DALL·E opcional si hay OPENAI_API_KEY.
+ * 3 templates SVG (siempre) + GPT Image Mini opcional si hay OPENAI_API_KEY.
  */
 import type { BrandKit } from '@agente/shared';
 
@@ -9,8 +9,9 @@ export type CoverTemplateId = 'editorial' | 'signal' | 'grid';
 export type FeaturedCover = {
   template: CoverTemplateId;
   alt: string;
-  /** data:image/svg+xml;base64... o URL https (DALL·E / WP) */
+  /** data:image/svg+xml;base64... | data:image/png;base64... | URL https */
   url: string;
+  /** `dalle` = alias histórico de portada IA (ahora GPT Image Mini). */
   source: 'svg' | 'dalle' | 'wordpress';
   prompt?: string;
 };
@@ -183,7 +184,10 @@ export function coverSvgBuffer(cover: FeaturedCover): Buffer | null {
   return Buffer.from(b64, 'base64');
 }
 
-/** Intenta DALL·E; si falla, el caller usa SVG. */
+/**
+ * GPT Image 1 Mini (barato). Si falla, el caller usa SVG.
+ * Respuesta siempre en b64 (no URL). quality=low ≈ USD 0.005–0.006/img.
+ */
 export async function tryGenerateDalleCover(input: {
   title: string;
   topic: string;
@@ -192,9 +196,23 @@ export async function tryGenerateDalleCover(input: {
 }): Promise<FeaturedCover | null> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) return null;
-  if (process.env.DISABLE_DALLE_COVER === 'true') return null;
+  if (
+    process.env.DISABLE_DALLE_COVER === 'true' ||
+    process.env.DISABLE_AI_COVER === 'true'
+  ) {
+    return null;
+  }
 
   const brand = input.brand || 'Cleexs';
+  const model = process.env.OPENAI_IMAGE_MODEL?.trim() || 'gpt-image-1-mini';
+  const quality = (process.env.OPENAI_IMAGE_QUALITY?.trim() || 'low') as
+    | 'low'
+    | 'medium'
+    | 'high';
+  const size = (process.env.OPENAI_IMAGE_SIZE?.trim() || '1536x1024') as
+    | '1024x1024'
+    | '1024x1536'
+    | '1536x1024';
   const prompt = `Editorial blog cover illustration, flat modern design, no text, no logos, no watermarks. Theme: ${input.topic}. Style: clean geometric abstract for B2B SaaS / SEO content, blue and slate palette, professional LATAM tech magazine feel. Piece type mood: ${input.pieceType}. Brand vibe: ${brand}.`;
 
   try {
@@ -205,20 +223,34 @@ export async function tryGenerateDalleCover(input: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_IMAGE_MODEL?.trim() || 'dall-e-3',
+        model,
         prompt,
         n: 1,
-        size: '1792x1024',
-        quality: 'standard',
+        size,
+        quality,
+        output_format: 'png',
       }),
       signal: AbortSignal.timeout(90_000),
     });
     if (!res.ok) {
-      console.warn('[media-cover] DALL·E error', res.status, await res.text().catch(() => ''));
+      console.warn(
+        '[media-cover] GPT Image error',
+        model,
+        res.status,
+        await res.text().catch(() => ''),
+      );
       return null;
     }
-    const data = (await res.json()) as { data?: Array<{ url?: string }> };
-    const url = data.data?.[0]?.url;
+    const data = (await res.json()) as {
+      data?: Array<{ url?: string; b64_json?: string }>;
+    };
+    const item = data.data?.[0];
+    let url: string | undefined;
+    if (item?.b64_json) {
+      url = `data:image/png;base64,${item.b64_json}`;
+    } else if (item?.url) {
+      url = item.url;
+    }
     if (!url) return null;
     return {
       template: pickCoverTemplate(input.pieceType, input.title),
@@ -228,7 +260,7 @@ export async function tryGenerateDalleCover(input: {
       prompt,
     };
   } catch (err) {
-    console.warn('[media-cover] DALL·E falló:', err instanceof Error ? err.message : err);
+    console.warn('[media-cover] GPT Image falló:', err instanceof Error ? err.message : err);
     return null;
   }
 }
@@ -247,16 +279,15 @@ export async function generateFeaturedCover(input: {
     branding: input.branding,
   });
 
-  const dalle = await tryGenerateDalleCover({
+  const ai = await tryGenerateDalleCover({
     title: input.title,
     topic: input.topic,
     pieceType: input.pieceType,
     brand: input.branding?.brandName,
   });
 
-  // Preferimos SVG estable en el HTML; DALL·E se usa sobre todo para featured_media WP.
-  // Si hay DALL·E, lo devolvemos como cover principal (más “imagen real”).
-  return dalle ?? svg;
+  // SVG en HTML; IA (GPT Image Mini) para featured_media WP cuando hay b64/URL.
+  return ai ?? svg;
 }
 
 export const COVER_TEMPLATE_LABELS: Record<CoverTemplateId, string> = {

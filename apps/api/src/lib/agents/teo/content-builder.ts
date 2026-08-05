@@ -292,7 +292,7 @@ export async function runWriterRich(
     founderInjected = voice.injected;
   }
 
-  // Portada: SVG siempre en HTML; DALL·E opcional para featured_media WP.
+  // Portada: SVG siempre en HTML; GPT Image Mini opcional para featured_media WP.
   try {
     const cover = await generateFeaturedCover({
       title: plan.title,

@@ -41,7 +41,7 @@ export type ArticleData = {
     alt: string;
     template?: string;
     source?: string;
-    /** URL remota (DALL·E) para subir a WP como featured_media. */
+    /** URL remota o data-URI IA (GPT Image) para subir a WP como featured_media. */
     remoteUrl?: string;
   };
 };
