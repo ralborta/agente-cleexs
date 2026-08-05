@@ -19,6 +19,10 @@ import {
   ensureDefaultCluster,
   enrichHtmlWithClusterInterlinks,
 } from './content-cluster';
+import {
+  markOpportunityCovered,
+  releaseOpportunity,
+} from './agents/teo/keyword-opportunities';
 
 const runningMissions = new Set<string>();
 
@@ -54,6 +58,8 @@ export async function executeMission(missionId: string) {
   }
 
   runningMissions.add(missionId);
+  let opportunityId: string | undefined;
+  let workspaceIdForOpportunity: string | undefined;
 
   try {
     const mission = await prisma.mission.findUnique({
@@ -74,6 +80,7 @@ export async function executeMission(missionId: string) {
     if (!mission) {
       throw new Error('Misión no encontrada');
     }
+    workspaceIdForOpportunity = mission.workspaceId;
 
     if (mission.status === 'completed' || mission.status === 'cancelled') {
       return { skipped: true, reason: 'already_finished' };
@@ -130,6 +137,8 @@ export async function executeMission(missionId: string) {
       refreshSource || hasManualHints || isManualMission
         ? {}
         : await getStrategicPlanHints(mission.workspace.slug, teoConfig, missionCount);
+
+    opportunityId = metricsHints.opportunityId;
 
     if (metricsHints.rationale && !refreshSource) {
       await logAgentActivity({
@@ -315,6 +324,10 @@ export async function executeMission(missionId: string) {
       }
     }
 
+    if (opportunityId) {
+      await markOpportunityCovered(mission.workspaceId, opportunityId).catch(() => undefined);
+    }
+
     await prisma.mission.update({
       where: { id: missionId },
       data: {
@@ -336,6 +349,11 @@ export async function executeMission(missionId: string) {
     });
 
     return { missionId, pieceId: piece.id, status: 'completed' };
+  } catch (err) {
+    if (opportunityId && workspaceIdForOpportunity) {
+      await releaseOpportunity(workspaceIdForOpportunity, opportunityId).catch(() => undefined);
+    }
+    throw err;
   } finally {
     runningMissions.delete(missionId);
   }

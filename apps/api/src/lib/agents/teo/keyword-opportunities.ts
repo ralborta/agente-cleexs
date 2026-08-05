@@ -177,7 +177,7 @@ export async function deleteKeywordOpportunity(workspaceId: string, id: string) 
   return { ok: true };
 }
 
-/** Próxima oportunidad en cola (solo status=queued) para el estratega. */
+/** Próxima oportunidad para el estratega: encoladas primero, si no hay, ideas por prioridad. */
 export async function pickNextOpportunityTopic(workspaceId: string): Promise<{
   topic: string;
   keyword: string;
@@ -185,18 +185,33 @@ export async function pickNextOpportunityTopic(workspaceId: string): Promise<{
   stage: FunnelStage;
   cluster: string;
 } | null> {
-  const chosen = await prisma.keywordOpportunity.findFirst({
+  const queued = await prisma.keywordOpportunity.findFirst({
     where: { workspaceId, status: 'queued' },
     orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
   });
-  if (!chosen) return null;
+  if (queued) {
+    return {
+      topic: queued.keyword,
+      keyword: queued.keyword,
+      opportunityId: queued.id,
+      stage: queued.stage,
+      cluster: queued.cluster,
+    };
+  }
+
+  // Autonomía: sin clicks de "Encolar", Teo toma la idea de mayor prioridad.
+  const idea = await prisma.keywordOpportunity.findFirst({
+    where: { workspaceId, status: 'idea' },
+    orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+  });
+  if (!idea) return null;
 
   return {
-    topic: chosen.keyword,
-    keyword: chosen.keyword,
-    opportunityId: chosen.id,
-    stage: chosen.stage,
-    cluster: chosen.cluster,
+    topic: idea.keyword,
+    keyword: idea.keyword,
+    opportunityId: idea.id,
+    stage: idea.stage,
+    cluster: idea.cluster,
   };
 }
 
@@ -205,6 +220,107 @@ export async function markOpportunityInProgress(workspaceId: string, opportunity
     where: { id: opportunityId, workspaceId },
     data: { status: 'in_progress' },
   });
+}
+
+export async function markOpportunityCovered(workspaceId: string, opportunityId: string) {
+  await prisma.keywordOpportunity.updateMany({
+    where: { id: opportunityId, workspaceId },
+    data: { status: 'covered' },
+  });
+}
+
+/** Si una misión falla, la oportunidad vuelve a idea para reintentar. */
+export async function releaseOpportunity(workspaceId: string, opportunityId: string) {
+  await prisma.keywordOpportunity.updateMany({
+    where: { id: opportunityId, workspaceId, status: 'in_progress' },
+    data: { status: 'idea' },
+  });
+}
+
+/**
+ * Asegura cloud de oportunidades a partir de las semillas del workspace.
+ * Idempotente: no regenera seeds que ya tienen keywords abiertas.
+ */
+export async function ensureOpportunityCloudFromSeeds(
+  workspaceId: string,
+  seeds: string[],
+): Promise<{ created: number; skippedSeeds: number; source: string }> {
+  const cleanSeeds = [
+    ...new Set(
+      seeds
+        .map((s) => s.replace(/\s+/g, ' ').trim())
+        .filter((s) => s.length >= 2 && s.length <= 160),
+    ),
+  ];
+  if (!cleanSeeds.length) return { created: 0, skippedSeeds: 0, source: 'none' };
+
+  const openBySeed = await prisma.keywordOpportunity.groupBy({
+    by: ['seedKeyword'],
+    where: {
+      workspaceId,
+      seedKeyword: { in: cleanSeeds },
+      status: { in: ['idea', 'queued', 'in_progress'] },
+    },
+    _count: { _all: true },
+  });
+  const covered = new Set(
+    openBySeed.filter((row) => row._count._all > 0).map((row) => row.seedKeyword),
+  );
+
+  const missing = cleanSeeds.filter((s) => !covered.has(s));
+  if (!missing.length) {
+    return { created: 0, skippedSeeds: cleanSeeds.length, source: 'existing' };
+  }
+
+  const result = await ingestSeedKeywords(workspaceId, missing, { expand: true });
+  return {
+    created: result.created,
+    skippedSeeds: cleanSeeds.length - missing.length,
+    source: result.source,
+  };
+}
+
+/**
+ * Tick autónomo: toma topics de Teo y genera cloud si falta.
+ * También libera oportunidades "in_progress" viejas (>48h) por si falló una misión.
+ */
+export async function tickOpportunityCloud(): Promise<{
+  workspaces: number;
+  created: number;
+  released: number;
+}> {
+  const configs = await prisma.agentConfig.findMany({
+    where: { agent: { slug: 'teo' } },
+    select: { workspaceId: true, topics: true },
+  });
+
+  let created = 0;
+  let released = 0;
+  let touched = 0;
+
+  const staleBefore = new Date(Date.now() - 48 * 60 * 60 * 1000);
+  const freed = await prisma.keywordOpportunity.updateMany({
+    where: { status: 'in_progress', updatedAt: { lt: staleBefore } },
+    data: { status: 'idea' },
+  });
+  released = freed.count;
+
+  for (const config of configs) {
+    const topics = Array.isArray(config.topics)
+      ? (config.topics as unknown[]).filter((t): t is string => typeof t === 'string')
+      : [];
+    if (!topics.length) continue;
+    touched += 1;
+    const result = await ensureOpportunityCloudFromSeeds(config.workspaceId, topics);
+    created += result.created;
+    if (result.created > 0) {
+      console.log(
+        `[opportunities] cloud autónomo workspace=${config.workspaceId} +${result.created} (${result.source})`,
+      );
+    }
+  }
+
+  return { workspaces: touched, created, released };
 }
 
 export function keywordsMatch(a: string, b: string): boolean {

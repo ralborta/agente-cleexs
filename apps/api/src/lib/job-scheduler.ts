@@ -4,6 +4,7 @@ import { frequencyToIntervalDays } from './frequency';
 import { syncWorkspaceMetrics } from './metrics-sync';
 import { tickRefresherScans } from './refresher-scan';
 import { getStrategicPlanHints } from './agents/teo/strategist-metrics';
+import { tickOpportunityCloud } from './agents/teo/keyword-opportunities';
 import { buildMissionObjective } from './agents/teo/mission-plan';
 import { logAgentActivity } from './agent-helpers';
 
@@ -119,10 +120,11 @@ export async function tickAutonomousMissions() {
 }
 
 export async function runSchedulerTick() {
+  const opportunities = await tickOpportunityCloud();
   const metrics = await tickMetricsSync();
   const refresher = await tickRefresherScans();
   const missions = await tickAutonomousMissions();
-  return { missions, metrics, refresher };
+  return { opportunities, missions, metrics, refresher };
 }
 
 export function startAutonomousScheduler() {
@@ -130,7 +132,12 @@ export function startAutonomousScheduler() {
 
   const tick = () => {
     runSchedulerTick()
-      .then(({ missions, metrics, refresher }) => {
+      .then(({ opportunities, missions, metrics, refresher }) => {
+        if (opportunities.created > 0) {
+          console.log(
+            `[scheduler] Cloud oportunidades: +${opportunities.created} en ${opportunities.workspaces} workspace(s)`,
+          );
+        }
         if (missions.spawned > 0) {
           console.log(`[scheduler] Misiones autónomas disparadas: ${missions.spawned}`);
         }

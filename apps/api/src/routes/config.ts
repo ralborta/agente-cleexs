@@ -6,6 +6,7 @@ import { getAutomationStatus } from '../lib/automation-status';
 import { FREQUENCY_PRESETS } from '../lib/frequency';
 import { resolveBrandKit } from '../lib/branding/brand-kit';
 import { renderBrandPreviewHtml } from '../lib/agents/teo/article-template';
+import { ensureOpportunityCloudFromSeeds } from '../lib/agents/teo/keyword-opportunities';
 
 const BRAND_TEMPLATE_LABELS: Record<BrandTemplateId, string> = {
   default: 'Clásico (default)',
@@ -170,6 +171,19 @@ const configRoutes: FastifyPluginAsync = async (server) => {
 
     const automation = await getAutomationStatus(workspaceSlug);
     const branding = resolveBrandKit(config.branding, workspace.name);
+
+    // Autonomía: al guardar temas, Teo expande el cloud en background (sin clicks).
+    if (agentSlug === 'teo' && Array.isArray(parsed.data.topics) && parsed.data.topics.length > 0) {
+      const seeds = parsed.data.topics;
+      setImmediate(() => {
+        ensureOpportunityCloudFromSeeds(workspace.id, seeds).catch((err) => {
+          console.warn(
+            '[config] cloud oportunidades falló:',
+            err instanceof Error ? err.message : err,
+          );
+        });
+      });
+    }
 
     return { config, branding, automation };
   });

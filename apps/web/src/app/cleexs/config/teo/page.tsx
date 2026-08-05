@@ -137,7 +137,7 @@ export default function TeoConfigPage() {
 
           <SettingsSection
             title="Temas prioritarios"
-            description="Teo elige aleatoriamente entre estos temas al crear misiones autónomas."
+            description="Teo usa estos temas como semillas: genera solo el cloud TOFU/MOFU/BOFU y prioriza qué escribir. También los ves en Oportunidades."
           >
             <div className="flex flex-wrap gap-2">
               {topics.map((topic) => (

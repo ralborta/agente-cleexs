@@ -13,6 +13,7 @@ type TeoConfigInput = {
 
 export type StrategicHints = Partial<StrategistPlan> & {
   rationale?: string;
+  opportunityId?: string;
 };
 
 function normalizeTopic(value: string): string {
@@ -90,7 +91,7 @@ export async function getStrategicPlanHints(
     return { topic, pieceType: 'faq', keyword: topic, rationale: 'Workspace no encontrado — fallback' };
   }
 
-  // Preferir oportunidades en cola (status=queued) del Input Engine.
+  // Preferir oportunidades del Input Engine (encoladas o ideas priorizadas — Teo elige solo).
   const opportunity = await pickNextOpportunityTopic(workspace.id);
   if (opportunity) {
     const piecesForOp = await prisma.contentPiece.findMany({
@@ -123,6 +124,7 @@ export async function getStrategicPlanHints(
       depth,
       objective: `Generar pieza tipo ${pieceType} sobre "${opportunity.topic}" desde oportunidad ${opportunity.stage.toUpperCase()} (cluster: ${opportunity.cluster}).`,
       rationale: `Oportunidad priorizada (${opportunity.stage}): ${opportunity.cluster}`,
+      opportunityId: opportunity.opportunityId,
     };
   }
 

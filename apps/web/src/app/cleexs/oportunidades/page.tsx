@@ -47,9 +47,7 @@ export default function OportunidadesPage() {
     byStage: { tofu: number; mofu: number; bofu: number };
     byStatus: Record<string, number>;
   } | null>(null);
-  const [seedsInput, setSeedsInput] = useState(
-    'posicionar en chatgpt\nconseguir clientes en chatgpt\nrankear en motores de IA',
-  );
+  const [seedsInput, setSeedsInput] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -141,8 +139,8 @@ export default function OportunidadesPage() {
           </p>
           <h2 className="mt-1 text-3xl font-semibold text-white">Oportunidades</h2>
           <p className="mt-2 max-w-2xl text-sm text-hub-muted">
-            Cargá keywords semilla. Teo genera un cloud por funnel (TOFU / MOFU / BOFU). Encolá las
-            que quieras escribir; el estratega las prioriza en la próxima misión.
+            Teo genera y prioriza solo a partir de tus temas semilla. Esta pantalla es el radar:
+            mirás qué eligió, descartás lo que no sirve. No hace falta encolar nada para que escriba.
           </p>
         </div>
         <button
@@ -152,6 +150,12 @@ export default function OportunidadesPage() {
         >
           <RefreshCw className="h-4 w-4" /> Recargar
         </button>
+      </div>
+
+      <div className="mb-4 rounded-xl border border-cleexs-blue/25 bg-cleexs-blue/10 px-4 py-3 text-sm text-blue-100">
+        <strong className="font-semibold text-white">Autónomo:</strong> el scheduler toma tus temas
+        de Config → Temas y reglas, arma el cloud TOFU/MOFU/BOFU y escribe primero las de mayor
+        prioridad. <em>Encolar</em> solo fuerza una keyword; <em>Descartar</em> la saca del radar.
       </div>
 
       {message ? (
@@ -168,11 +172,11 @@ export default function OportunidadesPage() {
       <section className="mb-6 rounded-2xl border border-hub-border bg-hub-card p-5">
         <div className="mb-3 flex items-center gap-2">
           <Target className="h-4 w-4 text-cleexs-blue" />
-          <h3 className="text-sm font-semibold text-white">Keywords semilla</h3>
+          <h3 className="text-sm font-semibold text-white">Semillas extras (opcional)</h3>
         </div>
         <p className="mb-3 text-xs text-hub-muted">
-          Una por línea. Ejemplos del PROCESO 100: posicionar en chatgpt, conseguir clientes en
-          chatgpt, rankear en motores de IA.
+          Lo normal es definir temas en <span className="text-slate-300">Config → Temas y reglas</span>
+          ; Teo expande solo. Acá podés forzar semillas adicionales si querés.
         </p>
         <textarea
           value={seedsInput}
@@ -188,7 +192,7 @@ export default function OportunidadesPage() {
             className="inline-flex items-center gap-2 rounded-xl bg-cleexs-blue px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
           >
             {expanding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            {expanding ? 'Generando cloud…' : 'Generar cloud TOFU / MOFU / BOFU'}
+            {expanding ? 'Generando cloud…' : 'Forzar expansión ahora'}
           </button>
         </div>
       </section>
