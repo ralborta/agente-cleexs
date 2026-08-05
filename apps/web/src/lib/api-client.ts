@@ -330,6 +330,8 @@ export async function triggerSchedulerTick(workspace: string) {
     ok: boolean;
     workspace: string;
     result: {
+      opportunities?: { created: number; workspaces: number };
+      demand?: { workspaces: number; scored: number; imported: number };
       missions: { spawned: number; missionIds: string[] };
       metrics: { synced: number; workspaces: string[] };
       refresher: { missionsSpawned: number; candidates: number };
@@ -509,6 +511,11 @@ export type KeywordOpportunity = {
   priority: number;
   source: string;
   notes: string | null;
+  gscImpressions: number | null;
+  gscClicks: number | null;
+  demandScore: number | null;
+  scoreReason: string | null;
+  scoredAt: string | null;
   createdAt: string;
   updatedAt: string;
 };

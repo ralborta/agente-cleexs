@@ -386,20 +386,25 @@ enum KeywordOpportunityStatus {
 }
 
 model KeywordOpportunity {
-  id           String                    @id @default(uuid())
-  workspaceId  String                    @map("workspace_id")
-  seedKeyword  String                    @map("seed_keyword")
-  keyword      String
-  cluster      String
-  stage        FunnelStage
-  intent       String?
-  intentLabel  String?                   @map("intent_label")
-  status       KeywordOpportunityStatus  @default(idea)
-  priority     Int                       @default(0)
-  source       String                    @default("manual")
-  notes        String?                   @db.Text
-  createdAt    DateTime                  @default(now()) @map("created_at")
-  updatedAt    DateTime                  @updatedAt @map("updated_at")
+  id             String                    @id @default(uuid())
+  workspaceId    String                    @map("workspace_id")
+  seedKeyword    String                    @map("seed_keyword")
+  keyword        String
+  cluster        String
+  stage          FunnelStage
+  intent         String?
+  intentLabel    String?                   @map("intent_label")
+  status         KeywordOpportunityStatus  @default(idea)
+  priority       Int                       @default(0)
+  source         String                    @default("manual")
+  notes          String?                   @db.Text
+  gscImpressions Int?                      @map("gsc_impressions")
+  gscClicks      Int?                      @map("gsc_clicks")
+  demandScore    Int?                      @map("demand_score")
+  scoreReason    String?                   @map("score_reason") @db.Text
+  scoredAt       DateTime?                 @map("scored_at")
+  createdAt      DateTime                  @default(now()) @map("created_at")
+  updatedAt      DateTime                  @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
 
@@ -408,6 +413,7 @@ model KeywordOpportunity {
   @@index([workspaceId, stage])
   @@index([workspaceId, cluster])
   @@index([workspaceId, priority])
+  @@index([workspaceId, demandScore])
   @@map("keyword_opportunities")
 }
 

@@ -5,6 +5,7 @@ import { syncWorkspaceMetrics } from './metrics-sync';
 import { tickRefresherScans } from './refresher-scan';
 import { getStrategicPlanHints } from './agents/teo/strategist-metrics';
 import { tickOpportunityCloud } from './agents/teo/keyword-opportunities';
+import { tickDemandScoring } from './agents/teo/demand-scoring';
 import { buildMissionObjective } from './agents/teo/mission-plan';
 import { logAgentActivity } from './agent-helpers';
 
@@ -121,10 +122,11 @@ export async function tickAutonomousMissions() {
 
 export async function runSchedulerTick() {
   const opportunities = await tickOpportunityCloud();
+  const demand = await tickDemandScoring();
   const metrics = await tickMetricsSync();
   const refresher = await tickRefresherScans();
   const missions = await tickAutonomousMissions();
-  return { opportunities, missions, metrics, refresher };
+  return { opportunities, demand, missions, metrics, refresher };
 }
 
 export function startAutonomousScheduler() {
@@ -132,10 +134,15 @@ export function startAutonomousScheduler() {
 
   const tick = () => {
     runSchedulerTick()
-      .then(({ opportunities, missions, metrics, refresher }) => {
+      .then(({ opportunities, demand, missions, metrics, refresher }) => {
         if (opportunities.created > 0) {
           console.log(
             `[scheduler] Cloud oportunidades: +${opportunities.created} en ${opportunities.workspaces} workspace(s)`,
+          );
+        }
+        if (demand.imported > 0 || demand.scored > 0) {
+          console.log(
+            `[scheduler] Demanda GSC: scored=${demand.scored} imported=${demand.imported}`,
           );
         }
         if (missions.spawned > 0) {

@@ -83,7 +83,21 @@ export default function OportunidadesPage() {
       list.push(row);
       map.set(row.cluster, list);
     }
-    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    return [...map.entries()]
+      .map(([cluster, items]) => [
+        cluster,
+        [...items].sort(
+          (a, b) =>
+            b.priority - a.priority ||
+            (b.demandScore ?? 0) - (a.demandScore ?? 0) ||
+            a.keyword.localeCompare(b.keyword),
+        ),
+      ] as const)
+      .sort((a, b) => {
+        const topA = a[1][0]?.priority ?? 0;
+        const topB = b[1][0]?.priority ?? 0;
+        return topB - topA || a[0].localeCompare(b[0]);
+      });
   }, [rows]);
 
   async function handleExpand() {
@@ -139,8 +153,8 @@ export default function OportunidadesPage() {
           </p>
           <h2 className="mt-1 text-3xl font-semibold text-white">Oportunidades</h2>
           <p className="mt-2 max-w-2xl text-sm text-hub-muted">
-            Teo genera y prioriza solo a partir de tus temas semilla. Esta pantalla es el radar:
-            mirás qué eligió, descartás lo que no sirve. No hace falta encolar nada para que escriba.
+            Teo genera, scorea con GSC y prioriza solo. Esta pantalla es el radar: mirás el ranking,
+            descartás lo que no sirve. No hace falta encolar ni recalcular demanda a mano.
           </p>
         </div>
         <button
@@ -153,9 +167,10 @@ export default function OportunidadesPage() {
       </div>
 
       <div className="mb-4 rounded-xl border border-cleexs-blue/25 bg-cleexs-blue/10 px-4 py-3 text-sm text-blue-100">
-        <strong className="font-semibold text-white">Autónomo:</strong> el scheduler toma tus temas
-        de Config → Temas y reglas, arma el cloud TOFU/MOFU/BOFU y escribe primero las de mayor
-        prioridad. <em>Encolar</em> solo fuerza una keyword; <em>Descartar</em> la saca del radar.
+        <strong className="font-semibold text-white">Autónomo:</strong> el scheduler arma el cloud,
+        importa queries reales de Search Console, recalcula demanda/prioridad (~cada 12h) y escribe
+        primero las de mayor score. <em>Encolar</em> solo fuerza una keyword; <em>Descartar</em> la
+        saca del radar.
       </div>
 
       {message ? (
@@ -251,7 +266,8 @@ export default function OportunidadesPage() {
                     <tr>
                       <th className="px-4 py-3 font-medium">Keyword</th>
                       <th className="px-4 py-3 font-medium">Etapa</th>
-                      <th className="px-4 py-3 font-medium">Intención</th>
+                      <th className="px-4 py-3 font-medium">Demanda</th>
+                      <th className="px-4 py-3 font-medium">GSC</th>
                       <th className="px-4 py-3 font-medium">Prioridad</th>
                       <th className="px-4 py-3 font-medium">Estado</th>
                       <th className="px-4 py-3 font-medium">Acciones</th>
@@ -265,6 +281,11 @@ export default function OportunidadesPage() {
                           <td className="px-4 py-3 text-slate-100">
                             <div className="font-medium">{row.keyword}</div>
                             <div className="text-xs text-hub-muted">semilla: {row.seedKeyword}</div>
+                            {row.scoreReason ? (
+                              <div className="mt-1 max-w-xs text-[11px] leading-snug text-hub-muted/90" title={row.scoreReason}>
+                                {row.scoreReason}
+                              </div>
+                            ) : null}
                           </td>
                           <td className="px-4 py-3">
                             <span
@@ -277,10 +298,17 @@ export default function OportunidadesPage() {
                               {stage.label}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-slate-300">
-                            {row.intentLabel ?? row.intent ?? '—'}
+                          <td className="px-4 py-3 tabular-nums text-slate-200">
+                            {row.demandScore != null ? row.demandScore : '—'}
                           </td>
-                          <td className="px-4 py-3 text-slate-300">{row.priority}</td>
+                          <td className="px-4 py-3 text-xs tabular-nums text-slate-400">
+                            {row.gscImpressions != null || row.gscClicks != null
+                              ? `${row.gscImpressions ?? 0} imp · ${row.gscClicks ?? 0} clic`
+                              : '—'}
+                          </td>
+                          <td className="px-4 py-3 font-medium tabular-nums text-slate-100">
+                            {row.priority}
+                          </td>
                           <td className="px-4 py-3 text-slate-300">{STATUS_LABEL[row.status]}</td>
                           <td className="px-4 py-3">
                             <div className="flex flex-wrap gap-2">

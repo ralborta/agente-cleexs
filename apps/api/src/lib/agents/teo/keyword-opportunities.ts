@@ -21,7 +21,7 @@ export async function listKeywordOpportunities(filters: ListOpportunitiesFilters
 
   const opportunities = await prisma.keywordOpportunity.findMany({
     where,
-    orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+    orderBy: [{ priority: 'desc' }, { demandScore: 'desc' }, { createdAt: 'desc' }],
     take: 500,
   });
 

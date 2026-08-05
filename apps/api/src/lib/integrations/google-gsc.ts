@@ -150,6 +150,38 @@ export async function fetchGscAggregateMetrics(
   };
 }
 
+export type GscQueryRow = {
+  query: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+};
+
+/** Queries reales que ya buscan en Google (dimensión query de Search Console). */
+export async function fetchGscQueryMetrics(
+  config: GoogleMetricsConfig,
+  options?: { days?: number; rowLimit?: number },
+): Promise<GscQueryRow[]> {
+  const days = options?.days ?? 28;
+  const range = dateRangeForPeriod(days, 0);
+
+  const data = await runGscQuery(config, {
+    startDate: range.start,
+    endDate: range.end,
+    dimensions: ['query'],
+    rowLimit: options?.rowLimit ?? 1000,
+  });
+
+  return (data.rows ?? [])
+    .map((row) => ({
+      query: (row.keys?.[0] ?? '').trim(),
+      impressions: row.impressions ?? 0,
+      clicks: row.clicks ?? 0,
+      ctr: row.ctr ?? 0,
+    }))
+    .filter((row) => row.query.length > 0);
+}
+
 export type UrlIndexStatus = {
   url: string;
   verdict: 'PASS' | 'PARTIAL' | 'FAIL' | 'NEUTRAL' | 'UNKNOWN';

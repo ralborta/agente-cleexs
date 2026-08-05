@@ -29,6 +29,14 @@ export function AutomationPanel({ automation, onTickComplete }: Props) {
     try {
       const res = await triggerSchedulerTick('cleexs');
       const parts: string[] = [];
+      if ((res.result.opportunities?.created ?? 0) > 0) {
+        parts.push(`+${res.result.opportunities!.created} oportunidad(es)`);
+      }
+      if ((res.result.demand?.scored ?? 0) > 0 || (res.result.demand?.imported ?? 0) > 0) {
+        parts.push(
+          `demanda GSC (score ${res.result.demand!.scored}, +${res.result.demand!.imported})`,
+        );
+      }
       if (res.result.missions.spawned > 0) {
         parts.push(`${res.result.missions.spawned} misión(es) autónoma(s)`);
       }
