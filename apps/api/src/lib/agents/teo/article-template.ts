@@ -360,7 +360,7 @@ body.single-post .ast-container,body.single-post .entry-content{max-width:1120px
 .cleexs-editorial__hero{position:relative;overflow:hidden;background:linear-gradient(135deg,${EDITORIAL_INK} 0%,#061527 55%,#0a2340 100%);border-radius:20px;padding:44px 44px 40px;margin:0 0 44px}
 .cleexs-editorial__cover{display:block;width:100%;height:auto;border-radius:16px;margin:0 0 28px;object-fit:cover;max-height:320px}
 .cleexs-editorial__hero:after{content:"";position:absolute;right:-70px;top:-70px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,${t.primary}59,transparent 70%);pointer-events:none}
-.cleexs-editorial__kicker{position:relative;z-index:1;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#7aa5f5;margin:0 0 18px}
+.cleexs-editorial__kicker,.cleexs-editorial p.cleexs-editorial__kicker{position:relative;z-index:1;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#9ec0ff;margin:0 0 18px}
 .cleexs-editorial__title{position:relative;z-index:1;font-size:38px;line-height:1.18;font-weight:800;letter-spacing:-.02em;color:#fff;margin:0 0 24px}
 .cleexs-editorial__author{position:relative;z-index:1;display:flex;align-items:center;gap:12px;margin:0 0 26px}
 .cleexs-editorial__avatar{flex:0 0 48px;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,${t.primary},${t.secondary});color:#fff;font-weight:700;font-size:17px;line-height:48px;text-align:center;overflow:hidden}
