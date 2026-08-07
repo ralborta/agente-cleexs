@@ -150,3 +150,29 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
+/* --- Editorial PRO (parche para posts ya publicados; el HTML nuevo trae estilos inline) --- */
+body.single-post .entry-header {
+  display: none;
+}
+
+@media (min-width: 921px) {
+  body.single-post .ast-container,
+  body.single-post .entry-content {
+    max-width: 1120px;
+  }
+  .cleexs-editorial {
+    max-width: 1040px !important;
+  }
+}
+
+.cleexs-editorial p.cleexs-editorial__lead {
+  color: #eef3fa !important;
+}
+
+.cleexs-editorial__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

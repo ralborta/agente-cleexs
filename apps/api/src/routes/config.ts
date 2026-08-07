@@ -32,6 +32,7 @@ const brandingSchema = z.object({
   secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   fontFamily: z.string().max(200).optional(),
   logoUrl: z.string().url().max(500).optional().or(z.literal('')),
+  authorAvatarUrl: z.string().url().max(500).optional().or(z.literal('')),
   authorLine: z.string().max(200).optional(),
   cta: brandCtaSchema.optional(),
   ctaB: brandCtaSchema.optional(),

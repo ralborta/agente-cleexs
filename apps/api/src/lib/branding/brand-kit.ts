@@ -88,6 +88,7 @@ export function resolveBrandKit(
     secondaryColor: secondary,
     fontFamily: raw.fontFamily?.trim() || DEFAULT_BRAND_KIT.fontFamily,
     logoUrl: sanitizeUrl(raw.logoUrl),
+    authorAvatarUrl: sanitizeUrl(raw.authorAvatarUrl),
     authorLine: raw.authorLine?.trim() || defaultAuthor,
     cta: {
       headline: raw.cta?.headline?.trim() || DEFAULT_BRAND_KIT.cta?.headline,

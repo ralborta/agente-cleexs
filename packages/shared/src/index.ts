@@ -73,6 +73,8 @@ export type BrandKit = {
   secondaryColor?: string;
   fontFamily?: string;
   logoUrl?: string;
+  /** Foto del autor en el hero editorial (p. ej. Teo). */
+  authorAvatarUrl?: string;
   authorLine?: string;
   cta?: BrandCta;
   /** Variante B para A/B del bloque CTA. */

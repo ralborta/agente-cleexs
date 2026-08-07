@@ -164,6 +164,18 @@ export function BrandKitPanel({
             </div>
 
             <div>
+              <FieldLabel hint="Foto circular del autor en el hero editorial. Vacío: Teo usa la foto por defecto.">
+                URL foto del autor
+              </FieldLabel>
+              <input
+                value={branding.authorAvatarUrl ?? ''}
+                onChange={(e) => patch({ authorAvatarUrl: e.target.value })}
+                className={inputClassName}
+                placeholder="https://agents.cleexs.net/branding/teo.jpg"
+              />
+            </div>
+
+            <div>
               <FieldLabel hint="Podés usar {brandName} como placeholder.">
                 Firma del artículo
               </FieldLabel>

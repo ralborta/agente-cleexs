@@ -348,9 +348,14 @@ export function buildEditorialCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
   const ctaBtnFg = contrastText(ctaBtn, '#0f172a');
   // El hero ya muestra título, autor y fecha: se oculta la cabecera del tema
   // (Astra imprime .entry-header) para que no aparezcan dos veces.
+  // Lead: selector p.cleexs-editorial__lead gana a .cleexs-editorial p (#374151).
   return `
 body.single-post .entry-header{display:none}
 .cleexs-editorial{font-family:${t.fontFamily};color:#1f2937;line-height:1.75;font-size:17px;max-width:780px;margin:0 auto}
+@media (min-width:921px){
+body.single-post .ast-container,body.single-post .entry-content{max-width:1120px}
+.cleexs-editorial{max-width:1040px}
+}
 .cleexs-editorial *{box-sizing:border-box}
 .cleexs-editorial__hero{position:relative;overflow:hidden;background:linear-gradient(135deg,${EDITORIAL_INK} 0%,#061527 55%,#0a2340 100%);border-radius:20px;padding:44px 44px 40px;margin:0 0 44px}
 .cleexs-editorial__cover{display:block;width:100%;height:auto;border-radius:16px;margin:0 0 28px;object-fit:cover;max-height:320px}
@@ -358,12 +363,12 @@ body.single-post .entry-header{display:none}
 .cleexs-editorial__kicker{position:relative;z-index:1;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#7aa5f5;margin:0 0 18px}
 .cleexs-editorial__title{position:relative;z-index:1;font-size:38px;line-height:1.18;font-weight:800;letter-spacing:-.02em;color:#fff;margin:0 0 24px}
 .cleexs-editorial__author{position:relative;z-index:1;display:flex;align-items:center;gap:12px;margin:0 0 26px}
-.cleexs-editorial__avatar{flex:0 0 44px;width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,${t.primary},${t.secondary});color:#fff;font-weight:700;font-size:17px;line-height:44px;text-align:center;overflow:hidden}
+.cleexs-editorial__avatar{flex:0 0 48px;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,${t.primary},${t.secondary});color:#fff;font-weight:700;font-size:17px;line-height:48px;text-align:center;overflow:hidden}
 .cleexs-editorial__avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .cleexs-editorial__author-name{font-size:14px;font-weight:700;color:#fff;line-height:1.35}
 .cleexs-editorial__author-role{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#8fa8c8;line-height:1.35}
-.cleexs-editorial__lead{position:relative;z-index:1;font-size:17px;line-height:1.7;color:#c7d5e6;margin:0 0 14px}
-.cleexs-editorial__lead:last-child{margin-bottom:0}
+.cleexs-editorial__lead,.cleexs-editorial p.cleexs-editorial__lead{position:relative;z-index:1;font-size:17px;line-height:1.7;color:#eef3fa;margin:0 0 14px}
+.cleexs-editorial__lead:last-child,.cleexs-editorial p.cleexs-editorial__lead:last-child{margin-bottom:0}
 .cleexs-editorial__section{margin:0 0 44px}
 .cleexs-editorial__section-head{display:flex;gap:18px;align-items:flex-start;margin:0 0 22px;padding-bottom:16px;border-bottom:1px solid #e8ecf3}
 .cleexs-editorial__num{flex:0 0 auto;font-size:40px;font-weight:800;line-height:1;letter-spacing:-.03em;color:#cfdcf3}
@@ -432,6 +437,20 @@ function parseAuthor(kit: BrandKit): { name: string; role: string } {
   const name = (first ?? '').replace(/^por\s+/i, '').trim() || kit.brandName || 'Redacción';
   const role = rest.join(' · ') || `Equipo ${kit.brandName ?? ''}`.trim();
   return { name, role };
+}
+
+/** Foto de Teo en agents.cleexs.net; override con TEO_AUTHOR_AVATAR_URL o brand kit. */
+function defaultTeoAvatarUrl(): string {
+  const fromEnv = process.env.TEO_AUTHOR_AVATAR_URL?.trim();
+  if (fromEnv) return fromEnv;
+  const front = (process.env.FRONTEND_URL || 'https://agents.cleexs.net').replace(/\/$/, '');
+  return `${front}/branding/teo.jpg`;
+}
+
+function resolveAuthorAvatarUrl(kit: BrandKit, authorName: string): string | undefined {
+  if (kit.authorAvatarUrl) return kit.authorAvatarUrl;
+  if (/^teo$/i.test(authorName.trim())) return defaultTeoAvatarUrl();
+  return kit.logoUrl;
 }
 
 function formatHeroDate(iso?: string): string {
@@ -528,8 +547,9 @@ function renderEditorialArticle(
 ): string {
   const author = parseAuthor(kit);
   const kicker = [data.kicker, formatHeroDate(data.publishedAt)].filter(Boolean).join(' · ');
-  const avatar = kit.logoUrl
-    ? `<img src="${escapeHtml(kit.logoUrl)}" alt="${escapeHtml(author.name)}" />`
+  const avatarUrl = resolveAuthorAvatarUrl(kit, author.name);
+  const avatar = avatarUrl
+    ? `<img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(author.name)}" width="48" height="48" />`
     : escapeHtml(author.name.charAt(0).toUpperCase());
 
   const leadHtml = data.lead
