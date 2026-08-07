@@ -443,8 +443,8 @@ function parseAuthor(kit: BrandKit): { name: string; role: string } {
 function defaultTeoAvatarUrl(): string {
   const fromEnv = process.env.TEO_AUTHOR_AVATAR_URL?.trim();
   if (fromEnv) return fromEnv;
-  const front = (process.env.FRONTEND_URL || 'https://agents.cleexs.net').replace(/\/$/, '');
-  return `${front}/branding/teo.jpg`;
+  // Preferir CDN del repo (siempre público) para no depender del static de Next en deploy.
+  return 'https://cdn.jsdelivr.net/gh/ralborta/agente-cleexs@main/apps/web/public/branding/teo.jpg';
 }
 
 function resolveAuthorAvatarUrl(kit: BrandKit, authorName: string): string | undefined {
