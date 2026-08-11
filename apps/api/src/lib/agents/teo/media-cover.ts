@@ -3,6 +3,7 @@
  * 3 templates SVG (siempre) + GPT Image Mini opcional si hay OPENAI_API_KEY.
  */
 import type { BrandKit } from '@agente/shared';
+import { fixUtf8Mojibake } from '../../agent-helpers';
 
 export type CoverTemplateId = 'editorial' | 'signal' | 'grid';
 
@@ -160,11 +161,12 @@ export function buildSvgCover(input: {
 }): FeaturedCover {
   const brand = input.branding?.brandName?.trim() || 'Cleexs';
   const primary = input.branding?.primaryColor || '#2563EB';
-  const kicker = (input.kicker || input.pieceType || 'Guía').slice(0, 48);
+  const title = fixUtf8Mojibake(input.title);
+  const kicker = fixUtf8Mojibake(input.kicker || input.pieceType || 'Guía').slice(0, 48);
   const template =
-    input.template || pickCoverTemplate(input.pieceType, input.title + input.pieceType);
+    input.template || pickCoverTemplate(input.pieceType, title + input.pieceType);
 
-  const payload = { title: input.title, kicker, brand, primary };
+  const payload = { title, kicker, brand, primary };
   let svg: string;
   if (template === 'signal') svg = buildSignalSvg(payload);
   else if (template === 'grid') svg = buildGridSvg(payload);
@@ -172,7 +174,7 @@ export function buildSvgCover(input: {
 
   return {
     template,
-    alt: `Portada: ${input.title}`,
+    alt: `Portada: ${title}`,
     url: svgToDataUrl(svg),
     source: 'svg',
   };

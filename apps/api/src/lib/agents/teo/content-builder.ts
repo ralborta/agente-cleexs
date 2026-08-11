@@ -4,6 +4,7 @@ import { buildProArticleData } from './pro-content-fallback';
 import { enforceAeoChecklist } from './aeo-checklist';
 import { applyFounderVoiceToArticle } from './founder-voice';
 import { buildSvgCover, generateFeaturedCover } from './media-cover';
+import { fixUtf8Mojibake, fixUtf8MojibakeDeep } from '../../agent-helpers';
 import type { BrandKit } from '@agente/shared';
 import type { StrategistPlan } from './types';
 
@@ -252,12 +253,16 @@ export async function runWriterRich(
   }
 
   articleData = enforceAeoChecklist(articleData, plan);
+  articleData = fixUtf8MojibakeDeep({
+    ...articleData,
+    title: fixUtf8Mojibake(plan.title),
+  });
 
   let founderQuoteIds: string[] = [];
   let founderInjected = 0;
   if (opts?.workspaceId) {
     const voice = await applyFounderVoiceToArticle(opts.workspaceId, plan, articleData);
-    articleData = voice.article;
+    articleData = fixUtf8MojibakeDeep(voice.article);
     founderQuoteIds = voice.quoteIds;
     founderInjected = voice.injected;
   }
@@ -265,8 +270,8 @@ export async function runWriterRich(
   // Portada: SVG siempre en HTML; GPT Image Mini opcional para featured_media WP.
   try {
     const cover = await generateFeaturedCover({
-      title: plan.title,
-      topic: plan.topic,
+      title: articleData.title,
+      topic: fixUtf8Mojibake(plan.topic),
       pieceType: plan.pieceType,
       kicker: articleData.kicker,
       branding,
@@ -274,7 +279,7 @@ export async function runWriterRich(
     const svgForHtml =
       cover.source === 'dalle'
         ? buildSvgCover({
-            title: plan.title,
+            title: articleData.title,
             kicker: articleData.kicker,
             pieceType: plan.pieceType,
             branding,

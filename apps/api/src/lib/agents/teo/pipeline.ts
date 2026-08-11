@@ -1,3 +1,4 @@
+import { fixUtf8Mojibake, slugify } from '../../agent-helpers';
 import { runWriterRich } from './content-builder';
 import { buildTitle } from './strategist-metrics';
 import { runWebResearch } from './web-research';
@@ -21,18 +22,19 @@ export function runStrategist(config: TeoConfig, missionIndex: number, overrides
   const topic = overrides?.topic?.trim() || topics[missionIndex % topics.length];
   const types = ['faq', 'comparison', 'checklist', 'how_to', 'pillar', 'case_study', 'landing'] as const;
   const pieceType = (overrides?.pieceType as StrategistPlan['pieceType']) || types[missionIndex % types.length];
-  const title = overrides?.title?.trim() || buildTitle(pieceType, topic);
+  const title = fixUtf8Mojibake(overrides?.title?.trim() || buildTitle(pieceType, topic));
 
   const depth = overrides?.depth ?? (pieceType === 'pillar' ? 'pro' : 'standard');
 
   return {
-    topic,
+    topic: fixUtf8Mojibake(topic),
     pieceType,
     title,
-    keyword: overrides?.keyword?.trim() || topic,
-    objective:
+    keyword: fixUtf8Mojibake(overrides?.keyword?.trim() || topic),
+    objective: fixUtf8Mojibake(
       overrides?.objective?.trim() ||
-      `Generar pieza tipo ${pieceType} sobre "${topic}" para rankear en Google y ser citables por IA.`,
+        `Generar pieza tipo ${pieceType} sobre "${topic}" para rankear en Google y ser citables por IA.`,
+    ),
     depth,
   };
 }
@@ -102,32 +104,29 @@ export async function runWriter(
 export type WriterDraft = Awaited<ReturnType<typeof runWriter>>;
 
 export function runSeoBuilder(plan: StrategistPlan, draft: WriterDraft, branding?: BrandKit) {
-  const slug = plan.title
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+  const title = fixUtf8Mojibake(plan.title);
+  const excerpt = fixUtf8Mojibake(draft.excerpt);
+  const slug = slugify(title);
 
   const brandName = branding?.brandName?.trim() || 'Cleexs';
   const faqs = collectArticleFaqs(draft.articleData);
   const schema = buildSeoSchemaGraph({
-    title: plan.title,
-    description: draft.excerpt,
+    title,
+    description: excerpt,
     pieceType: plan.pieceType,
     faqs,
     brandName,
   });
-  const html = injectJsonLd(draft.html, schema);
+  const html = injectJsonLd(fixUtf8Mojibake(draft.html), schema);
 
   return {
-    metaTitle: `${plan.title} | ${brandName}`,
-    metaDescription: draft.excerpt,
+    metaTitle: `${title} | ${brandName}`,
+    metaDescription: excerpt,
     canonical: `https://cleexs.net/articulos/${slug}`,
     schema,
     openGraph: {
-      title: plan.title,
-      description: draft.excerpt,
+      title,
+      description: excerpt,
       type: 'article',
     },
     slug,

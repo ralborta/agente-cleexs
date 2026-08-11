@@ -65,6 +65,41 @@ export function slugify(text: string) {
     .replace(/^-|-$/g, '');
 }
 
+/**
+ * Repara mojibake UTF-8 típico (`técnicas` → `tÃ©cnicas`) cuando el texto
+ * UTF-8 se interpretó como Latin-1/Windows-1252.
+ */
+export function fixUtf8Mojibake(input: string): string {
+  if (!input || !/[ÃÂ]/.test(input)) return input;
+  let current = input;
+  for (let i = 0; i < 2; i += 1) {
+    if (![...current].every((ch) => ch.charCodeAt(0) <= 255)) break;
+    if (!/[ÃÂ]/.test(current)) break;
+    try {
+      const bytes = Uint8Array.from([...current].map((ch) => ch.charCodeAt(0)));
+      const decoded = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+      if (!decoded || decoded === current || decoded.includes('\uFFFD')) break;
+      current = decoded;
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
+export function fixUtf8MojibakeDeep<T>(value: T): T {
+  if (typeof value === 'string') return fixUtf8Mojibake(value) as T;
+  if (Array.isArray(value)) return value.map((item) => fixUtf8MojibakeDeep(item)) as T;
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+      out[key] = fixUtf8MojibakeDeep(nested);
+    }
+    return out as T;
+  }
+  return value;
+}
+
 export const PIECE_TYPES: ContentPieceType[] = [
   'faq',
   'comparison',
