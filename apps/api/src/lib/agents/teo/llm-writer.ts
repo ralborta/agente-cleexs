@@ -122,7 +122,7 @@ Requisitos obligatorios de profundidad (se verifican, no son sugerencias):
 - Incluí al menos 3 bloques "examples" con casos concretos y distintos de PyMEs latinoamericanas (retail, servicios, B2B, industria) — con números o situaciones específicas, no genéricas.
 - Incluí al menos 2 "callout" con insights accionables o datos que llamen la atención.
 - En el cuerpo, usá enlaces markdown [texto](url) a fuentes autorizadas. Si te di fuentes reales arriba, priorizá citarlas. Si no, solo dominios creíbles (.google.com, .org, medios tech serios) — no inventes URLs.
-- Sección final de "references": 6-8 fuentes con URL https válida (usá las fuentes reales si te las di).
+- Sección final de "references": 6-8 fuentes con URL https válida (usá las fuentes reales si te las di). Si incluís Cleexs, usá título exacto "Cleexs - Conseguí clientes desde ChatGPT" y URL https://cleexs.net/ (home), nunca /diagnostico/crear ni el texto "Diagnóstico Cleexs".
 - Mencioná AEO, AI Overviews y visibilidad en asistentes (ChatGPT, Gemini, Claude) cuando aplique naturalmente.
 - En los "chart": si el dato no viene de una fuente dura, marcalo con "sourceNote": "Estimación ilustrativa" — nunca presentes un número inventado como si fuera un dato oficial.
 - ${ctaHint}

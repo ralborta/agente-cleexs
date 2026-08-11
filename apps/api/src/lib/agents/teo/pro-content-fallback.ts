@@ -26,7 +26,7 @@ export function buildProArticleData(plan: StrategistPlan, tone?: string | null):
           'robots.txt: permitir GPTBot, ClaudeBot y Googlebot sin bloqueos accidentales.',
           'Publicar llms.txt con misión, servicios y URLs canónicas ([especificación llms.txt](https://llmstxt.org/)).',
           'Schema FAQ/Article en piezas que respondan preguntas reales de clientes.',
-          'Comparar tu visibilidad vs 2 competidores con el [diagnóstico Cleexs](https://app.cleexs.net/diagnostico/crear?url=).',
+          'Comparar tu visibilidad vs 2 competidores en [Cleexs](https://cleexs.net/).',
         ],
       },
       {
@@ -102,9 +102,9 @@ export function buildProArticleData(plan: StrategistPlan, tone?: string | null):
         note: 'Marcado para preguntas frecuentes.',
       },
       {
-        title: 'Cleexs — Diagnóstico de visibilidad',
-        url: 'https://app.cleexs.net/diagnostico/crear?url=',
-        note: 'Medí tu marca en Google e IA.',
+        title: 'Cleexs - Conseguí clientes desde ChatGPT',
+        url: 'https://cleexs.net/',
+        note: 'Home de Cleexs.',
       },
     ],
   };

@@ -24,14 +24,16 @@ add_action('init', function () {
         'rank_math_focus_keyword',
     ];
 
-    foreach ($keys as $key) {
-        register_post_meta('post', $key, [
-            'show_in_rest'  => true,
-            'single'        => true,
-            'type'          => 'string',
-            'auth_callback' => function () {
-                return current_user_can('edit_posts');
-            },
-        ]);
+    foreach (['post', 'page'] as $postType) {
+        foreach ($keys as $key) {
+            register_post_meta($postType, $key, [
+                'show_in_rest'  => true,
+                'single'        => true,
+                'type'          => 'string',
+                'auth_callback' => function () {
+                    return current_user_can('edit_posts');
+                },
+            ]);
+        }
     }
 });

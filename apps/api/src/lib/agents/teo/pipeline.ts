@@ -72,7 +72,7 @@ export async function runResearcher(plan: StrategistPlan): Promise<ResearchResul
         'llms.txt / especificación para LLMs',
         'Google Search Console (impresiones por URL)',
         'Schema.org FAQPage / Article',
-        'Diagnóstico Cleexs (app.cleexs.net)',
+        'Cleexs - Conseguí clientes desde ChatGPT (https://cleexs.net/)',
       ]
     : [
         'Google Search Console — datos del workspace',

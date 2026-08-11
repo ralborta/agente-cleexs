@@ -351,7 +351,7 @@ export function buildEditorialCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
   // Lead: selector p.cleexs-editorial__lead gana a .cleexs-editorial p (#374151).
   return `
 body.single-post .entry-header{display:none}
-.cleexs-editorial{font-family:${t.fontFamily};color:#1f2937;line-height:1.75;font-size:17px;max-width:780px;margin:0 auto}
+.cleexs-editorial{font-family:${t.fontFamily};color:#1f2937;line-height:1.75;font-size:19px;max-width:780px;margin:0 auto}
 @media (min-width:921px){
 body.single-post .ast-container,body.single-post .entry-content{max-width:1120px}
 .cleexs-editorial{max-width:1040px}
@@ -367,7 +367,7 @@ body.single-post .ast-container,body.single-post .entry-content{max-width:1120px
 .cleexs-editorial__avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .cleexs-editorial__author-name{font-size:14px;font-weight:700;color:#fff;line-height:1.35}
 .cleexs-editorial__author-role{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#8fa8c8;line-height:1.35}
-.cleexs-editorial__lead,.cleexs-editorial p.cleexs-editorial__lead{position:relative;z-index:1;font-size:17px;line-height:1.7;color:#eef3fa;margin:0 0 14px}
+.cleexs-editorial__lead,.cleexs-editorial p.cleexs-editorial__lead{position:relative;z-index:1;font-size:19px;line-height:1.7;color:#eef3fa;margin:0 0 14px}
 .cleexs-editorial__lead:last-child,.cleexs-editorial p.cleexs-editorial__lead:last-child{margin-bottom:0}
 .cleexs-editorial__section{margin:0 0 44px}
 .cleexs-editorial__section-head{display:flex;gap:18px;align-items:flex-start;margin:0 0 22px;padding-bottom:16px;border-bottom:1px solid #e8ecf3}
@@ -419,7 +419,7 @@ body.single-post .ast-container,body.single-post .entry-content{max-width:1120px
 .cleexs-editorial .cleexs-ecosystem__tag{margin-left:6px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#94a3b8}
 .cleexs-editorial .cleexs-meta{margin:28px 0 0;padding-top:18px;border-top:1px solid #e8ecf3;font-size:13px;color:#94a3b8}
 @media (max-width:640px){
-.cleexs-editorial{font-size:16px}
+.cleexs-editorial{font-size:18px}
 .cleexs-editorial__hero{padding:28px 22px;border-radius:16px;margin-bottom:32px}
 .cleexs-editorial__title{font-size:27px}
 .cleexs-editorial__section-head{gap:12px}
