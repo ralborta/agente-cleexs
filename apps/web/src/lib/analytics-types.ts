@@ -58,6 +58,45 @@ export type AnalyticsDashboard = {
   };
 };
 
+export type PublicationPerformanceRow = {
+  pieceId: string;
+  publicationId: string;
+  title: string;
+  slug: string | null;
+  url: string | null;
+  publishedAt: string | null;
+  agentSlug: string;
+  agentName: string;
+  pieceType: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  sessions: number;
+  ctaClicks: number;
+  ctaSubmits: number;
+  gscSubmitStatus: string | null;
+  indexNowStatus: string | null;
+  score: number;
+};
+
+export type PublicationPerformanceReport = {
+  workspace: { slug: string; name: string };
+  period: AnalyticsPeriod;
+  updatedAt: string;
+  agent: string | null;
+  sources: { gsc: boolean; ga4: boolean; cta: boolean };
+  kpis: {
+    publications: number;
+    impressions: number;
+    clicks: number;
+    sessions: number;
+    ctaEvents: number;
+    indexedOk: number;
+  };
+  agents: Array<{ slug: string; name: string; publications: number }>;
+  rows: PublicationPerformanceRow[];
+};
+
 export function formatMetric(value: number) {
   return new Intl.NumberFormat('es-AR').format(value);
 }

@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { buildAnalyticsDashboard, type AnalyticsPeriod } from '../lib/analytics-dashboard';
+import { buildPublicationPerformance } from '../lib/publication-metrics';
 
 const VALID_PERIODS = new Set<number>([7, 30, 90]);
 
@@ -15,6 +16,25 @@ const analyticsRoutes: FastifyPluginAsync = async (server) => {
       return dashboard;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error analytics';
+      if (message.includes('no encontrado')) {
+        return reply.status(404).send({ error: message });
+      }
+      return reply.status(500).send({ error: message });
+    }
+  });
+
+  /** Rendimiento fila-a-fila por publicación (y filtro opcional por agente). */
+  server.get('/:workspaceSlug/publications', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    const query = request.query as { period?: string; agent?: string };
+    const parsed = Number(query.period ?? 30);
+    const period = (VALID_PERIODS.has(parsed) ? parsed : 30) as AnalyticsPeriod;
+    const agent = query.agent?.trim() || null;
+
+    try {
+      return await buildPublicationPerformance(workspaceSlug, period, agent);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error analytics publicaciones';
       if (message.includes('no encontrado')) {
         return reply.status(404).send({ error: message });
       }

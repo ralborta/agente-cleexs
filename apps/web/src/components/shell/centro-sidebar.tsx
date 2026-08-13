@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   FileText,
   LayoutDashboard,
+  LineChart,
   LogOut,
   Plug,
   Radio,
@@ -27,6 +28,7 @@ import { cn } from '@/lib/utils';
 const resultsNav = [
   { href: '/cleexs', label: PLATFORM_SHORT, icon: LayoutDashboard },
   { href: '/cleexs/resultados', label: 'Resultados', icon: BarChart3 },
+  { href: '/cleexs/rendimiento', label: 'Rendimiento', icon: LineChart },
   { href: '/cleexs/publicaciones', label: 'Publicaciones', icon: FileText },
   { href: '/cleexs/calendario', label: 'Calendario', icon: CalendarDays },
   { href: '/cleexs/oportunidades', label: 'Oportunidades', icon: Target },

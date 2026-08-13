@@ -304,6 +304,18 @@ export async function fetchAnalytics(workspace: string, period: 7 | 30 | 90 = 30
   );
 }
 
+export async function fetchPublicationPerformance(
+  workspace: string,
+  period: 7 | 30 | 90 = 30,
+  agent?: string | null,
+) {
+  const qs = new URLSearchParams({ period: String(period) });
+  if (agent) qs.set('agent', agent);
+  return api<import('./analytics-types').PublicationPerformanceReport>(
+    `/api/analytics/${workspace}/publications?${qs.toString()}`,
+  );
+}
+
 export type AgentConfig = {
   id: string;
   tone: string | null;
