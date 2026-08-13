@@ -54,11 +54,15 @@ function resolvePieceTitle(input: {
     return missionTitle.replace(/^Refresco:\s*/i, '').trim() || input.refreshTitle;
   }
 
-  if (missionTitle?.startsWith('Misión manual') && !AUTO_MISSION_TITLE.test(missionTitle)) {
-    return missionTitle;
+  if (input.hintTitle?.trim()) {
+    return input.hintTitle.trim();
   }
 
-  return input.hintTitle ?? input.refreshTitle;
+  if (missionTitle?.startsWith('Misión manual') && !AUTO_MISSION_TITLE.test(missionTitle)) {
+    return missionTitle.replace(/^Misión manual\s*[—\-]\s*/i, '').trim() || missionTitle;
+  }
+
+  return input.refreshTitle;
 }
 
 export async function executeMission(missionId: string) {

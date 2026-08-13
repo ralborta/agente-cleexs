@@ -16,10 +16,12 @@ export function parseMissionPlanHints(mission: {
 
   const topicMatch = obj.match(/\[topic:([^\]]+)\]/i);
   const pieceMatch = obj.match(/\[pieceType:([a-z_]+)\]/i);
+  const titleMatch = obj.match(/\[title:([^\]]+)\]/i);
 
   return {
     ...(topicMatch?.[1]?.trim() ? { topic: topicMatch[1].trim() } : {}),
     ...(pieceMatch?.[1]?.trim() ? { pieceType: pieceMatch[1].trim() } : {}),
+    ...(titleMatch?.[1]?.trim() ? { title: titleMatch[1].trim() } : {}),
     ...(wantsPro ? { depth: 'pro' as const, pieceType: pieceMatch?.[1]?.trim() || 'pillar' } : {}),
   };
 }
@@ -31,12 +33,13 @@ export function parseRefreshPieceId(objective?: string | null): string | null {
 
 export function buildMissionObjective(
   objective: string | undefined,
-  opts: { topic?: string; pieceType?: string; depth?: string },
+  opts: { topic?: string; pieceType?: string; depth?: string; title?: string },
 ): string | undefined {
   const parts = [objective?.trim()].filter(Boolean) as string[];
   if (opts.depth === 'pro') parts.push('[depth:pro]');
   if (opts.topic?.trim()) parts.push(`[topic:${opts.topic.trim()}]`);
   if (opts.pieceType?.trim()) parts.push(`[pieceType:${opts.pieceType.trim()}]`);
+  if (opts.title?.trim()) parts.push(`[title:${opts.title.trim()}]`);
   const joined = parts.join(' ').trim();
   return joined || undefined;
 }
