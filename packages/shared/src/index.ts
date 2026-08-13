@@ -91,9 +91,9 @@ export const DEFAULT_BRAND_KIT: BrandKit = {
   fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
   authorLine: 'Por Teo · Agente de contenido Cleexs',
   cta: {
-    headline: '¿Querés medir tu visibilidad en Google e IA?',
-    body: 'Pegá la URL de tu sitio y Cleexs analiza cómo te ven ChatGPT, Google y tus competidores.',
-    label: 'Checkeá tu visibilidad gratis',
+    headline: 'Conseguí clientes desde ChatGPT',
+    body: 'Pegá la URL de tu sitio y descubrí si ChatGPT te recomienda a vos o a tu competencia.',
+    label: 'Empezá gratis',
     url: 'https://app.cleexs.net/diagnostico/crear?url=',
     buttonColor: '#FFFFFF',
     urlInput: true,

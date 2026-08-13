@@ -170,6 +170,9 @@ export async function createWordPressPost(
     title: payload.title,
     content: payload.content,
     status: payload.status ?? config.approvalPostStatus ?? 'draft',
+    // Artículos de Teo: sin comentarios ni pings en el post público
+    comment_status: 'closed',
+    ping_status: 'closed',
     ...buildWordPressSeoMetaFields({
       metaTitle: payload.seoMeta?.metaTitle,
       metaDescription: payload.seoMeta?.metaDescription ?? payload.excerpt,

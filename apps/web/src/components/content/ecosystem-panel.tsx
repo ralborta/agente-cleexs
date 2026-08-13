@@ -71,7 +71,7 @@ export function EcosystemPanel({ clusters }: { clusters: ContentClusterSummary[]
       </div>
 
       <p className="mt-4 text-xs text-hub-muted">
-        Al publicar, Teo agrega una sección <strong className="text-slate-300">En este ecosistema</strong>{' '}
+        Al publicar, Teo agrega una sección <strong className="text-slate-300">Artículos que te pueden interesar</strong>{' '}
         con links internos entre pilar y satélites.{' '}
         <Link href="/cleexs/monitor" className="text-cleexs-blue underline">
           Lanzar misión

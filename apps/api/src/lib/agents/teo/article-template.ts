@@ -253,7 +253,7 @@ function buildCtaActionHtml(
   <input type="url" name="${escapeHtml(dest.paramName)}" placeholder="${escapeHtml(cta.placeholder)}" required autocomplete="url" />
   <button type="submit">${escapeHtml(label)}</button>
 </form>
-<p class="cleexs-cta__hint">Abrimos el diagnóstico con tu URL ya cargada. · variante ${variant}</p>`
+`
     : `<a href="${escapeHtml(dest.fallbackHref)}" target="_blank" rel="noopener"${
         trackClick ? ` onclick="${trackClick}"` : ''
       }>${escapeHtml(label)}</a>`;

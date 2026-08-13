@@ -168,7 +168,7 @@ export function renderInterlinksSection(links: InterlinkTarget[]): string {
     })
     .join('');
 
-  return `<section class="cleexs-ecosystem"><h2>En este ecosistema de contenido</h2><p>Artículos relacionados del cluster SEO/AEO de Cleexs — enlazados para mejorar autoridad y citabilidad en IA.</p><ul class="cleexs-ecosystem__list">${items}</ul></section>`;
+  return `<section class="cleexs-ecosystem"><h2>Artículos que te pueden interesar</h2><p>Más lecturas del blog de Cleexs.</p><ul class="cleexs-ecosystem__list">${items}</ul></section>`;
 }
 
 function escapeHtml(text: string): string {

@@ -10,29 +10,31 @@ if (!defined('ABSPATH')) {
 }
 
 add_action('init', function () {
-    if (get_option('cleexs_home_seo_fixed_v2')) {
+    if (get_option('cleexs_home_seo_fixed_v3')) {
         return;
     }
 
-    $title = 'Cleexs - Conseguí clientes desde ChatGPT';
-    $desc  = 'Conseguí clientes desde ChatGPT con Cleexs.';
+    // blogname/page title cortos para header+menú; frase larga solo en meta SEO
+    $siteName = 'Cleexs';
+    $seoTitle = 'Cleexs - Conseguí clientes desde ChatGPT';
+    $desc     = 'Conseguí clientes desde ChatGPT con Cleexs.';
 
-    update_option('blogname', $title);
+    update_option('blogname', $siteName);
     update_option('blogdescription', $desc);
 
     $homeId = (int) get_option('page_on_front');
     if ($homeId > 0) {
         wp_update_post([
             'ID'         => $homeId,
-            'post_title' => $title,
+            'post_title' => 'Inicio',
         ]);
-        update_post_meta($homeId, 'rank_math_title', $title);
+        update_post_meta($homeId, 'rank_math_title', $seoTitle);
         update_post_meta($homeId, 'rank_math_description', $desc);
     }
 
     $titles = get_option('rank-math-options-titles');
     if (is_array($titles)) {
-        $titles['homepage_title']       = $title;
+        $titles['homepage_title']       = $seoTitle;
         $titles['homepage_description'] = $desc;
         update_option('rank-math-options-titles', $titles);
     }
@@ -42,7 +44,7 @@ add_action('init', function () {
     if (is_readable($index) && is_writable($index)) {
         $html = file_get_contents($index);
         if ($html !== false) {
-            $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . esc_html($title) . '</title>', $html, 1);
+            $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . esc_html($seoTitle) . '</title>', $html, 1);
             if (preg_match('/<meta\s+name=["\']description["\']/i', $html)) {
                 $html = preg_replace(
                     '/<meta\s+name=["\']description["\']\s+content=["\'][^"\']*["\']\s*\/?>/i',
@@ -53,26 +55,26 @@ add_action('init', function () {
             } else {
                 $html = preg_replace(
                     '/<title>.*?<\/title>/is',
-                    '<title>' . esc_html($title) . '</title>' . "\n  <meta name=\"description\" content=\"" . esc_attr($desc) . '" />',
+                    '<title>' . esc_html($seoTitle) . '</title>' . "\n  <meta name=\"description\" content=\"" . esc_attr($desc) . '" />',
                     $html,
                     1
                 );
             }
             $html = preg_replace(
                 '/property=["\']og:title["\']\s+content=["\'][^"\']*["\']/i',
-                'property="og:title" content="' . esc_attr($title) . '"',
+                'property="og:title" content="' . esc_attr($seoTitle) . '"',
                 $html
             );
             $html = preg_replace(
                 '/content=["\'][^"\']*["\']\s+property=["\']og:title["\']/i',
-                'content="' . esc_attr($title) . '" property="og:title"',
+                'content="' . esc_attr($seoTitle) . '" property="og:title"',
                 $html
             );
             file_put_contents($index, $html);
         }
     }
 
-    update_option('cleexs_home_seo_fixed_v2', 1);
+    update_option('cleexs_home_seo_fixed_v3', 1);
 
     if (has_action('litespeed_purge_all')) {
         do_action('litespeed_purge_all');
