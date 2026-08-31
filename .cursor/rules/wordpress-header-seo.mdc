@@ -1,0 +1,14 @@
+---
+description: Copy SEO de la home no va al header de WordPress/Astra
+alwaysApply: true
+---
+
+# Header WP vs SEO de la home
+
+Astra muestra **logo + título del sitio** a la izquierda y el **nombre de la página Inicio** en el menú. Si ambos llevan la frase SEO, se ve duplicada en cada artículo.
+
+- Título del sitio (`blogname` / `wp_update_site_settings.title`) → `Cleexs`
+- Página de inicio (`post_title` / `wp_update_page` id de Inicio) → `Inicio`
+- Frase larga (`Cleexs - Conseguí clientes desde ChatGPT`) → solo Rank Math / `<title>` / og:title / meta description
+
+Nunca uses `wp_update_site_settings` ni `wp_update_page` (título) para aplicar copy SEO de la home. En código: `applyHomeSeoMeta` / `protectWordPressHeaderIdentity`.
