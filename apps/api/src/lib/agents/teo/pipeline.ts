@@ -103,12 +103,18 @@ export async function runWriter(
 
 export type WriterDraft = Awaited<ReturnType<typeof runWriter>>;
 
-export function runSeoBuilder(plan: StrategistPlan, draft: WriterDraft, branding?: BrandKit) {
+export function runSeoBuilder(
+  plan: StrategistPlan,
+  draft: WriterDraft,
+  branding?: BrandKit,
+  opts?: { siteBaseUrl?: string },
+) {
   const title = fixUtf8Mojibake(plan.title);
   const excerpt = fixUtf8Mojibake(draft.excerpt);
   const slug = slugify(title);
 
   const brandName = branding?.brandName?.trim() || 'Cleexs';
+  const siteBase = (opts?.siteBaseUrl ?? 'https://cleexs.net').replace(/\/$/, '');
   const faqs = collectArticleFaqs(draft.articleData);
   const schema = buildSeoSchemaGraph({
     title,
@@ -122,7 +128,7 @@ export function runSeoBuilder(plan: StrategistPlan, draft: WriterDraft, branding
   return {
     metaTitle: `${title} | ${brandName}`,
     metaDescription: excerpt,
-    canonical: `https://cleexs.net/articulos/${slug}`,
+    canonical: `${siteBase}/articulos/${slug}/`,
     schema,
     openGraph: {
       title,

@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { resolveSiteBaseUrl } from './integrations/wordpress';
 
 export type InterlinkTarget = {
   pieceId: string;
@@ -36,6 +37,10 @@ const DEFAULT_CLUSTERS: Record<string, { name: string; pillarTopic: string }> = 
     name: 'Visibilidad AEO / SEO',
     pillarTopic: 'visibilidad en IA y SEO para PyMEs',
   },
+  empleados: {
+    name: 'Marca empleadora / atracción de talento',
+    pillarTopic: 'marca empleadora y visibilidad en IA para HR',
+  },
 };
 
 function pieceRole(type: string): 'pillar' | 'satellite' {
@@ -45,9 +50,13 @@ function pieceRole(type: string): 'pillar' | 'satellite' {
 function resolvePublicUrl(
   publicationUrl: string | null | undefined,
   slug: string | null | undefined,
+  siteBase: string,
 ): string | null {
   if (publicationUrl?.trim()) return publicationUrl.trim();
-  if (slug?.trim()) return `https://cleexs.net/articulos/${slug.replace(/^\/+|\/+$/g, '')}/`;
+  if (slug?.trim()) {
+    const base = siteBase.replace(/\/$/, '') || 'https://cleexs.net';
+    return `${base}/articulos/${slug.replace(/^\/+|\/+$/g, '')}/`;
+  }
   return null;
 }
 
@@ -122,6 +131,9 @@ export async function getInterlinkTargets(
 ): Promise<InterlinkTarget[]> {
   const limit = options?.limit ?? 4;
 
+  const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+  const siteBase = resolveSiteBaseUrl(workspace?.slug ?? 'cleexs');
+
   const pieces = await prisma.contentPiece.findMany({
     where: {
       workspaceId,
@@ -136,7 +148,7 @@ export async function getInterlinkTargets(
   const targets: InterlinkTarget[] = [];
 
   for (const piece of pieces) {
-    const url = resolvePublicUrl(piece.publication?.url, piece.slug);
+    const url = resolvePublicUrl(piece.publication?.url, piece.slug, siteBase);
     if (!url) continue;
     if (options?.excludeSlug && piece.slug === options.excludeSlug) continue;
 
@@ -234,6 +246,8 @@ export async function listWorkspaceClusters(workspaceSlug: string): Promise<Clus
     },
   });
 
+  const siteBase = resolveSiteBaseUrl(workspaceSlug);
+
   return clusters.map((cluster) => {
     const typesPresent = new Set(cluster.pieces.map((p) => p.type));
     const missingTypes = ECOSYSTEM_TYPES.filter((t) => !typesPresent.has(t));
@@ -249,7 +263,7 @@ export async function listWorkspaceClusters(workspaceSlug: string): Promise<Clus
         status: p.status,
         slug: p.slug,
         keyword: p.keyword,
-        url: resolvePublicUrl(p.publication?.url, p.slug),
+        url: resolvePublicUrl(p.publication?.url, p.slug, siteBase),
         role: pieceRole(p.type),
       })),
       stats: {

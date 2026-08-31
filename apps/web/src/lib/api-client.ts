@@ -475,6 +475,20 @@ export async function fetchWordPressSetup(workspace: string) {
   );
 }
 
+export async function restoreWordPressHeaderIdentity(workspace: string) {
+  return api<{
+    workspace: string;
+    header: {
+      siteTitle: string;
+      homePageTitle: string;
+      homePageId: number | null;
+      ok: boolean;
+      detail: string;
+    };
+    setup: WordPressSetupReport;
+  }>(`/api/integrations/${workspace}/wordpress/header-identity`, { method: 'POST' });
+}
+
 export type SeoFoundationsCheck = {
   id: string;
   label: string;

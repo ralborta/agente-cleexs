@@ -16,6 +16,7 @@ import { getStrategicPlanHints } from './agents/teo/strategist-metrics';
 import { parseMissionPlanHints, parseRefreshPieceId } from './agents/teo/mission-plan';
 import { resolveBrandKit } from './branding/brand-kit';
 import { publishAndRecordPiece } from './integrations/wordpress-publish';
+import { resolveSiteBaseUrl } from './integrations/wordpress';
 import {
   ensureDefaultCluster,
   enrichHtmlWithClusterInterlinks,
@@ -295,7 +296,9 @@ export async function executeMission(missionId: string) {
     }
 
     // --- Albañil SEO ---
-    const seo = runSeoBuilder(plan, draftLinked, branding);
+    const seo = runSeoBuilder(plan, draftLinked, branding, {
+      siteBaseUrl: resolveSiteBaseUrl(mission.workspace.slug),
+    });
     const finalHtml = seo.html || linkedHtml;
     const stepSeo = await createMissionStep({
       missionId,

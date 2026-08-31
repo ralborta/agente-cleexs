@@ -147,7 +147,7 @@ export default function IntegracionesPage() {
           <RankMathSetupPanel />
 
           <div className="grid gap-6 xl:grid-cols-2">
-            <SettingsSection title="WordPress" description="Publicación en cleexs.net/articulos/">
+            <SettingsSection title="WordPress" description="Publicación en /articulos/ del sitio del workspace">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 {wpBadge ? <StatusBadge status={wpBadge.status} label={wpBadge.label} /> : null}
                 <button
@@ -218,7 +218,7 @@ export default function IntegracionesPage() {
                       disabled={testing !== null}
                       className={`${buttonSecondaryClassName} mt-3`}
                     >
-                      {testing === 'header' ? 'Restaurando…' : 'Restaurar header (Cleexs / Inicio)'}
+                      {testing === 'header' ? 'Restaurando…' : 'Restaurar header (sitio / Inicio)'}
                     </button>
                   ) : null}
                   <p className="mt-3 text-xs text-hub-muted">

@@ -86,7 +86,7 @@ export default function PublicacionesPage() {
         <div>
           <h2 className="text-2xl font-semibold text-white">Publicaciones</h2>
           <p className="mt-1 text-sm text-hub-muted">
-            Piezas aprobadas y publicadas por {TEO_AUTHOR_NAME} en cleexs.net, organizadas en
+            Piezas aprobadas y publicadas por {TEO_AUTHOR_NAME} en el blog del workspace, organizadas en
             ecosistemas.
           </p>
         </div>

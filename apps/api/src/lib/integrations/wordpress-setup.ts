@@ -1,10 +1,11 @@
 import {
+  auditWordPressHeaderIdentity,
   findOrCreateCategory,
   isWordPressConfigured,
   resolveWordPressConfig,
   testWordPressConnection,
 } from './wordpress';
-import { resolveSeoPlugin } from './wordpress-seo';
+import { resolveSeoPlugin, resolveHeaderSiteName, WP_HEADER_HOME_NAV_TITLE } from './wordpress-seo';
 
 export type WordPressSetupCheck = {
   id: string;
@@ -160,6 +161,26 @@ export async function auditWordPressSetup(workspaceSlug: string): Promise<WordPr
       ? `API configurada: ${seoPlugin}. Instalá el plugin en WP + mu-plugin cleexs-teo-rankmath-rest.php`
       : 'Definí WORDPRESS_SEO_PLUGIN=rankmath en Easypanel API',
   });
+
+  try {
+    const header = await auditWordPressHeaderIdentity(config!, {
+      siteName: resolveHeaderSiteName(workspaceSlug),
+      homeNavTitle: WP_HEADER_HOME_NAV_TITLE,
+    });
+    checks.push({
+      id: 'header_identity',
+      label: 'Header (título del sitio / Inicio)',
+      status: header.ok ? 'ok' : 'warning',
+      detail: header.detail,
+    });
+  } catch (err) {
+    checks.push({
+      id: 'header_identity',
+      label: 'Header (título del sitio / Inicio)',
+      status: 'warning',
+      detail: err instanceof Error ? err.message : 'No se pudo verificar el header de Astra',
+    });
+  }
 
   if (seoPlugin === 'rankmath') {
     try {

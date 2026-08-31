@@ -119,7 +119,7 @@ export function ApprovalReviewCard({
       const res = await approvePiece(item.id, wpStatus, reviewNotes);
       onSuccess(
         wpStatus === 'publish'
-          ? `Publicado en cleexs.net (${res.wordpress.status}): ${res.wordpress.url}`
+          ? `Publicado en WordPress (${res.wordpress.status}): ${res.wordpress.url}`
           : `Borrador en WordPress (${res.wordpress.status}): ${res.wordpress.url}`,
       );
       onDone();
@@ -369,7 +369,7 @@ export function ApprovalReviewCard({
                     onChange={(e) => setPublishLive(e.target.checked)}
                     className="h-4 w-4 rounded border-hub-border bg-[#0b1220] text-cleexs-blue"
                   />
-                  Publicar en vivo en cleexs.net/articulos/
+                  Publicar en vivo en /articulos/
                 </label>
                 <div className="flex flex-wrap gap-2">
                   <button

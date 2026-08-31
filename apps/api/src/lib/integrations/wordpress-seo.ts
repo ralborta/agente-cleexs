@@ -4,6 +4,45 @@ export type WordPressSeoInput = {
   focusKeyword?: string | null;
 };
 
+/** Nombre corto del sitio (Astra lo muestra junto al logo en el header). */
+export const WP_HEADER_SITE_NAME = 'Cleexs';
+/** Título de la página de inicio (Astra lo usa como ítem del menú). */
+export const WP_HEADER_HOME_NAV_TITLE = 'Inicio';
+/** Frase larga: solo Rank Math / <title> / og:title — nunca blogname ni post_title. */
+export const HOME_SEO_TITLE = 'Cleexs - Conseguí clientes desde ChatGPT';
+export const HOME_SEO_DESCRIPTION = 'Conseguí clientes desde ChatGPT con Cleexs.';
+
+const HEADER_SITE_BY_WORKSPACE: Record<string, string> = {
+  cleexs: 'Cleexs',
+  empleados: 'Empleados',
+};
+
+/** Nombre corto para blogname / header (nunca la frase SEO larga). */
+export function resolveHeaderSiteName(
+  workspaceSlug: string,
+  brandName?: string | null,
+): string {
+  const fromBrand = brandName?.trim();
+  if (fromBrand) return fromBrand;
+  return HEADER_SITE_BY_WORKSPACE[workspaceSlug] ?? WP_HEADER_SITE_NAME;
+}
+
+/**
+ * True si el texto es copy SEO/meta y no un label de header/menú.
+ * Astra muestra logo + blogname a la izquierda y el título de la página Inicio a la derecha:
+ * meter la frase larga ahí duplica el texto en cada artículo.
+ */
+export function looksLikeSeoHeadline(
+  value: string,
+  siteName = WP_HEADER_SITE_NAME,
+): boolean {
+  const t = value.trim();
+  if (!t) return false;
+  if (t === siteName || t === WP_HEADER_HOME_NAV_TITLE) return false;
+  if (/ [-–—|] /.test(t) || t.includes(' - ')) return true;
+  return t.length > 24;
+}
+
 export function resolveSeoPlugin(): 'rankmath' | 'yoast' | null {
   const raw = (process.env.WORDPRESS_SEO_PLUGIN ?? '').trim().toLowerCase();
   if (raw === 'rankmath' || raw === 'rank_math' || raw === 'rank-math') return 'rankmath';

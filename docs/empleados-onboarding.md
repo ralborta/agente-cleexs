@@ -4,6 +4,7 @@
 
 - Workspace DB `empleados` + AgentConfig Teo + user `admin@empleados.net`
 - Portal multi-tenant: `/{workspace}/...` (ej. `/empleados`, `/cleexs`)
+- Canonicals / interlinks usan la URL WP del workspace (`WP_EMPLEADOS_*` o fallback `empleados.net`)
 - Env listos: `WP_EMPLEADOS_*`, `GSC_EMPLEADOS_*`, `GA4_EMPLEADOS_*`, `INDEXNOW_EMPLEADOS_*`
 
 ## Pendiente (vos)

@@ -14,7 +14,8 @@ add_action('init', function () {
         return;
     }
 
-    // blogname/page title cortos para header+menú; frase larga solo en meta SEO
+    // Astra: logo + blogname a la izquierda, título de la página Inicio en el menú.
+    // Nunca pongas la frase SEO larga en blogname ni en post_title.
     $siteName = 'Cleexs';
     $seoTitle = 'Cleexs - Conseguí clientes desde ChatGPT';
     $desc     = 'Conseguí clientes desde ChatGPT con Cleexs.';

@@ -4,6 +4,18 @@ import { testGoogleMetrics, syncWorkspaceMetrics } from '../lib/metrics-sync';
 import { getWordPressStatus, testWorkspaceWordPress } from '../lib/integrations/wordpress-publish';
 import { auditWordPressSetup } from '../lib/integrations/wordpress-setup';
 import { auditSeoFoundations, publishLlmsTxt } from '../lib/integrations/seo-foundations';
+import {
+  applyHomeSeoMeta,
+  isWordPressConfigured,
+  protectWordPressHeaderIdentity,
+  resolveWordPressConfig,
+} from '../lib/integrations/wordpress';
+import {
+  HOME_SEO_DESCRIPTION,
+  HOME_SEO_TITLE,
+  resolveHeaderSiteName,
+  WP_HEADER_HOME_NAV_TITLE,
+} from '../lib/integrations/wordpress-seo';
 import { getAutomationStatus } from '../lib/automation-status';
 import { getWorkspaceIndexingStatus, invalidateIndexingCache } from '../lib/indexing-status';
 import {
@@ -75,6 +87,53 @@ const integrationRoutes: FastifyPluginAsync = async (server) => {
     const { workspaceSlug } = request.params as { workspaceSlug: string };
     const report = await auditWordPressSetup(workspaceSlug);
     return { workspace: workspaceSlug, setup: report };
+  });
+
+  server.post('/:workspaceSlug/wordpress/header-identity', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    const config = resolveWordPressConfig(workspaceSlug);
+    if (!isWordPressConfigured(config)) {
+      return reply.status(400).send({ error: 'WordPress no configurado' });
+    }
+    try {
+      const identity = {
+        siteName: resolveHeaderSiteName(workspaceSlug),
+        homeNavTitle: WP_HEADER_HOME_NAV_TITLE,
+      };
+      const header = await protectWordPressHeaderIdentity(config, identity);
+      const setup = await auditWordPressSetup(workspaceSlug);
+      return { workspace: workspaceSlug, header, setup };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al restaurar el header';
+      return reply.status(502).send({ error: message });
+    }
+  });
+
+  server.post('/:workspaceSlug/seo-foundations/home', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    const config = resolveWordPressConfig(workspaceSlug);
+    if (!isWordPressConfigured(config)) {
+      return reply.status(400).send({ error: 'WordPress no configurado' });
+    }
+    try {
+      const identity = {
+        siteName: resolveHeaderSiteName(workspaceSlug),
+        homeNavTitle: WP_HEADER_HOME_NAV_TITLE,
+      };
+      // Copy SEO largo de home solo para Cleexs; otros workspaces solo protegen el header.
+      const header =
+        workspaceSlug === 'cleexs'
+          ? await applyHomeSeoMeta(
+              config,
+              { metaTitle: HOME_SEO_TITLE, metaDescription: HOME_SEO_DESCRIPTION },
+              identity,
+            )
+          : await protectWordPressHeaderIdentity(config, identity);
+      return { workspace: workspaceSlug, header };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al aplicar SEO de la home';
+      return reply.status(502).send({ error: message });
+    }
   });
 
   server.get('/:workspaceSlug/seo-foundations', async (request, reply) => {

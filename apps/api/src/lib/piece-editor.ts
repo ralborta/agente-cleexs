@@ -8,6 +8,7 @@ import {
 import { sanitizeChartSpec } from './agents/teo/charts';
 import { resolveBrandKit } from './branding/brand-kit';
 import { prisma } from './prisma';
+import { resolveSiteBaseUrl } from './integrations/wordpress';
 
 function renderWithTracking(
   articleData: ArticleData,
@@ -261,6 +262,7 @@ export async function updateApprovalPieceContent(
   });
 
   const branding = resolveBrandKit(agentConfig?.branding, approval.workspace.name);
+  const siteBase = resolveSiteBaseUrl(approval.workspace.slug);
   const currentContent = parsePieceContent(approval.piece.content);
   const currentSeo = parsePieceSeoMeta(approval.piece.seoMeta);
 
@@ -328,7 +330,7 @@ export async function updateApprovalPieceContent(
       slug,
       metaTitle: `${title} | ${branding.brandName ?? 'Cleexs'}`,
       metaDescription: nextContent.excerpt ?? currentSeo.metaDescription,
-      canonical: slug ? `https://cleexs.net/articulos/${slug}` : currentSeo.canonical,
+      canonical: slug ? `${siteBase}/articulos/${slug}/` : currentSeo.canonical,
       schema,
       faqCount: faqs.length,
     };
@@ -374,7 +376,7 @@ export async function updateApprovalPieceContent(
     slug,
     metaTitle: `${title} | ${branding.brandName ?? 'Cleexs'}`,
     metaDescription: nextContent.excerpt ?? currentSeo.metaDescription,
-    canonical: slug ? `https://cleexs.net/articulos/${slug}` : currentSeo.canonical,
+    canonical: slug ? `${siteBase}/articulos/${slug}/` : currentSeo.canonical,
   };
 
   const piece = await prisma.contentPiece.update({

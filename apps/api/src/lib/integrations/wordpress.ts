@@ -1,4 +1,12 @@
-import { buildWordPressSeoMetaFields, buildSeoMetaPayload, hasSeoPluginConfigured } from './wordpress-seo';
+import {
+  buildWordPressSeoMetaFields,
+  buildSeoMetaPayload,
+  hasSeoPluginConfigured,
+  looksLikeSeoHeadline,
+  WP_HEADER_HOME_NAV_TITLE,
+  WP_HEADER_SITE_NAME,
+  type WordPressSeoInput,
+} from './wordpress-seo';
 
 export type WordPressConfig = {
   baseUrl: string;
@@ -224,7 +232,22 @@ export async function syncWordPressSeoMeta(
   }
 }
 
-/** URL pública legible (cleexs.net/articulos/slug/), no el preview ?p= de borradores. */
+/** Base del sitio WP del workspace, o fallback Cleexs. */
+export function resolveSiteBaseUrl(workspaceSlug: string): string {
+  const config = resolveWordPressConfig(workspaceSlug);
+  if (config?.baseUrl) return config.baseUrl.replace(/\/$/, '');
+  if (workspaceSlug === 'empleados') return 'https://empleados.net';
+  return 'https://cleexs.net';
+}
+
+/** Canonical / URL pública de artículo: {site}/articulos/{slug}/ */
+export function buildArticleCanonicalUrl(siteBase: string, slug: string): string {
+  const base = siteBase.replace(/\/$/, '') || 'https://cleexs.net';
+  const clean = slug.replace(/^\/+|\/+$/g, '');
+  return `${base}/articulos/${clean}/`;
+}
+
+/** URL pública legible ({site}/articulos/slug/), no el preview ?p= de borradores. */
 export function resolveWordPressPublicUrl(
   config: WordPressConfig,
   wpPost: Pick<WordPressPostResponse, 'link' | 'slug' | 'permalink_template'>,
@@ -413,8 +436,151 @@ type WpPage = {
   link: string;
   status: string;
   slug: string;
-  title: { rendered: string };
+  title: { rendered: string; raw?: string };
 };
+
+type WpSettings = {
+  title?: string;
+  description?: string;
+  page_on_front?: number;
+  show_on_front?: string;
+};
+
+function rawPageTitle(page: WpPage): string {
+  return (page.title.raw ?? page.title.rendered ?? '').trim();
+}
+
+export type WordPressHeaderIdentity = {
+  siteTitle: string;
+  homePageTitle: string;
+  homePageId: number | null;
+  ok: boolean;
+  detail: string;
+};
+
+async function readWordPressSettings(config: WordPressConfig): Promise<WpSettings> {
+  return wpFetch<WpSettings>(config, '/settings');
+}
+
+async function readFrontPage(
+  config: WordPressConfig,
+  settings?: WpSettings,
+): Promise<{ settings: WpSettings; page: WpPage | null }> {
+  const resolved = settings ?? (await readWordPressSettings(config));
+  const homeId = Number(resolved.page_on_front) || 0;
+  if (homeId <= 0) {
+    return { settings: resolved, page: null };
+  }
+  const page = await wpFetch<WpPage>(config, `/pages/${homeId}?context=edit`);
+  return { settings: resolved, page };
+}
+
+/**
+ * Astra muestra logo + título del sitio a la izquierda y el nombre de la
+ * página Inicio en el menú. El copy SEO largo va solo a Rank Math / meta.
+ */
+export async function auditWordPressHeaderIdentity(
+  config: WordPressConfig,
+  identity: { siteName?: string; homeNavTitle?: string } = {},
+): Promise<WordPressHeaderIdentity> {
+  const siteName = identity.siteName ?? WP_HEADER_SITE_NAME;
+  const homeNavTitle = identity.homeNavTitle ?? WP_HEADER_HOME_NAV_TITLE;
+  try {
+    const { settings, page } = await readFrontPage(config);
+    const siteTitle = (settings.title ?? '').trim();
+    const homePageTitle = page ? rawPageTitle(page) : homeNavTitle;
+    const siteOk = !looksLikeSeoHeadline(siteTitle, siteName) && siteTitle.length > 0;
+    const pageOk = !page || !looksLikeSeoHeadline(homePageTitle, siteName);
+    const ok = siteOk && pageOk;
+    return {
+      siteTitle,
+      homePageTitle,
+      homePageId: page?.id ?? null,
+      ok,
+      detail: ok
+        ? `Header OK: sitio “${siteTitle}” / menú “${homePageTitle}” (SEO largo solo en meta)`
+        : `El header muestra copy SEO. Dejá título del sitio = “${siteName}” y la página de inicio = “${homeNavTitle}”; la frase larga va a Rank Math.`,
+    };
+  } catch (err) {
+    return {
+      siteTitle: '',
+      homePageTitle: '',
+      homePageId: null,
+      ok: false,
+      detail: err instanceof Error ? err.message : 'No se pudo leer título del sitio / Inicio',
+    };
+  }
+}
+
+/** Restaura blogname + título de Inicio si alguien los pisó con copy SEO. */
+export async function protectWordPressHeaderIdentity(
+  config: WordPressConfig,
+  identity: { siteName?: string; homeNavTitle?: string } = {},
+): Promise<WordPressHeaderIdentity> {
+  const siteName = identity.siteName ?? WP_HEADER_SITE_NAME;
+  const homeNavTitle = identity.homeNavTitle ?? WP_HEADER_HOME_NAV_TITLE;
+  const { settings, page } = await readFrontPage(config);
+  const siteTitle = (settings.title ?? '').trim();
+
+  if (!siteTitle || looksLikeSeoHeadline(siteTitle, siteName)) {
+    await wpFetch(config, '/settings', {
+      method: 'POST',
+      body: JSON.stringify({ title: siteName }),
+    });
+  }
+
+  if (page && looksLikeSeoHeadline(rawPageTitle(page), siteName)) {
+    await wpFetch(config, `/pages/${page.id}`, {
+      method: 'POST',
+      body: JSON.stringify({ title: homeNavTitle }),
+    });
+  }
+
+  return auditWordPressHeaderIdentity(config, identity);
+}
+
+async function syncWordPressPageSeoMeta(
+  config: WordPressConfig,
+  pageId: number,
+  seo: WordPressSeoInput,
+): Promise<boolean> {
+  const metaFields = buildSeoMetaPayload(seo);
+  if (Object.keys(metaFields).length === 0) return false;
+  await wpFetch(config, `/pages/${pageId}`, {
+    method: 'POST',
+    body: JSON.stringify({ meta: metaFields }),
+  });
+  return true;
+}
+
+/**
+ * Aplica copy SEO de la home sin tocar el header.
+ * Escribe Rank Math (rank_math_title / description) en la página de inicio
+ * y deja blogname = Cleexs / post_title = Inicio.
+ */
+export async function applyHomeSeoMeta(
+  config: WordPressConfig,
+  seo: WordPressSeoInput,
+  identity: { siteName?: string; homeNavTitle?: string } = {},
+): Promise<WordPressHeaderIdentity & { seoApplied: boolean }> {
+  const header = await protectWordPressHeaderIdentity(config, identity);
+  let seoApplied = false;
+  if (header.homePageId && hasSeoPluginConfigured()) {
+    try {
+      seoApplied = await syncWordPressPageSeoMeta(config, header.homePageId, seo);
+    } catch (err) {
+      console.warn('[wordpress] No se pudo escribir meta SEO de la home:', err);
+    }
+  }
+  return { ...header, seoApplied };
+}
+
+function isWordPressFrontPage(page: WpPage, frontPageId: number | null, siteUrl: string): boolean {
+  if (frontPageId && page.id === frontPageId) return true;
+  const link = page.link.replace(/\/$/, '');
+  const home = siteUrl.replace(/\/$/, '');
+  return link === home;
+}
 
 /** Busca o crea/actualiza una página WP (p. ej. slug llms-txt). */
 export async function upsertWordPressPage(
@@ -432,13 +598,26 @@ export async function upsertWordPressPage(
     `/pages?slug=${search}&per_page=5&status=any&context=edit`,
   );
   const match = existing.find((p) => p.slug === input.slug);
-  const body = {
+  const body: Record<string, unknown> = {
     title: input.title,
     content: input.content,
     slug: input.slug,
     status: input.status ?? 'publish',
   };
+
   if (match) {
+    try {
+      const settings = await readWordPressSettings(config);
+      const frontId = Number(settings.page_on_front) || null;
+      if (isWordPressFrontPage(match, frontId, config.baseUrl) && looksLikeSeoHeadline(input.title)) {
+        delete body.title;
+      }
+    } catch {
+      // si no podemos leer settings, no arriesgamos el header de Inicio
+      if (looksLikeSeoHeadline(input.title)) {
+        delete body.title;
+      }
+    }
     return wpFetch<WpPage>(config, `/pages/${match.id}`, {
       method: 'POST',
       body: JSON.stringify(body),

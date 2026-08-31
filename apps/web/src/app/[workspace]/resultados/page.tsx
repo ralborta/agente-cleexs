@@ -81,7 +81,7 @@ export default function ResultadosPage() {
           </div>
           <h2 className="text-3xl font-semibold tracking-tight text-white">Resultados</h2>
           <p className="mt-2 max-w-2xl text-sm text-hub-muted">
-            Visitas, clicks e impresiones del blog de {TEO_AUTHOR_NAME} en cleexs.net · datos de Google Search
+            Visitas, clicks e impresiones del blog de {TEO_AUTHOR_NAME} · datos de Google Search
             Console y Analytics.
           </p>
         </div>
