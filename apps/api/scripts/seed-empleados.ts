@@ -18,7 +18,7 @@ const EMPLEADOS_BRANDING = {
     headline: 'Encontrá y retené mejor talento',
     body: 'Pegá la URL de tu sitio y descubrí cómo potenciar tu marca empleadora.',
     label: 'Empezá gratis',
-    url: 'https://empleados.net/',
+    url: 'https://empliados.net/',
     buttonColor: '#FFFFFF',
     urlInput: false,
     placeholder: 'https://tu-empresa.com',

@@ -236,7 +236,7 @@ export async function syncWordPressSeoMeta(
 export function resolveSiteBaseUrl(workspaceSlug: string): string {
   const config = resolveWordPressConfig(workspaceSlug);
   if (config?.baseUrl) return config.baseUrl.replace(/\/$/, '');
-  if (workspaceSlug === 'empleados') return 'https://empleados.net';
+  if (workspaceSlug === 'empleados') return 'https://empliados.net';
   return 'https://cleexs.net';
 }
 
