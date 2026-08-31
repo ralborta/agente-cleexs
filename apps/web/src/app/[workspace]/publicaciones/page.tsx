@@ -1,5 +1,7 @@
 'use client';
 
+import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
+import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Archive, CalendarDays, Loader2 } from 'lucide-react';
@@ -17,6 +19,10 @@ import {
 import { TEO_AUTHOR_NAME } from '@/lib/branding';
 
 export default function PublicacionesPage() {
+  const workspace = useWorkspaceSlug();
+  const workspaceName =
+    getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
+
   const [pieces, setPieces] = useState<Awaited<ReturnType<typeof fetchPieces>>['pieces']>([]);
   const [clusters, setClusters] = useState<ContentClusterSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,8 +34,8 @@ export default function PublicacionesPage() {
     setLoading(true);
     try {
       const [piecesData, clustersData] = await Promise.all([
-        fetchPieces('cleexs'),
-        fetchContentClusters('cleexs'),
+        fetchPieces(workspace),
+        fetchContentClusters(workspace),
       ]);
       setPieces(piecesData.pieces.filter((p) => p.status === 'published'));
       setClusters(clustersData.clusters);
@@ -39,7 +45,7 @@ export default function PublicacionesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspace]);
 
   useEffect(() => {
     load();
@@ -54,7 +60,7 @@ export default function PublicacionesPage() {
     setError(null);
     setMessage(null);
     try {
-      const res = await archivePiece(pieceId, 'cleexs');
+      const res = await archivePiece(pieceId, workspace);
       setPieces((prev) => prev.filter((p) => p.id !== pieceId));
       setMessage(
         res.wordpressTrashed
@@ -64,7 +70,7 @@ export default function PublicacionesPage() {
             : 'Archivada en Teo.',
       );
       // refrescar clusters (conteos)
-      fetchContentClusters('cleexs')
+      fetchContentClusters(workspace)
         .then((d) => setClusters(d.clusters))
         .catch(() => undefined);
     } catch (err) {
@@ -75,7 +81,7 @@ export default function PublicacionesPage() {
   };
 
   return (
-    <CentroShell workspaceName="Cleexs">
+    <CentroShell workspaceName={workspaceName}>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-white">Publicaciones</h2>
@@ -85,7 +91,7 @@ export default function PublicacionesPage() {
           </p>
         </div>
         <Link
-          href="/cleexs/calendario"
+          href={workspaceHref(workspace, "calendario")}
           className="inline-flex items-center gap-2 rounded-xl border border-hub-border bg-hub-card px-4 py-2 text-sm font-medium text-slate-200 hover:text-white"
         >
           <CalendarDays className="h-4 w-4" />
@@ -108,7 +114,7 @@ export default function PublicacionesPage() {
         <p className="text-hub-muted">Cargando…</p>
       ) : (
         <>
-          <IndexingStatusPanel workspace="cleexs" />
+          <IndexingStatusPanel workspace={workspace} />
           <EcosystemPanel clusters={clusters} />
 
           {pieces.length === 0 ? (

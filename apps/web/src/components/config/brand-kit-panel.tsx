@@ -1,5 +1,6 @@
 'use client';
 
+import { useWorkspaceSlug } from '@/lib/workspace';
 import { useCallback, useEffect, useState } from 'react';
 import { Eye, Palette } from 'lucide-react';
 import {
@@ -29,6 +30,7 @@ export function BrandKitPanel({
   onChange,
   previewVersion = 0,
 }: Props) {
+  const workspace = useWorkspaceSlug();
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [abStats, setAbStats] = useState<{
@@ -44,7 +46,7 @@ export function BrandKitPanel({
   async function loadPreview() {
     setPreviewLoading(true);
     try {
-      const res = await fetchBrandPreview('cleexs');
+      const res = await fetchBrandPreview(workspace);
       setPreviewHtml(res.html);
     } catch {
       setPreviewHtml(null);
@@ -55,12 +57,12 @@ export function BrandKitPanel({
 
   const loadAbStats = useCallback(async () => {
     try {
-      const res = await fetchCtaAbStats('cleexs', 30);
+      const res = await fetchCtaAbStats(workspace, 30);
       setAbStats(res);
     } catch {
       setAbStats(null);
     }
-  }, []);
+  }, [workspace]);
 
   useEffect(() => {
     loadPreview();

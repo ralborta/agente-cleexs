@@ -1,5 +1,6 @@
 'use client';
 
+import { useWorkspaceSlug } from '@/lib/workspace';
 import { useCallback, useEffect, useState } from 'react';
 import { FileText, RefreshCw, Upload } from 'lucide-react';
 import {
@@ -25,6 +26,7 @@ function CheckMark({ status }: { status: string }) {
 }
 
 export function SeoFoundationsPanel() {
+  const workspace = useWorkspaceSlug();
   const [report, setReport] = useState<SeoFoundationsReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<'audit' | 'publish' | null>(null);
@@ -35,14 +37,14 @@ export function SeoFoundationsPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchSeoFoundations('cleexs');
+      const res = await fetchSeoFoundations(workspace);
       setReport(res.foundations);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al auditar fundaciones SEO');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspace]);
 
   useEffect(() => {
     load();
@@ -67,7 +69,7 @@ export function SeoFoundationsPanel() {
     setMessage(null);
     setError(null);
     try {
-      const res = await publishLlmsTxt('cleexs');
+      const res = await publishLlmsTxt(workspace);
       setReport(res.foundations);
       setMessage(
         `llms.txt publicado en WP (${res.page.url}). Si /llms.txt en raíz aún falla, instalá el mu-plugin y flush permalinks.`,

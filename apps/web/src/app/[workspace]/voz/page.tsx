@@ -1,5 +1,7 @@
 'use client';
 
+import { useWorkspaceSlug } from '@/lib/workspace';
+import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Link2, Mic2 } from 'lucide-react';
 import { CentroShell } from '@/components/shell/centro-shell';
@@ -11,6 +13,10 @@ import {
 } from '@/lib/api-client';
 
 export default function VozFounderPage() {
+  const workspace = useWorkspaceSlug();
+  const workspaceName =
+    getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
+
   const [notes, setNotes] = useState<FounderVoiceNote[]>([]);
   const [invites, setInvites] = useState<Array<{ id: string; topic: string | null; url: string; expiresAt: string }>>([]);
   const [summary, setSummary] = useState<{ available: number; used: number } | null>(null);
@@ -27,7 +33,7 @@ export default function VozFounderPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchFounderVoice('cleexs');
+      const res = await fetchFounderVoice(workspace);
       setNotes(res.notes);
       setInvites(res.openInvites);
       setSummary(res.summary);
@@ -36,7 +42,7 @@ export default function VozFounderPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspace]);
 
   useEffect(() => {
     load();
@@ -55,7 +61,7 @@ export default function VozFounderPage() {
     setError(null);
     setMessage(null);
     try {
-      const res = await addFounderVoiceQuotes('cleexs', {
+      const res = await addFounderVoiceQuotes(workspace, {
         topic: topic.trim() || undefined,
         quotes,
         authorLabel: 'Founder Cleexs',
@@ -75,7 +81,7 @@ export default function VozFounderPage() {
     setError(null);
     setMessage(null);
     try {
-      const res = await createFounderVoiceInvite('cleexs', topic.trim() || undefined);
+      const res = await createFounderVoiceInvite(workspace, topic.trim() || undefined);
       setLastLink(res.url);
       setMessage('Link mágico listo (24h). Compartilo con el founder — no hace falta login.');
       await load();
@@ -87,7 +93,7 @@ export default function VozFounderPage() {
   }
 
   return (
-    <CentroShell workspaceName="Cleexs">
+    <CentroShell workspaceName={workspaceName}>
       <div className="mb-6">
         <p className="text-sm font-medium uppercase tracking-[0.18em] text-cleexs-blue">
           Diferencial humano

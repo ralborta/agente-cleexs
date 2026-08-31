@@ -16,8 +16,20 @@ export type IndexNowResult = {
   status?: number;
 };
 
-export function resolveIndexNowConfig(siteBaseUrl: string | null | undefined): IndexNowConfig | null {
+/**
+ * Resuelve IndexNow por workspace: INDEXNOW_{SLUG}_KEY / INDEXNOW_{SLUG}_KEY_LOCATION,
+ * con fallback a INDEXNOW_KEY / CLEEXS_INDEXNOW_KEY (legacy Cleexs).
+ */
+export function resolveIndexNowConfig(
+  siteBaseUrl: string | null | undefined,
+  workspaceSlug?: string | null,
+): IndexNowConfig | null {
+  const prefix = workspaceSlug
+    ? workspaceSlug.toUpperCase().replace(/-/g, '_')
+    : '';
+
   const key =
+    (prefix && process.env[`INDEXNOW_${prefix}_KEY`]?.trim()) ||
     process.env.INDEXNOW_KEY?.trim() ||
     process.env.CLEEXS_INDEXNOW_KEY?.trim() ||
     '';
@@ -32,7 +44,9 @@ export function resolveIndexNowConfig(siteBaseUrl: string | null | undefined): I
   }
 
   const keyLocation =
-    process.env.INDEXNOW_KEY_LOCATION?.trim() || `${root}/${key}.txt`;
+    (prefix && process.env[`INDEXNOW_${prefix}_KEY_LOCATION`]?.trim()) ||
+    process.env.INDEXNOW_KEY_LOCATION?.trim() ||
+    `${root}/${key}.txt`;
 
   return { key, keyLocation, host };
 }

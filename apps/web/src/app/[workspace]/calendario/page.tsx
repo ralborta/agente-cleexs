@@ -1,5 +1,7 @@
 'use client';
 
+import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
+import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -53,6 +55,10 @@ function mondayOffset(year: number, month: number): number {
 }
 
 export default function CalendarioPage() {
+  const workspace = useWorkspaceSlug();
+  const workspaceName =
+    getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
+
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -72,7 +78,7 @@ export default function CalendarioPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchContentCalendar('cleexs', year, month);
+      const data = await fetchContentCalendar(workspace, year, month);
       setByDay(data.byDay);
       setCounts(data.counts);
       setDaysInMonth(data.daysInMonth);
@@ -123,7 +129,7 @@ export default function CalendarioPage() {
     today.getFullYear() === year && today.getMonth() + 1 === month;
 
   return (
-    <CentroShell workspaceName="Cleexs">
+    <CentroShell workspaceName={workspaceName}>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-white">Calendario editorial</h2>
@@ -286,7 +292,7 @@ export default function CalendarioPage() {
                   <div className="mt-2 flex flex-wrap gap-2">
                     {item.kind === 'pendiente' ? (
                       <Link
-                        href="/cleexs/aprobaciones"
+                        href={workspaceHref(workspace, "aprobaciones")}
                         className="text-xs font-semibold text-cleexs-blue hover:underline"
                       >
                         Ir a aprobaciones

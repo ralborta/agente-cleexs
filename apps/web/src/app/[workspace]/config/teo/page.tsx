@@ -1,5 +1,7 @@
 'use client';
 
+import { useWorkspaceSlug } from '@/lib/workspace';
+import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, Save, X } from 'lucide-react';
 import { AutomationPanel } from '@/components/config/automation-panel';
@@ -23,6 +25,10 @@ import {
 import { TEO_AUTHOR_NAME } from '@/lib/branding';
 
 export default function TeoConfigPage() {
+  const workspace = useWorkspaceSlug();
+  const workspaceName =
+    getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
+
   const [data, setData] = useState<TeoConfigResponse | null>(null);
   const [topics, setTopics] = useState<string[]>([]);
   const [newTopic, setNewTopic] = useState('');
@@ -42,7 +48,7 @@ export default function TeoConfigPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchTeoConfig('cleexs');
+      const res = await fetchTeoConfig(workspace);
       setData(res);
       setTopics(Array.isArray(res.config?.topics) ? (res.config.topics as string[]) : []);
       setTone(res.config?.tone ?? '');
@@ -56,7 +62,7 @@ export default function TeoConfigPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspace]);
 
   useEffect(() => {
     load();
@@ -83,7 +89,7 @@ export default function TeoConfigPage() {
     setError(null);
     setMessage(null);
     try {
-      const res = await updateTeoConfig('cleexs', {
+      const res = await updateTeoConfig(workspace, {
         topics,
         tone: tone.trim() || undefined,
         frequency,
@@ -108,7 +114,7 @@ export default function TeoConfigPage() {
   ];
 
   return (
-    <CentroShell workspaceName="Cleexs">
+    <CentroShell workspaceName={workspaceName}>
       <div className="mb-6">
         <p className="text-sm font-medium uppercase tracking-[0.18em] text-cleexs-blue">Configuración</p>
         <h2 className="mt-1 text-3xl font-semibold text-white">Temas y reglas — {TEO_AUTHOR_NAME}</h2>

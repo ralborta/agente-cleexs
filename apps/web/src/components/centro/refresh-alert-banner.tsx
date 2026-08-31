@@ -1,5 +1,6 @@
 'use client';
 
+import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
 import Link from 'next/link';
 import { useState } from 'react';
 import { retryRefreshPiece } from '@/lib/api-client';
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export function RefreshAlertBanner({ pieces, onRetried }: Props) {
+  const workspace = useWorkspaceSlug();
   const refreshPieces = pieces.filter((p) => p.status === 'refresh');
 
   const [retryingId, setRetryingId] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export function RefreshAlertBanner({ pieces, onRetried }: Props) {
     setRetryingId(pieceId);
     setError(null);
     try {
-      const result = await retryRefreshPiece('cleexs', pieceId);
+      const result = await retryRefreshPiece(workspace, pieceId);
       if (result.mission.skipped) {
         setError(
           result.mission.reason === 'mission_active'
@@ -59,7 +61,7 @@ export function RefreshAlertBanner({ pieces, onRetried }: Props) {
             <p className="mt-1 text-blue-200">Refresco en curso — seguí el progreso en el Monitor.</p>
           ) : null}
           <div className="mt-2 flex flex-wrap gap-3">
-            <Link href="/cleexs/monitor" className="font-semibold text-white underline">
+            <Link href={workspaceHref(workspace, "monitor")} className="font-semibold text-white underline">
               Ver Monitor
             </Link>
             {piece.lastRefreshMission?.status === 'failed' ||

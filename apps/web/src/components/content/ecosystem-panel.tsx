@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { BookOpen, Circle, ExternalLink } from 'lucide-react';
 import type { ContentClusterSummary } from '@/lib/api-client';
+import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
 
 const TYPE_LABEL: Record<string, string> = {
   pillar: 'Pilar',
@@ -13,6 +14,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export function EcosystemPanel({ clusters }: { clusters: ContentClusterSummary[] }) {
+  const workspace = useWorkspaceSlug();
   const cluster = clusters[0];
   if (!cluster) return null;
 
@@ -73,7 +75,7 @@ export function EcosystemPanel({ clusters }: { clusters: ContentClusterSummary[]
       <p className="mt-4 text-xs text-hub-muted">
         Al publicar, Teo agrega una sección <strong className="text-slate-300">Artículos que te pueden interesar</strong>{' '}
         con links internos entre pilar y satélites.{' '}
-        <Link href="/cleexs/monitor" className="text-cleexs-blue underline">
+        <Link href={workspaceHref(workspace, 'monitor')} className="text-cleexs-blue underline">
           Lanzar misión
         </Link>
       </p>

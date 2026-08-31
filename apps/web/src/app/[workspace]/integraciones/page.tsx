@@ -1,5 +1,7 @@
 'use client';
 
+import { useWorkspaceSlug } from '@/lib/workspace';
+import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useState } from 'react';
 import { Plug, RefreshCw, TestTube2 } from 'lucide-react';
 import { AutomationPanel } from '@/components/config/automation-panel';
@@ -15,6 +17,7 @@ import { CentroShell } from '@/components/shell/centro-shell';
 import {
   fetchIntegrationsOverview,
   fetchWordPressSetup,
+  restoreWordPressHeaderIdentity,
   syncMetrics,
   testGoogleIntegration,
   testWordPressIntegration,
@@ -29,6 +32,10 @@ function integrationBadge(configured: boolean, connected?: boolean) {
 }
 
 export default function IntegracionesPage() {
+  const workspace = useWorkspaceSlug();
+  const workspaceName =
+    getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
+
   const [data, setData] = useState<IntegrationsOverview | null>(null);
   const [wpSetup, setWpSetup] = useState<WordPressSetupReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,8 +48,8 @@ export default function IntegracionesPage() {
     setError(null);
     try {
       const [overview, setup] = await Promise.all([
-        fetchIntegrationsOverview('cleexs'),
-        fetchWordPressSetup('cleexs'),
+        fetchIntegrationsOverview(workspace),
+        fetchWordPressSetup(workspace),
       ]);
       setData(overview);
       setWpSetup(setup.setup);
@@ -51,7 +58,7 @@ export default function IntegracionesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspace]);
 
   useEffect(() => {
     load();
@@ -63,21 +70,21 @@ export default function IntegracionesPage() {
     setError(null);
     try {
       if (kind === 'wp') {
-        const res = await testWordPressIntegration('cleexs');
+        const res = await testWordPressIntegration(workspace);
         setMessage(
           res.wordpress.ok
             ? `WordPress OK — usuario ${res.wordpress.user ?? 'Teo'}`
             : 'WordPress respondió con error',
         );
       } else if (kind === 'google') {
-        const res = await testGoogleIntegration('cleexs');
+        const res = await testGoogleIntegration(workspace);
         setMessage(
           res.google.connected
             ? 'Google OK — Search Console y GA4 responden'
             : res.google.error ?? 'Google respondió con error',
         );
       } else {
-        const res = await syncMetrics('cleexs');
+        const res = await syncMetrics(workspace);
         setMessage(
           res.ok
             ? `Métricas sincronizadas (${res.snapshotsWritten ?? 0} snapshots)`
@@ -100,7 +107,7 @@ export default function IntegracionesPage() {
     : null;
 
   return (
-    <CentroShell workspaceName="Cleexs">
+    <CentroShell workspaceName={workspaceName}>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-hub-border bg-hub-card px-3 py-1 text-xs font-medium text-hub-muted">
@@ -191,6 +198,29 @@ export default function IntegracionesPage() {
                       </li>
                     ))}
                   </ul>
+                  {wpSetup.checks.some((c) => c.id === 'header_identity' && c.status === 'warning') ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setTesting('header');
+                        setMessage(null);
+                        setError(null);
+                        try {
+                          const res = await restoreWordPressHeaderIdentity(workspace);
+                          setWpSetup(res.setup);
+                          setMessage(res.header.detail);
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : 'Error al restaurar el header');
+                        } finally {
+                          setTesting(null);
+                        }
+                      }}
+                      disabled={testing !== null}
+                      className={`${buttonSecondaryClassName} mt-3`}
+                    >
+                      {testing === 'header' ? 'Restaurando…' : 'Restaurar header (Cleexs / Inicio)'}
+                    </button>
+                  ) : null}
                   <p className="mt-3 text-xs text-hub-muted">
                     CSS: <code className="rounded bg-[#0b1220] px-1">{wpSetup.cssSnippetPath}</code>
                   </p>

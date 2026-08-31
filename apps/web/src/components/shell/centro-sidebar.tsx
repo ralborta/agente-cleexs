@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchApprovals } from '@/lib/api-client';
 import {
   Activity,
@@ -20,33 +20,32 @@ import {
   Target,
   Mic2,
 } from 'lucide-react';
-import { PLATFORM_NAME, PLATFORM_SHORT } from '@/lib/branding';
+import { PLATFORM_NAME } from '@/lib/branding';
 import { clearAuthSession, getStoredUser } from '@/lib/auth-client';
+import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
 import { cn } from '@/lib/utils';
 
-/** Resultados primero — el agente trabaja solo, el cliente mide. */
-const resultsNav = [
-  { href: '/cleexs', label: PLATFORM_SHORT, icon: LayoutDashboard },
-  { href: '/cleexs/resultados', label: 'Resultados', icon: BarChart3 },
-  { href: '/cleexs/rendimiento', label: 'Rendimiento', icon: LineChart },
-  { href: '/cleexs/publicaciones', label: 'Publicaciones', icon: FileText },
-  { href: '/cleexs/calendario', label: 'Calendario', icon: CalendarDays },
-  { href: '/cleexs/oportunidades', label: 'Oportunidades', icon: Target },
-  { href: '/cleexs/actividad', label: 'Actividad', icon: Activity },
-];
-
-/** Operación — aprobaciones, monitor y refrescador. */
-const operationNav = [
-  { href: '/cleexs/aprobaciones', label: 'Entregables', icon: CheckCircle2 },
-  { href: '/cleexs/monitor', label: 'Monitor', icon: Radio },
-];
-
-/** Configuración al final — se toca poco. */
-const configNav = [
-  { href: '/cleexs/voz', label: 'Voz del founder', icon: Mic2 },
-  { href: '/cleexs/config/teo', label: 'Temas y reglas Teo', icon: Settings },
-  { href: '/cleexs/integraciones', label: 'Integraciones', icon: Plug },
-];
+function buildNav(workspace: string) {
+  const resultsNav = [
+    { href: workspaceHref(workspace), label: 'Inicio', icon: LayoutDashboard },
+    { href: workspaceHref(workspace, 'resultados'), label: 'Resultados', icon: BarChart3 },
+    { href: workspaceHref(workspace, 'rendimiento'), label: 'Rendimiento', icon: LineChart },
+    { href: workspaceHref(workspace, 'publicaciones'), label: 'Publicaciones', icon: FileText },
+    { href: workspaceHref(workspace, 'calendario'), label: 'Calendario', icon: CalendarDays },
+    { href: workspaceHref(workspace, 'oportunidades'), label: 'Oportunidades', icon: Target },
+    { href: workspaceHref(workspace, 'actividad'), label: 'Actividad', icon: Activity },
+  ];
+  const operationNav = [
+    { href: workspaceHref(workspace, 'aprobaciones'), label: 'Entregables', icon: CheckCircle2 },
+    { href: workspaceHref(workspace, 'monitor'), label: 'Monitor', icon: Radio },
+  ];
+  const configNav = [
+    { href: workspaceHref(workspace, 'voz'), label: 'Voz del founder', icon: Mic2 },
+    { href: workspaceHref(workspace, 'config/teo'), label: 'Temas y reglas Teo', icon: Settings },
+    { href: workspaceHref(workspace, 'integraciones'), label: 'Integraciones', icon: Plug },
+  ];
+  return { resultsNav, operationNav, configNav };
+}
 
 const agents = [
   { slug: 'teo', name: 'Teo', status: 'online' as const },
@@ -105,18 +104,23 @@ function NavSection({
 export function CentroSidebar({ workspaceName, pendingApprovals: pendingProp }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const workspace = useWorkspaceSlug();
   const storedUser = getStoredUser();
   const [pendingApprovals, setPendingApprovals] = useState(pendingProp ?? 0);
+  const { resultsNav, operationNav, configNav } = useMemo(
+    () => buildNav(workspace),
+    [workspace],
+  );
 
   useEffect(() => {
     if (pendingProp !== undefined) {
       setPendingApprovals(pendingProp);
       return;
     }
-    fetchApprovals('cleexs')
+    fetchApprovals(workspace)
       .then((data) => setPendingApprovals(data.pendingCount))
       .catch(() => undefined);
-  }, [pathname, pendingProp]);
+  }, [pathname, pendingProp, workspace]);
 
   const operationWithBadge = operationNav.map((item) =>
     item.href.includes('aprobaciones')
@@ -166,7 +170,7 @@ export function CentroSidebar({ workspaceName, pendingApprovals: pendingProp }: 
       <div className="mt-auto flex items-center justify-between rounded-xl border border-hub-border bg-hub-card px-3 py-3">
         <div>
           <p className="text-sm font-medium text-white">{storedUser?.name ?? 'Administrador'}</p>
-          <p className="text-xs text-hub-muted">{storedUser?.email ?? 'admin@cleexs.net'}</p>
+          <p className="text-xs text-hub-muted">{storedUser?.email ?? '—'}</p>
         </div>
         <button
           type="button"

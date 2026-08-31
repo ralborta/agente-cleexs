@@ -73,7 +73,7 @@ export async function getWorkspaceIndexingStatus(
     (config?.gscSiteUrl?.startsWith('sc-domain:')
       ? `https://${config.gscSiteUrl.replace(/^sc-domain:/, '')}`
       : config?.gscSiteUrl?.replace(/\/$/, '') ?? null);
-  const indexNowCfg = resolveIndexNowConfig(siteRoot);
+  const indexNowCfg = resolveIndexNowConfig(siteRoot, workspaceSlug);
 
   const submitReady = {
     googleIndexing: isGoogleMetricsConfigured(config),

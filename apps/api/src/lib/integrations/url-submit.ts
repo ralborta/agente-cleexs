@@ -30,7 +30,7 @@ export async function ensureIndexNowKeyFile(workspaceSlug: string): Promise<{
 }> {
   const wp = resolveWordPressConfig(workspaceSlug);
   const site = wp?.baseUrl?.replace(/\/$/, '') || null;
-  const cfg = resolveIndexNowConfig(site);
+  const cfg = resolveIndexNowConfig(site, workspaceSlug);
   if (!cfg) {
     throw new Error('INDEXNOW_KEY no configurada (o falta WORDPRESS_URL)');
   }
@@ -61,7 +61,10 @@ export async function submitUrlForIndexing(
   const site = wp?.baseUrl || (google?.gscSiteUrl?.startsWith('sc-domain:')
     ? `https://${google.gscSiteUrl.replace(/^sc-domain:/, '')}`
     : google?.gscSiteUrl) || null;
-  const indexNowCfg = resolveIndexNowConfig(site?.replace(/\/$/, '') ?? null);
+  const indexNowCfg = resolveIndexNowConfig(
+    site?.replace(/\/$/, '') ?? null,
+    workspaceSlug,
+  );
 
   let gsc: UrlSubmitResult['gsc'];
   if (!isGoogleMetricsConfigured(google)) {

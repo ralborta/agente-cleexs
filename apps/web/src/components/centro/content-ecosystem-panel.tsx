@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import {
   Activity,
@@ -14,6 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
 
 export type RadarPieceData = {
   id: string;
@@ -121,14 +124,15 @@ function toLayoutPieces(pieces: RadarPieceData[]): LayoutPiece[] {
 }
 
 function RadarNode({ piece }: { piece: LayoutPiece }) {
+  const workspace = useWorkspaceSlug();
   const cfg = STATUS[piece.status];
   const Icon = piece.icon;
   const missionFailed = piece.lastRefreshMission?.status === 'failed';
   const href =
     piece.status === 'approval'
-      ? '/cleexs/aprobaciones'
+      ? workspaceHref(workspace, 'aprobaciones')
       : piece.status === 'refresh' || piece.status === 'working'
-        ? '/cleexs/monitor'
+        ? workspaceHref(workspace, 'monitor')
         : null;
 
   const card = (

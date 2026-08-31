@@ -1,5 +1,7 @@
 'use client';
 
+import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
+import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Sparkles, TrendingUp } from 'lucide-react';
@@ -28,6 +30,10 @@ function formatUpdatedAt(iso: string) {
 }
 
 export default function ResultadosPage() {
+  const workspace = useWorkspaceSlug();
+  const workspaceName =
+    getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
+
   const [period, setPeriod] = useState<AnalyticsPeriod>(30);
   const [data, setData] = useState<AnalyticsDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +43,7 @@ export default function ResultadosPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await fetchAnalytics('cleexs', period));
+      setData(await fetchAnalytics(workspace, period));
     } catch {
       setData(null);
     } finally {
@@ -53,7 +59,7 @@ export default function ResultadosPage() {
     setRunning(true);
     setMessage(null);
     try {
-      const res = await createMission('cleexs');
+      const res = await createMission(workspace);
       setMessage(`Misión "${res.mission.title}" en ejecución…`);
       setTimeout(load, 3000);
     } catch (e) {
@@ -66,7 +72,7 @@ export default function ResultadosPage() {
   const kpis = data?.kpis;
 
   return (
-    <CentroShell workspaceName="Cleexs">
+    <CentroShell workspaceName={workspaceName}>
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cleexs-violet/30 bg-cleexs-violet/10 px-3 py-1 text-xs font-medium text-violet-200">
@@ -167,7 +173,7 @@ export default function ResultadosPage() {
                 </div>
               </div>
               <Link
-                href="/cleexs/publicaciones"
+                href={workspaceHref(workspace, "publicaciones")}
                 className="text-sm font-semibold text-cleexs-blue hover:underline"
               >
                 Ver artículos →

@@ -1,5 +1,7 @@
 'use client';
 
+import { useWorkspaceSlug } from '@/lib/workspace';
+import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApprovalReviewCard } from '@/components/approvals/approval-review-card';
 import { CentroShell } from '@/components/shell/centro-shell';
@@ -16,6 +18,10 @@ function startOfWeek(d: Date): Date {
 }
 
 export default function AprobacionesPage() {
+  const workspace = useWorkspaceSlug();
+  const workspaceName =
+    getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
+
   const [items, setItems] = useState<Approval[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
@@ -27,14 +33,14 @@ export default function AprobacionesPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchApprovals('cleexs');
+      const data = await fetchApprovals(workspace);
       setItems(data.approvals);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspace]);
 
   useEffect(() => {
     load();
@@ -54,7 +60,7 @@ export default function AprobacionesPage() {
   const remaining = Math.max(0, items.length - WEEKLY_FOCUS);
 
   return (
-    <CentroShell workspaceName="Cleexs" agentsOnline={1}>
+    <CentroShell workspaceName={workspaceName} agentsOnline={1}>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-white">Entregables de la semana</h2>

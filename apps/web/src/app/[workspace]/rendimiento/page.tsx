@@ -1,5 +1,7 @@
 'use client';
 
+import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
+import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BarChart3, ExternalLink } from 'lucide-react';
@@ -52,6 +54,10 @@ function StatusPill({
 }
 
 export default function RendimientoPage() {
+  const workspace = useWorkspaceSlug();
+  const workspaceName =
+    getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
+
   const [period, setPeriod] = useState<AnalyticsPeriod>(30);
   const [agent, setAgent] = useState<string | null>('teo');
   const [data, setData] = useState<PublicationPerformanceReport | null>(null);
@@ -60,7 +66,7 @@ export default function RendimientoPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await fetchPublicationPerformance('cleexs', period, agent));
+      setData(await fetchPublicationPerformance(workspace, period, agent));
     } catch {
       setData(null);
     } finally {
@@ -75,7 +81,7 @@ export default function RendimientoPage() {
   const kpis = data?.kpis;
 
   return (
-    <CentroShell workspaceName="Cleexs">
+    <CentroShell workspaceName={workspaceName}>
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cleexs-blue/30 bg-cleexs-blue/10 px-3 py-1 text-xs font-medium text-blue-200">
@@ -287,7 +293,7 @@ export default function RendimientoPage() {
           <p className="mt-4 text-xs text-hub-muted">
             Tip: las piezas nuevas pueden tardar días en acumular impresiones en Search Console.
             Revisá también{' '}
-            <Link href="/cleexs/resultados" className="text-cleexs-blue hover:underline">
+            <Link href={workspaceHref(workspace, "resultados")} className="text-cleexs-blue hover:underline">
               Resultados
             </Link>{' '}
             para el overview del blog.

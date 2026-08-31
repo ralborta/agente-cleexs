@@ -1,5 +1,7 @@
 'use client';
 
+import { useWorkspaceSlug } from '@/lib/workspace';
+import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useState } from 'react';
 import { Radio, RefreshCw } from 'lucide-react';
 import { StatusBadge } from '@/components/config/status-badge';
@@ -23,6 +25,10 @@ const TRIGGER_LABEL: Record<string, string> = {
 };
 
 export default function MonitorPage() {
+  const workspace = useWorkspaceSlug();
+  const workspaceName =
+    getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
+
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
@@ -32,14 +38,14 @@ export default function MonitorPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchMissions('cleexs');
+      const data = await fetchMissions(workspace);
       setMissions(data.missions);
     } catch {
       setMissions([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspace]);
 
   useEffect(() => {
     load();
@@ -51,7 +57,7 @@ export default function MonitorPage() {
     setRunning(true);
     setMessage(null);
     try {
-      const res = await createMission('cleexs');
+      const res = await createMission(workspace);
       setMessage(`Misión "${res.mission.title}" encolada…`);
       setTimeout(load, 2000);
     } catch (e) {
@@ -65,7 +71,7 @@ export default function MonitorPage() {
     setScanning(true);
     setMessage(null);
     try {
-      const res = await runRefresherScan('cleexs', true);
+      const res = await runRefresherScan(workspace, true);
       if (res.candidates === 0) {
         setMessage(`Refrescador: ${res.scanned} URL(s) analizadas — sin candidatos urgentes`);
       } else if (res.mission?.skipped) {
@@ -92,7 +98,7 @@ export default function MonitorPage() {
   const active = missions.filter((m) => ['pending', 'in_progress'].includes(m.status));
 
   return (
-    <CentroShell workspaceName="Cleexs">
+    <CentroShell workspaceName={workspaceName}>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cleexs-orange/30 bg-cleexs-orange/10 px-3 py-1 text-xs font-medium text-orange-200">

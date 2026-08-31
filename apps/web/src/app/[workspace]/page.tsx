@@ -1,5 +1,7 @@
 'use client';
 
+import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
+import { getStoredUser } from '@/lib/auth-client';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityFeed } from '@/components/centro/activity-feed';
@@ -13,7 +15,7 @@ import { PLATFORM_NAME, PLATFORM_SHORT, PLATFORM_TAGLINE } from '@/lib/branding'
 type CentroData = Awaited<ReturnType<typeof fetchCentroDashboard>>;
 
 const FALLBACK: CentroData = {
-  workspace: { id: 'demo', name: 'Cleexs', slug: 'cleexs' },
+  workspace: { id: 'demo', name: 'Workspace', slug: 'cleexs' },
   kpis: [
     { label: 'Piezas publicadas', value: 0, hint: 'Conectá la API' },
     { label: 'Impresiones Google', value: 0, hint: 'Search Console' },
@@ -33,19 +35,23 @@ const FALLBACK: CentroData = {
 };
 
 export default function CleexsCentroPage() {
+  const workspace = useWorkspaceSlug();
+  const workspaceName =
+    getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
+
   const [data, setData] = useState<CentroData>(FALLBACK);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await fetchCentroDashboard('cleexs'));
+      setData(await fetchCentroDashboard(workspace));
     } catch {
       setData(FALLBACK);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspace]);
 
   useEffect(() => {
     load();
@@ -55,9 +61,9 @@ export default function CleexsCentroPage() {
   const pendingApprovals = data.kpis.find((k) => k.label === 'En aprobación')?.value ?? 0;
 
   const kpisWithLinks = data.kpis.map((kpi) => {
-    if (kpi.label === 'En aprobación') return { ...kpi, href: '/cleexs/aprobaciones' };
+    if (kpi.label === 'En aprobación') return { ...kpi, href: workspaceHref(workspace, 'aprobaciones') };
     if (kpi.label === 'Misiones activas' || kpi.label === 'A refrescar') {
-      return { ...kpi, href: '/cleexs/monitor' };
+      return { ...kpi, href: workspaceHref(workspace, 'monitor') };
     }
     return kpi;
   });
@@ -85,7 +91,7 @@ export default function CleexsCentroPage() {
         <div className="mb-6 rounded-xl border border-cleexs-orange/30 bg-cleexs-orange/10 px-4 py-3 text-sm text-orange-100">
           Tenés {pendingApprovals} pieza{pendingApprovals === 1 ? '' : 's'} pendiente
           {pendingApprovals === 1 ? '' : 's'} de revisión.{' '}
-          <Link href="/cleexs/aprobaciones" className="font-semibold text-white underline">
+          <Link href={workspaceHref(workspace, "aprobaciones")} className="font-semibold text-white underline">
             Ir a Aprobaciones
           </Link>{' '}
           para preview, editar y publicar.

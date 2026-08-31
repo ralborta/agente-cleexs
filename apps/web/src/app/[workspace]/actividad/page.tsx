@@ -1,5 +1,7 @@
 'use client';
 
+import { useWorkspaceSlug } from '@/lib/workspace';
+import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityFeed } from '@/components/centro/activity-feed';
 import { buttonSecondaryClassName } from '@/components/config/settings-section';
@@ -16,13 +18,17 @@ type FeedItem = {
 };
 
 export default function ActividadPage() {
+  const workspace = useWorkspaceSlug();
+  const workspaceName =
+    getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
+
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchActivity('cleexs', 60);
+      const data = await fetchActivity(workspace, 60);
       setItems(
         data.activities.map((item) => ({
           id: item.id,
@@ -40,7 +46,7 @@ export default function ActividadPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspace]);
 
   useEffect(() => {
     load();
@@ -49,7 +55,7 @@ export default function ActividadPage() {
   }, [load]);
 
   return (
-    <CentroShell workspaceName="Cleexs">
+    <CentroShell workspaceName={workspaceName}>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-3xl font-semibold text-white">Actividad</h2>

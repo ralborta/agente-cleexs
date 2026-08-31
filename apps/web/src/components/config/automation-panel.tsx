@@ -1,5 +1,6 @@
 'use client';
 
+import { useWorkspaceSlug } from '@/lib/workspace';
 import { useState } from 'react';
 import { Play, RefreshCw } from 'lucide-react';
 import { StatusBadge } from '@/components/config/status-badge';
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function AutomationPanel({ automation, onTickComplete }: Props) {
+  const workspace = useWorkspaceSlug();
   const [running, setRunning] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -27,7 +29,7 @@ export function AutomationPanel({ automation, onTickComplete }: Props) {
     setRunning(true);
     setMessage(null);
     try {
-      const res = await triggerSchedulerTick('cleexs');
+      const res = await triggerSchedulerTick(workspace);
       const parts: string[] = [];
       if ((res.result.opportunities?.created ?? 0) > 0) {
         parts.push(`+${res.result.opportunities!.created} oportunidad(es)`);
@@ -169,7 +171,7 @@ export function AutomationPanel({ automation, onTickComplete }: Props) {
           <CronLine
             label="Sync métricas (diario 6:00)"
             url={automation.cronBackup?.metricsSync}
-            body='{"workspace":"cleexs"}'
+            body={`{"workspace":"${workspace}"}`}
           />
           <p className="text-[11px] text-hub-muted">
             Header: <code className="rounded bg-black/30 px-1">{automation.cronBackup?.header}</code> = valor

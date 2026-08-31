@@ -11,9 +11,9 @@ import { buttonPrimaryClassName, FieldLabel, inputClassName } from '@/components
 export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') || '/cleexs';
+  const next = searchParams.get('next') || '';
 
-  const [email, setEmail] = useState('admin@cleexs.net');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +32,14 @@ export default function LoginPageClient() {
         ...res.user,
         workspaceName: res.user.workspaceName,
       });
-      router.replace(next.startsWith('/') ? next : '/cleexs');
+      const home = `/${res.user.workspaceSlug}`;
+      const dest =
+        next.startsWith(`/${res.user.workspaceSlug}`)
+          ? next
+          : next.startsWith('/') && !next.startsWith('/login')
+            ? home
+            : home;
+      router.replace(dest);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión');
     } finally {

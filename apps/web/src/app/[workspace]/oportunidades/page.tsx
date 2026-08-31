@@ -1,5 +1,7 @@
 'use client';
 
+import { useWorkspaceSlug } from '@/lib/workspace';
+import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2, Plus, RefreshCw, Target, Trash2 } from 'lucide-react';
 import { CentroShell } from '@/components/shell/centro-shell';
@@ -53,6 +55,10 @@ const QUESTION_STATUS: Record<KeywordQuestionStatus, string> = {
 };
 
 export default function OportunidadesPage() {
+  const workspace = useWorkspaceSlug();
+  const workspaceName =
+    getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
+
   const [rows, setRows] = useState<KeywordOpportunity[]>([]);
   const [questions, setQuestions] = useState<KeywordQuestion[]>([]);
   const [summary, setSummary] = useState<{
@@ -73,7 +79,7 @@ export default function OportunidadesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchOpportunities('cleexs', {
+      const res = await fetchOpportunities(workspace, {
         stage: stageFilter || undefined,
         status: statusFilter || undefined,
       });
@@ -136,7 +142,7 @@ export default function OportunidadesPage() {
     setError(null);
     setMessage(null);
     try {
-      const res = await ingestOpportunitySeeds('cleexs', seeds, true);
+      const res = await ingestOpportunitySeeds(workspace, seeds, true);
       setRows(res.opportunities);
       setQuestions(res.questions ?? []);
       setSummary(res.summary);
@@ -155,7 +161,7 @@ export default function OportunidadesPage() {
     setError(null);
     setMessage(null);
     try {
-      const res = await generateOpportunityQuestions('cleexs');
+      const res = await generateOpportunityQuestions(workspace);
       setQuestions(res.questions ?? []);
       setMessage(
         res.created > 0
@@ -197,7 +203,7 @@ export default function OportunidadesPage() {
   }
 
   return (
-    <CentroShell workspaceName="Cleexs">
+    <CentroShell workspaceName={workspaceName}>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.18em] text-cleexs-blue">
