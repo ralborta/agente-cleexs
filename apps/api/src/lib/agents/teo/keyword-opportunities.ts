@@ -21,7 +21,7 @@ export async function listKeywordOpportunities(filters: ListOpportunitiesFilters
 
   const opportunities = await prisma.keywordOpportunity.findMany({
     where,
-    orderBy: [{ priority: 'desc' }, { demandScore: 'desc' }, { createdAt: 'desc' }],
+    orderBy: [{ opportunityScore: 'desc' }, { priority: 'desc' }, { demandScore: 'desc' }, { createdAt: 'desc' }],
     take: 500,
   });
 
@@ -187,7 +187,7 @@ export async function pickNextOpportunityTopic(workspaceId: string): Promise<{
 } | null> {
   const queued = await prisma.keywordOpportunity.findFirst({
     where: { workspaceId, status: 'queued' },
-    orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+    orderBy: [{ opportunityScore: 'desc' }, { priority: 'desc' }, { createdAt: 'asc' }],
   });
   if (queued) {
     return {
@@ -199,10 +199,10 @@ export async function pickNextOpportunityTopic(workspaceId: string): Promise<{
     };
   }
 
-  // Autonomía: sin clicks de "Encolar", Teo toma la idea de mayor prioridad.
+  // Autonomía: sin clicks de "Encolar", Teo toma la idea de mayor oportunidad/prioridad.
   const idea = await prisma.keywordOpportunity.findFirst({
     where: { workspaceId, status: 'idea' },
-    orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+    orderBy: [{ opportunityScore: 'desc' }, { priority: 'desc' }, { createdAt: 'asc' }],
   });
   if (!idea) return null;
 

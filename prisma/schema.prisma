@@ -85,10 +85,12 @@ model AgentConfig {
   workspaceId String   @map("workspace_id")
   agentId     String   @map("agent_id")
   tone        String?  @db.Text
-  topics      Json?    // temas prioritarios
+  topics      Json?    // temas prioritarios / seeds Discovery
   frequency   String?  // ej: "2/semana"
   autoPublish Boolean  @default(false) @map("auto_publish")
   branding    Json?    // brand kit: colores, CTA, logo, templateId
+  /// Perfil del agente (ej. Discovery: siteUrl, description, market, language)
+  settings    Json?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -400,25 +402,32 @@ enum KeywordOpportunityStatus {
 }
 
 model KeywordOpportunity {
-  id             String                    @id @default(uuid())
-  workspaceId    String                    @map("workspace_id")
-  seedKeyword    String                    @map("seed_keyword")
-  keyword        String
-  cluster        String
-  stage          FunnelStage
-  intent         String?
-  intentLabel    String?                   @map("intent_label")
-  status         KeywordOpportunityStatus  @default(idea)
-  priority       Int                       @default(0)
-  source         String                    @default("manual")
-  notes          String?                   @db.Text
-  gscImpressions Int?                      @map("gsc_impressions")
-  gscClicks      Int?                      @map("gsc_clicks")
-  demandScore    Int?                      @map("demand_score")
-  scoreReason    String?                   @map("score_reason") @db.Text
-  scoredAt       DateTime?                 @map("scored_at")
-  createdAt      DateTime                  @default(now()) @map("created_at")
-  updatedAt      DateTime                  @updatedAt @map("updated_at")
+  id                String                    @id @default(uuid())
+  workspaceId       String                    @map("workspace_id")
+  seedKeyword       String                    @map("seed_keyword")
+  keyword           String
+  cluster           String
+  stage             FunnelStage
+  intent            String?
+  intentLabel       String?                   @map("intent_label")
+  status            KeywordOpportunityStatus  @default(idea)
+  priority          Int                       @default(0)
+  source            String                    @default("manual")
+  notes             String?                   @db.Text
+  gscImpressions    Int?                      @map("gsc_impressions")
+  gscClicks         Int?                      @map("gsc_clicks")
+  demandScore       Int?                      @map("demand_score")
+  scoreReason       String?                   @map("score_reason") @db.Text
+  scoredAt          DateTime?                 @map("scored_at")
+  /// Volumen mensual (Keyword Planner / DataForSEO)
+  monthlySearches   Int?                      @map("monthly_searches")
+  trendScore        Int?                      @map("trend_score")
+  relevanceScore    Int?                      @map("relevance_score")
+  opportunityScore  Int?                      @map("opportunity_score")
+  /// Content Opportunity Brief (JSON)
+  brief             Json?
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
 
@@ -428,6 +437,7 @@ model KeywordOpportunity {
   @@index([workspaceId, cluster])
   @@index([workspaceId, priority])
   @@index([workspaceId, demandScore])
+  @@index([workspaceId, opportunityScore])
   @@map("keyword_opportunities")
 }
 

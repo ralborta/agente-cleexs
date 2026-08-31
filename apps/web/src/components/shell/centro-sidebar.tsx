@@ -49,7 +49,7 @@ function buildNav(workspace: string) {
 
 const agents = [
   { slug: 'teo', name: 'Teo', status: 'online' as const },
-  { slug: 'futuro', name: 'Agente 2', status: 'idle' as const },
+  { slug: 'discovery', name: 'Discovery', status: 'online' as const },
 ];
 
 type SidebarProps = {

@@ -36,6 +36,17 @@ async function main() {
     },
   });
 
+  const discovery = await prisma.agent.upsert({
+    where: { slug: 'discovery' },
+    update: {},
+    create: {
+      slug: 'discovery',
+      name: 'Discovery',
+      description:
+        'Agente de descubrimiento de demanda — keywords, tendencia y briefs para Teo',
+    },
+  });
+
   const workspace = await prisma.workspace.upsert({
     where: { slug: 'empleados' },
     update: { name: 'Empleados' },
@@ -79,6 +90,47 @@ async function main() {
     },
   });
 
+  await prisma.agentConfig.upsert({
+    where: {
+      workspaceId_agentId: {
+        workspaceId: workspace.id,
+        agentId: discovery.id,
+      },
+    },
+    update: {
+      topics: [
+        'marca empleadora',
+        'atracción de talento',
+        'employer branding',
+        'reclutamiento con IA',
+      ],
+      settings: {
+        siteUrl: 'https://empliados.net',
+        description: 'Plataforma de marca empleadora y atracción de talento',
+        market: 'ar',
+        languageCode: 'es',
+      },
+    },
+    create: {
+      workspaceId: workspace.id,
+      agentId: discovery.id,
+      frequency: 'on-demand',
+      autoPublish: false,
+      topics: [
+        'marca empleadora',
+        'atracción de talento',
+        'employer branding',
+        'reclutamiento con IA',
+      ],
+      settings: {
+        siteUrl: 'https://empliados.net',
+        description: 'Plataforma de marca empleadora y atracción de talento',
+        market: 'ar',
+        languageCode: 'es',
+      },
+    },
+  });
+
   const passwordHash = await bcrypt.hash('empleados2026', 10);
   await prisma.user.upsert({
     where: { email: 'admin@empleados.net' },
@@ -98,7 +150,7 @@ async function main() {
 
   console.log('Seed empleados OK:', {
     workspace: workspace.slug,
-    agent: teo.slug,
+    agents: [teo.slug, discovery.slug],
     user: 'admin@empleados.net',
     password: 'empleados2026',
   });

@@ -721,6 +721,11 @@ export type KeywordOpportunity = {
   demandScore: number | null;
   scoreReason: string | null;
   scoredAt: string | null;
+  monthlySearches?: number | null;
+  trendScore?: number | null;
+  relevanceScore?: number | null;
+  opportunityScore?: number | null;
+  brief?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -790,6 +795,62 @@ export async function ingestOpportunitySeeds(
       body: JSON.stringify({ workspace, seeds, expand }),
     },
   );
+}
+
+export type DiscoveryStatus = {
+  workspace: string;
+  configured: boolean;
+  mode: 'sandbox' | 'live';
+  provider: 'dataforseo';
+  settings: {
+    siteUrl?: string;
+    description?: string;
+    market?: string;
+    languageCode?: string;
+    seeds?: string[];
+  } | null;
+  seeds: string[];
+};
+
+export type DiscoveryExploreResult = {
+  workspace: string;
+  ok: true;
+  mode: 'sandbox' | 'live';
+  cost: number;
+  candidates: number;
+  briefs: number;
+  created: number;
+  updated: number;
+  top: Array<{
+    topic: string;
+    primaryQuery: string;
+    opportunityScore: number;
+    monthlySearches: number | null;
+    suggestedAngle: string;
+    cluster: string;
+  }>;
+};
+
+export async function fetchDiscoveryStatus(workspace: string) {
+  return api<DiscoveryStatus>(`/api/discovery/${workspace}/status`);
+}
+
+export async function runDiscoveryExplore(
+  workspace: string,
+  body: {
+    siteUrl: string;
+    description: string;
+    market?: string;
+    languageCode?: string;
+    seeds: string[];
+    includeSiteKeywords?: boolean;
+    maxCandidates?: number;
+  },
+) {
+  return api<DiscoveryExploreResult>(`/api/discovery/${workspace}/explore`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }
 
 export async function updateOpportunity(

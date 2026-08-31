@@ -1,5 +1,6 @@
 export const AGENT_SLUGS = {
   TEO: 'teo',
+  DISCOVERY: 'discovery',
 } as const;
 
 export type AgentSlug = (typeof AGENT_SLUGS)[keyof typeof AGENT_SLUGS];

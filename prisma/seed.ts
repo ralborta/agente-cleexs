@@ -15,6 +15,17 @@ async function main() {
     },
   });
 
+  const discovery = await prisma.agent.upsert({
+    where: { slug: 'discovery' },
+    update: {},
+    create: {
+      slug: 'discovery',
+      name: 'Discovery',
+      description:
+        'Agente de descubrimiento de demanda — keywords, tendencia y briefs para Teo',
+    },
+  });
+
   const workspace = await prisma.workspace.upsert({
     where: { slug: 'cleexs' },
     update: {},
@@ -42,6 +53,41 @@ async function main() {
       frequency: '2/semana',
       autoPublish: false,
       branding: DEFAULT_BRAND_KIT,
+    },
+  });
+
+  await prisma.agentConfig.upsert({
+    where: {
+      workspaceId_agentId: {
+        workspaceId: workspace.id,
+        agentId: discovery.id,
+      },
+    },
+    update: {
+      settings: {
+        siteUrl: 'https://cleexs.net',
+        description: 'Plataforma para conseguir clientes desde ChatGPT y medir visibilidad en IA',
+        market: 'ar',
+        languageCode: 'es',
+      },
+    },
+    create: {
+      workspaceId: workspace.id,
+      agentId: discovery.id,
+      frequency: 'on-demand',
+      autoPublish: false,
+      topics: [
+        'agentes de IA',
+        'visibilidad en IA',
+        'conseguir clientes con ChatGPT',
+        'AEO para pymes',
+      ],
+      settings: {
+        siteUrl: 'https://cleexs.net',
+        description: 'Plataforma para conseguir clientes desde ChatGPT y medir visibilidad en IA',
+        market: 'ar',
+        languageCode: 'es',
+      },
     },
   });
 
@@ -77,7 +123,7 @@ async function main() {
     });
   }
 
-  console.log('Seed OK:', { workspace: workspace.slug, agent: teo.slug });
+  console.log('Seed OK:', { workspace: workspace.slug, agents: [teo.slug, discovery.slug] });
 }
 
 main()

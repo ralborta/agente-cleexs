@@ -3,13 +3,15 @@
 import { useWorkspaceSlug } from '@/lib/workspace';
 import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, Plus, RefreshCw, Target, Trash2 } from 'lucide-react';
+import { Loader2, Plus, RefreshCw, Sparkles, Target, Trash2 } from 'lucide-react';
 import { CentroShell } from '@/components/shell/centro-shell';
 import {
   deleteOpportunity,
+  fetchDiscoveryStatus,
   fetchOpportunities,
   generateOpportunityQuestions,
   ingestOpportunitySeeds,
+  runDiscoveryExplore,
   updateKeywordQuestion,
   updateOpportunity,
   type FunnelStage,
@@ -72,6 +74,17 @@ export default function OportunidadesPage() {
   const [loading, setLoading] = useState(true);
   const [expanding, setExpanding] = useState(false);
   const [generatingQs, setGeneratingQs] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoveryMode, setDiscoveryMode] = useState<'sandbox' | 'live' | null>(null);
+  const [discoveryConfigured, setDiscoveryConfigured] = useState(false);
+  const [siteUrl, setSiteUrl] = useState(
+    workspace === 'empleados' ? 'https://empliados.net' : 'https://cleexs.net',
+  );
+  const [bizDescription, setBizDescription] = useState(
+    workspace === 'empleados'
+      ? 'Plataforma de marca empleadora y atracción de talento'
+      : 'Plataforma para conseguir clientes desde ChatGPT y medir visibilidad en IA',
+  );
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -97,6 +110,22 @@ export default function OportunidadesPage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    fetchDiscoveryStatus(workspace)
+      .then((s) => {
+        setDiscoveryConfigured(s.configured);
+        setDiscoveryMode(s.mode);
+        if (s.settings?.siteUrl) setSiteUrl(s.settings.siteUrl);
+        if (s.settings?.description) setBizDescription(s.settings.description);
+        if (Array.isArray(s.seeds) && s.seeds.length && !seedsInput.trim()) {
+          setSeedsInput(s.seeds.join('\n'));
+        }
+      })
+      .catch(() => {
+        setDiscoveryConfigured(false);
+      });
+  }, [workspace]);
+
   const openQuestions = useMemo(
     () =>
       [...questions]
@@ -117,17 +146,55 @@ export default function OportunidadesPage() {
         cluster,
         [...items].sort(
           (a, b) =>
-            b.priority - a.priority ||
+            (b.opportunityScore ?? b.priority) - (a.opportunityScore ?? a.priority) ||
             (b.demandScore ?? 0) - (a.demandScore ?? 0) ||
             a.keyword.localeCompare(b.keyword),
         ),
       ] as const)
       .sort((a, b) => {
-        const topA = a[1][0]?.priority ?? 0;
-        const topB = b[1][0]?.priority ?? 0;
+        const topA = a[1][0]?.opportunityScore ?? a[1][0]?.priority ?? 0;
+        const topB = b[1][0]?.opportunityScore ?? b[1][0]?.priority ?? 0;
         return topB - topA || a[0].localeCompare(b[0]);
       });
   }, [rows]);
+
+  async function handleDiscovery() {
+    const seeds = seedsInput
+      .split(/[\n,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!seeds.length) {
+      setError('Pegá al menos una keyword semilla para Discovery.');
+      return;
+    }
+    if (!siteUrl.trim() || !bizDescription.trim()) {
+      setError('Completá sitio y descripción del negocio.');
+      return;
+    }
+    setDiscovering(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await runDiscoveryExplore(workspace, {
+        siteUrl: siteUrl.trim(),
+        description: bizDescription.trim(),
+        market: 'ar',
+        seeds,
+        includeSiteKeywords: true,
+        maxCandidates: 40,
+      });
+      await load();
+      setMessage(
+        `Discovery (${res.mode}): ${res.briefs} briefs · +${res.created} / ~${res.updated} · cost≈$${res.cost.toFixed(4)}. Top: ${
+          res.top[0] ? `${res.top[0].primaryQuery} (${res.top[0].opportunityScore})` : '—'
+        }`,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error en Discovery');
+    } finally {
+      setDiscovering(false);
+    }
+  }
 
   async function handleExpand() {
     const seeds = seedsInput
@@ -211,8 +278,8 @@ export default function OportunidadesPage() {
           </p>
           <h2 className="mt-1 text-3xl font-semibold text-white">Oportunidades</h2>
           <p className="mt-2 max-w-2xl text-sm text-hub-muted">
-            Teo genera keywords, scorea con GSC y arma preguntas reales por cluster. Esta pantalla es
-            el radar: mirás ranking y FAQ map, descartás lo que no sirve.
+            Discovery encuentra demanda real (DataForSEO); Teo escribe. Score = demanda + tendencia +
+            relevancia al negocio.
           </p>
         </div>
         <button
@@ -225,9 +292,11 @@ export default function OportunidadesPage() {
       </div>
 
       <div className="mb-4 rounded-xl border border-cleexs-blue/25 bg-cleexs-blue/10 px-4 py-3 text-sm text-blue-100">
-        <strong className="font-semibold text-white">Autónomo:</strong> el scheduler arma el cloud,
-        importa GSC, genera preguntas estilo AnswerThePublic (~semanal) y escribe primero las de mayor
-        score. Si falta FAQ en un cluster, usa una pregunta real. <em>Descartar</em> saca del radar.
+        <strong className="font-semibold text-white">Discovery:</strong>{' '}
+        {discoveryConfigured
+          ? `DataForSEO listo · modo ${discoveryMode ?? 'sandbox'}.`
+          : 'Falta configurar DATAFORSEO_LOGIN / PASSWORD en la API (sandbox gratis).'}{' '}
+        Teo toma primero las ideas con mayor opportunity score.
       </div>
 
       {message ? (
@@ -241,21 +310,60 @@ export default function OportunidadesPage() {
         </div>
       ) : null}
 
+      <section className="mb-6 rounded-2xl border border-violet-500/30 bg-violet-500/5 p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-violet-300" />
+          <h3 className="text-sm font-semibold text-white">Correr Discovery (DataForSEO)</h3>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-xs text-hub-muted">
+            Sitio
+            <input
+              value={siteUrl}
+              onChange={(e) => setSiteUrl(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-hub-border bg-[#0b1220] px-3 py-2 text-sm text-white"
+              placeholder="https://empliados.net"
+            />
+          </label>
+          <label className="block text-xs text-hub-muted">
+            Descripción del negocio
+            <input
+              value={bizDescription}
+              onChange={(e) => setBizDescription(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-hub-border bg-[#0b1220] px-3 py-2 text-sm text-white"
+              placeholder="Qué hace el producto"
+            />
+          </label>
+        </div>
+        <label className="mt-3 block text-xs text-hub-muted">
+          Semillas (una por línea)
+          <textarea
+            value={seedsInput}
+            onChange={(e) => setSeedsInput(e.target.value)}
+            rows={4}
+            className="mt-1 w-full rounded-xl border border-hub-border bg-[#0b1220] px-3 py-2 text-sm text-white outline-none ring-violet-500/40 focus:ring-2"
+            placeholder={'marca empleadora\natracción de talento\nemployer branding'}
+          />
+        </label>
+        <button
+          type="button"
+          disabled={discovering || !discoveryConfigured}
+          onClick={handleDiscovery}
+          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {discovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {discovering ? 'Discovery corriendo…' : 'Explorar mercado'}
+        </button>
+      </section>
+
       <section className="mb-6 rounded-2xl border border-hub-border bg-hub-card p-5">
         <div className="mb-3 flex items-center gap-2">
           <Target className="h-4 w-4 text-cleexs-blue" />
-          <h3 className="text-sm font-semibold text-white">Semillas extras (opcional)</h3>
+          <h3 className="text-sm font-semibold text-white">Expansión LLM / reglas (legacy)</h3>
         </div>
         <p className="mb-3 text-xs text-hub-muted">
-          Lo normal es definir temas en <span className="text-slate-300">Config → Temas y reglas</span>
-          ; Teo expande solo. Acá podés forzar semillas adicionales si querés.
+          Cloud sin volumen real. Preferí Discovery arriba cuando DataForSEO esté configurado.
         </p>
-        <textarea
-          value={seedsInput}
-          onChange={(e) => setSeedsInput(e.target.value)}
-          rows={4}
-          className="w-full rounded-xl border border-hub-border bg-[#0b1220] px-3 py-2 text-sm text-white outline-none ring-cleexs-blue/40 focus:ring-2"
-        />
         <div className="mt-3 flex flex-wrap gap-3">
           <button
             type="button"
@@ -264,7 +372,7 @@ export default function OportunidadesPage() {
             className="inline-flex items-center gap-2 rounded-xl bg-cleexs-blue px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
           >
             {expanding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            {expanding ? 'Generando cloud…' : 'Forzar expansión ahora'}
+            {expanding ? 'Generando cloud…' : 'Forzar expansión LLM'}
           </button>
           <button
             type="button"
@@ -399,9 +507,9 @@ export default function OportunidadesPage() {
                     <tr>
                       <th className="px-4 py-3 font-medium">Keyword</th>
                       <th className="px-4 py-3 font-medium">Etapa</th>
-                      <th className="px-4 py-3 font-medium">Demanda</th>
+                      <th className="px-4 py-3 font-medium">Vol</th>
+                      <th className="px-4 py-3 font-medium">Opp</th>
                       <th className="px-4 py-3 font-medium">GSC</th>
-                      <th className="px-4 py-3 font-medium">Prioridad</th>
                       <th className="px-4 py-3 font-medium">Estado</th>
                       <th className="px-4 py-3 font-medium">Acciones</th>
                     </tr>
@@ -435,15 +543,15 @@ export default function OportunidadesPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 tabular-nums text-slate-200">
-                            {row.demandScore != null ? row.demandScore : '—'}
+                            {row.monthlySearches != null ? row.monthlySearches : '—'}
+                          </td>
+                          <td className="px-4 py-3 font-medium tabular-nums text-slate-100">
+                            {row.opportunityScore ?? row.priority}
                           </td>
                           <td className="px-4 py-3 text-xs tabular-nums text-slate-400">
                             {row.gscImpressions != null || row.gscClicks != null
                               ? `${row.gscImpressions ?? 0} imp · ${row.gscClicks ?? 0} clic`
                               : '—'}
-                          </td>
-                          <td className="px-4 py-3 font-medium tabular-nums text-slate-100">
-                            {row.priority}
                           </td>
                           <td className="px-4 py-3 text-slate-300">{STATUS_LABEL[row.status]}</td>
                           <td className="px-4 py-3">

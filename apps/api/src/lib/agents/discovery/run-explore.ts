@@ -1,0 +1,338 @@
+import { prisma } from '../../prisma';
+import {
+  fetchKeywordsForKeywords,
+  fetchKeywordsForSite,
+  isDataForSeoConfigured,
+  resolveDataForSeoConfig,
+  type DataForSeoKeywordRow,
+} from '../../integrations/dataforseo';
+import { logAgentActivity } from '../../agent-helpers';
+import { enrichCandidatesWithLlm } from './enrich-llm';
+import { scoreDemandFromVolume, scoreTrendFromMonthly } from './score';
+import {
+  DISCOVERY_MARKETS,
+  type DiscoveryExploreInput,
+  type DiscoveryKeywordCandidate,
+  type DiscoverySettings,
+  type OpportunityBrief,
+} from './types';
+
+function normalizeKeyword(value: string): string {
+  return value.replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function titleCaseKeyword(value: string): string {
+  const t = value.replace(/\s+/g, ' ').trim();
+  if (!t) return t;
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+function resolveMarket(input: DiscoveryExploreInput) {
+  const key = (input.market ?? 'ar').toLowerCase();
+  const market = DISCOVERY_MARKETS[key] ?? DISCOVERY_MARKETS.ar;
+  return {
+    ...market,
+    languageCode: input.languageCode?.trim() || market.languageCode,
+  };
+}
+
+function rowToCandidate(
+  row: DataForSeoKeywordRow,
+  seedKeyword: string,
+  source: DiscoveryKeywordCandidate['source'],
+): DiscoveryKeywordCandidate | null {
+  const keyword = normalizeKeyword(row.keyword ?? '');
+  if (keyword.length < 2) return null;
+
+  const monthlySearches =
+    typeof row.search_volume === 'number' && Number.isFinite(row.search_volume)
+      ? row.search_volume
+      : null;
+  const trend = scoreTrendFromMonthly(row.monthly_searches);
+  const demandScore = scoreDemandFromVolume(monthlySearches);
+
+  return {
+    keyword: titleCaseKeyword(keyword),
+    seedKeyword,
+    monthlySearches,
+    competitionIndex:
+      typeof row.competition_index === 'number' ? row.competition_index : null,
+    demandScore,
+    trendScore: trend.score,
+    trendLabel: trend.label,
+    source,
+  };
+}
+
+function mergeCandidates(
+  existing: Map<string, DiscoveryKeywordCandidate>,
+  incoming: DiscoveryKeywordCandidate[],
+) {
+  for (const c of incoming) {
+    const key = normalizeKeyword(c.keyword);
+    const prev = existing.get(key);
+    if (!prev) {
+      existing.set(key, c);
+      continue;
+    }
+    // Prefer higher volume / richer trend
+    if ((c.monthlySearches ?? 0) > (prev.monthlySearches ?? 0)) {
+      existing.set(key, { ...c, seedKeyword: prev.seedKeyword || c.seedKeyword });
+    }
+  }
+}
+
+async function ensureDiscoveryAgent(workspaceId: string) {
+  const agent = await prisma.agent.upsert({
+    where: { slug: 'discovery' },
+    update: {},
+    create: {
+      slug: 'discovery',
+      name: 'Discovery',
+      description:
+        'Agente de descubrimiento de demanda — keywords, tendencia y opportunity briefs para Teo',
+    },
+  });
+
+  await prisma.agentConfig.upsert({
+    where: {
+      workspaceId_agentId: { workspaceId, agentId: agent.id },
+    },
+    update: {},
+    create: {
+      workspaceId,
+      agentId: agent.id,
+      frequency: 'on-demand',
+      autoPublish: false,
+      topics: [],
+      settings: {},
+    },
+  });
+
+  return agent;
+}
+
+async function persistBriefs(
+  workspaceId: string,
+  briefs: OpportunityBrief[],
+  seedFallback: string,
+): Promise<{ created: number; updated: number }> {
+  let created = 0;
+  let updated = 0;
+
+  for (const brief of briefs) {
+    const keyword = titleCaseKeyword(brief.primaryQuery);
+    const existing = await prisma.keywordOpportunity.findUnique({
+      where: {
+        workspaceId_keyword: { workspaceId, keyword },
+      },
+    });
+
+    const data = {
+      seedKeyword: seedFallback,
+      cluster: brief.cluster,
+      stage: brief.stage,
+      intent: brief.intent,
+      intentLabel: brief.intentLabel,
+      priority: brief.opportunityScore,
+      source: `discovery_dataforseo_${brief.providerMode}`,
+      status: existing?.status === 'covered' || existing?.status === 'discarded'
+        ? existing.status
+        : existing?.status ?? 'idea',
+      demandScore: brief.demandScore,
+      monthlySearches: brief.monthlySearches,
+      trendScore: brief.trendScore,
+      relevanceScore: brief.relevanceScore,
+      opportunityScore: brief.opportunityScore,
+      scoreReason: `Discovery: demanda ${brief.demandScore} · tendencia ${brief.trendScore} · relevancia ${brief.relevanceScore} → ${brief.opportunityScore}`,
+      scoredAt: new Date(),
+      brief: brief as object,
+      notes: [
+        brief.suggestedAngle,
+        `Contenido: ${brief.recommendedContent}`,
+        `Target: ${brief.target}`,
+        brief.relatedQueries.length
+          ? `Related: ${brief.relatedQueries.join(' · ')}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    };
+
+    if (existing) {
+      await prisma.keywordOpportunity.update({
+        where: { id: existing.id },
+        data,
+      });
+      updated += 1;
+    } else {
+      await prisma.keywordOpportunity.create({
+        data: {
+          workspaceId,
+          keyword,
+          ...data,
+        },
+      });
+      created += 1;
+    }
+  }
+
+  return { created, updated };
+}
+
+export async function runDiscoveryExplore(
+  workspaceSlug: string,
+  input: DiscoveryExploreInput,
+): Promise<{
+  ok: true;
+  mode: 'sandbox' | 'live';
+  cost: number;
+  candidates: number;
+  briefs: number;
+  created: number;
+  updated: number;
+  top: OpportunityBrief[];
+}> {
+  const config = resolveDataForSeoConfig();
+  if (!config || !isDataForSeoConfigured()) {
+    throw new Error(
+      'DataForSEO no configurado. Definí DATAFORSEO_LOGIN y DATAFORSEO_PASSWORD (modo sandbox por defecto).',
+    );
+  }
+
+  const workspace = await prisma.workspace.findUnique({ where: { slug: workspaceSlug } });
+  if (!workspace) throw new Error(`Workspace "${workspaceSlug}" no encontrado`);
+
+  const seeds = [
+    ...new Set(
+      input.seeds
+        .map((s) => s.replace(/\s+/g, ' ').trim())
+        .filter((s) => s.length >= 2 && s.length <= 80),
+    ),
+  ].slice(0, 20);
+
+  if (!seeds.length) throw new Error('Agregá al menos una keyword semilla');
+
+  const siteUrl = input.siteUrl.trim() || `https://${workspaceSlug}.net`;
+  const description = input.description.trim() || workspace.name;
+  const market = resolveMarket(input);
+  const maxCandidates = Math.min(80, Math.max(10, input.maxCandidates ?? 40));
+
+  const agent = await ensureDiscoveryAgent(workspace.id);
+
+  await logAgentActivity({
+    workspaceId: workspace.id,
+    agentId: agent.id,
+    role: 'strategist',
+    message: `Discovery explorando demanda (${config.mode}): ${seeds.length} semillas · ${market.label}`,
+  });
+
+  const merged = new Map<string, DiscoveryKeywordCandidate>();
+  let totalCost = 0;
+
+  // Batches de hasta 20 seeds (API limit)
+  for (let i = 0; i < seeds.length; i += 20) {
+    const batch = seeds.slice(i, i + 20);
+    const { rows, cost } = await fetchKeywordsForKeywords(config, {
+      keywords: batch,
+      locationCode: market.locationCode,
+      languageCode: market.languageCode,
+      sortBy: 'search_volume',
+    });
+    totalCost += cost;
+    const seedTag = batch[0] ?? 'seed';
+    mergeCandidates(
+      merged,
+      rows
+        .map((row) => rowToCandidate(row, seedTag, 'keywords_for_keywords'))
+        .filter((c): c is DiscoveryKeywordCandidate => Boolean(c)),
+    );
+  }
+
+  if (input.includeSiteKeywords !== false && siteUrl) {
+    try {
+      const { rows, cost } = await fetchKeywordsForSite(config, {
+        target: siteUrl,
+        locationCode: market.locationCode,
+        languageCode: market.languageCode,
+      });
+      totalCost += cost;
+      mergeCandidates(
+        merged,
+        rows
+          .map((row) => rowToCandidate(row, seeds[0] ?? siteUrl, 'keywords_for_site'))
+          .filter((c): c is DiscoveryKeywordCandidate => Boolean(c)),
+      );
+    } catch (err) {
+      console.warn(
+        '[discovery] keywords_for_site falló:',
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
+  const ranked = [...merged.values()]
+    .sort((a, b) => (b.monthlySearches ?? 0) - (a.monthlySearches ?? 0) || b.demandScore - a.demandScore)
+    .slice(0, maxCandidates);
+
+  if (!ranked.length) {
+    throw new Error(
+      'DataForSEO no devolvió keywords. Probá otras semillas o revisá location/idioma.',
+    );
+  }
+
+  const briefs = await enrichCandidatesWithLlm(ranked, {
+    siteUrl,
+    description,
+    marketLabel: market.label,
+    providerMode: config.mode,
+  });
+
+  // Descartar relevancia muy baja del negocio
+  const kept = briefs.filter((b) => b.relevanceScore >= 35).slice(0, maxCandidates);
+  const { created, updated } = await persistBriefs(workspace.id, kept, seeds[0] ?? 'seed');
+
+  const settings: DiscoverySettings = {
+    siteUrl,
+    description,
+    market: input.market ?? 'ar',
+    languageCode: market.languageCode,
+    seeds,
+  };
+
+  await prisma.agentConfig.updateMany({
+    where: { workspaceId: workspace.id, agentId: agent.id },
+    data: {
+      topics: seeds,
+      settings: settings as object,
+    },
+  });
+
+  await logAgentActivity({
+    workspaceId: workspace.id,
+    agentId: agent.id,
+    role: 'strategist',
+    level: 'success',
+    message: `Discovery OK (${config.mode}): ${kept.length} briefs · +${created}/~${updated} · cost≈$${totalCost.toFixed(4)}`,
+  });
+
+  return {
+    ok: true,
+    mode: config.mode,
+    cost: totalCost,
+    candidates: ranked.length,
+    briefs: kept.length,
+    created,
+    updated,
+    top: kept.slice(0, 10),
+  };
+}
+
+export function getDiscoveryStatus() {
+  const config = resolveDataForSeoConfig();
+  return {
+    configured: Boolean(config),
+    mode: config?.mode ?? 'sandbox',
+    provider: 'dataforseo' as const,
+  };
+}
