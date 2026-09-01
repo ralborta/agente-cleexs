@@ -35,21 +35,24 @@ function buildNav(workspace: string) {
     { href: workspaceHref(workspace, 'oportunidades'), label: 'Oportunidades', icon: Target },
     { href: workspaceHref(workspace, 'actividad'), label: 'Actividad', icon: Activity },
   ];
+  const agentsNav = [
+    { href: workspaceHref(workspace, 'discovery'), label: 'Discovery', icon: Sparkles },
+    { href: workspaceHref(workspace, 'config/teo'), label: 'Teo · temas', icon: Settings },
+  ];
   const operationNav = [
     { href: workspaceHref(workspace, 'aprobaciones'), label: 'Entregables', icon: CheckCircle2 },
     { href: workspaceHref(workspace, 'monitor'), label: 'Monitor', icon: Radio },
   ];
   const configNav = [
     { href: workspaceHref(workspace, 'voz'), label: 'Voz del founder', icon: Mic2 },
-    { href: workspaceHref(workspace, 'config/teo'), label: 'Temas y reglas Teo', icon: Settings },
     { href: workspaceHref(workspace, 'integraciones'), label: 'Integraciones', icon: Plug },
   ];
-  return { resultsNav, operationNav, configNav };
+  return { resultsNav, agentsNav, operationNav, configNav };
 }
 
 const agents = [
-  { slug: 'teo', name: 'Teo', status: 'online' as const },
-  { slug: 'discovery', name: 'Discovery', status: 'online' as const },
+  { slug: 'discovery', name: 'Discovery', hrefSuffix: 'discovery', status: 'online' as const },
+  { slug: 'teo', name: 'Teo', hrefSuffix: 'config/teo', status: 'online' as const },
 ];
 
 type SidebarProps = {
@@ -107,7 +110,7 @@ export function CentroSidebar({ workspaceName, pendingApprovals: pendingProp }: 
   const workspace = useWorkspaceSlug();
   const storedUser = getStoredUser();
   const [pendingApprovals, setPendingApprovals] = useState(pendingProp ?? 0);
-  const { resultsNav, operationNav, configNav } = useMemo(
+  const { resultsNav, agentsNav, operationNav, configNav } = useMemo(
     () => buildNav(workspace),
     [workspace],
   );
@@ -135,24 +138,26 @@ export function CentroSidebar({ workspaceName, pendingApprovals: pendingProp }: 
           {PLATFORM_NAME}
         </p>
         <h1 className="mt-1 text-lg font-semibold text-white">{workspaceName}</h1>
-        <p className="mt-1 text-xs text-emerald-400">Teo activo · modo autónomo</p>
+        <p className="mt-1 text-xs text-emerald-400">Teo + Discovery activos</p>
       </div>
 
       <div className="min-h-0 flex-1 space-y-8 overflow-y-auto pr-1">
         <NavSection title="Resultados" items={resultsNav} pathname={pathname} />
+        <NavSection title="Agentes" items={agentsNav} pathname={pathname} />
         <NavSection title="Operación" items={operationWithBadge} pathname={pathname} />
         <NavSection title="Configuración" items={configNav} pathname={pathname} />
       </div>
 
       <div className="mt-4 shrink-0">
         <p className="mb-2 px-2 text-xs font-medium uppercase tracking-[0.18em] text-hub-muted">
-          Agentes
+          Estado
         </p>
         <div className="space-y-1">
           {agents.map((agent) => (
-            <div
+            <Link
               key={agent.slug}
-              className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-300"
+              href={workspaceHref(workspace, agent.hrefSuffix)}
+              className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-300 hover:bg-hub-card hover:text-white"
             >
               <span
                 className={cn(
@@ -162,7 +167,7 @@ export function CentroSidebar({ workspaceName, pendingApprovals: pendingProp }: 
               />
               <Sparkles className="h-4 w-4 text-cleexs-blue" />
               {agent.name}
-            </div>
+            </Link>
           ))}
         </div>
       </div>
