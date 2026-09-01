@@ -127,9 +127,12 @@ Clasificá cada keyword. Devolvé JSON:
 }
 
 Reglas:
-- relevanceScore alto solo si sirve al negocio descrito (no a IA genérica).
+- relevanceScore alto SOLO si la keyword sirve DIRECTAMENTE al negocio descrito.
+- Si es genérica (seo tools, seotools, marketing tools) y el negocio no es SEO → relevanceScore <= 20.
+- Preferí español / Latam cuando el mercado lo indique.
 - Agrupá keywords cercanas en el mismo cluster.
 - No inventes volúmenes.
+- suggestedAngle en español, concreto al negocio (no “Cómo abordar X para…” genérico).
 
 Keywords:
 ${JSON.stringify(list, null, 2)}`;

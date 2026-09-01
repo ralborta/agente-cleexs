@@ -27,6 +27,40 @@ function titleCaseKeyword(value: string): string {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+const STOP = new Set([
+  'para', 'con', 'como', 'que', 'qué', 'una', 'uno', 'los', 'las', 'del', 'por',
+  'the', 'and', 'for', 'with', 'from', 'tools', 'tool', 'best', 'mejor', 'mejores',
+]);
+
+function tokenize(...parts: string[]): Set<string> {
+  const out = new Set<string>();
+  for (const part of parts) {
+    const norm = part
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    for (const t of norm.split(/[^a-z0-9]+/)) {
+      if (t.length >= 3 && !STOP.has(t)) out.add(t);
+    }
+  }
+  return out;
+}
+
+/** Descarta ideas sin overlap con semillas/negocio (evita basura tipo Seotools). */
+function overlapsBusiness(
+  keyword: string,
+  seeds: string[],
+  description: string,
+): boolean {
+  const business = tokenize(...seeds, description);
+  if (!business.size) return true;
+  const kw = tokenize(keyword);
+  for (const t of kw) {
+    if (business.has(t)) return true;
+  }
+  return false;
+}
+
 function resolveMarket(input: DiscoveryExploreInput) {
   const key = (input.market ?? 'ar').toLowerCase();
   const market = DISCOVERY_MARKETS[key] ?? DISCOVERY_MARKETS.ar;
@@ -272,12 +306,13 @@ export async function runDiscoveryExplore(
   }
 
   const ranked = [...merged.values()]
+    .filter((c) => overlapsBusiness(c.keyword, seeds, description))
     .sort((a, b) => (b.monthlySearches ?? 0) - (a.monthlySearches ?? 0) || b.demandScore - a.demandScore)
     .slice(0, maxCandidates);
 
   if (!ranked.length) {
     throw new Error(
-      'DataForSEO no devolvió keywords. Probá otras semillas o revisá location/idioma.',
+      'DataForSEO no devolvió keywords alineadas a tus semillas/negocio. Probá semillas más concretas (ej. logística + IA) o modo live.',
     );
   }
 
@@ -288,8 +323,12 @@ export async function runDiscoveryExplore(
     providerMode: config.mode,
   });
 
-  // Descartar relevancia muy baja del negocio
-  const kept = briefs.filter((b) => b.relevanceScore >= 35).slice(0, maxCandidates);
+  // Descartar relevancia baja; en live exigimos más alineación al negocio
+  const minRelevance = config.mode === 'live' ? 50 : 35;
+  const kept = briefs
+    .filter((b) => b.relevanceScore >= minRelevance)
+    .filter((b) => overlapsBusiness(b.primaryQuery, seeds, description))
+    .slice(0, maxCandidates);
   const { created, updated } = await persistBriefs(workspace.id, kept, seeds[0] ?? 'seed');
 
   const settings: DiscoverySettings = {

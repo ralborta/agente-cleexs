@@ -8,8 +8,10 @@ export type DiscoveryMarket = {
 export const DISCOVERY_MARKETS: Record<string, DiscoveryMarket> = {
   ar: { locationCode: 2032, languageCode: 'es', label: 'Argentina' },
   mx: { locationCode: 2484, languageCode: 'es', label: 'México' },
+  co: { locationCode: 2170, languageCode: 'es', label: 'Colombia' },
   es: { locationCode: 2724, languageCode: 'es', label: 'España' },
-  latam: { locationCode: 2032, languageCode: 'es', label: 'Latinoamérica (AR)' },
+  /** Ads no tiene “Latam”: usamos AR como proxy de volumen en español. */
+  latam: { locationCode: 2032, languageCode: 'es', label: 'Latam (proxy Argentina)' },
 };
 
 export type DiscoveryExploreInput = {

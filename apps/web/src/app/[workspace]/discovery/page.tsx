@@ -33,6 +33,7 @@ export default function DiscoveryPage() {
       ? 'marca empleadora\natracción de talento\nemployer branding\nreclutamiento con IA'
       : 'agentes de IA\nvisibilidad en IA\nconseguir clientes con ChatGPT\nAEO para pymes',
   );
+  const [market, setMarket] = useState('latam');
   const [running, setRunning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +62,7 @@ export default function DiscoveryPage() {
       setMode(status.mode);
       if (status.settings?.siteUrl) setSiteUrl(status.settings.siteUrl);
       if (status.settings?.description) setDescription(status.settings.description);
+      if (status.settings?.market) setMarket(status.settings.market);
       if (Array.isArray(status.seeds) && status.seeds.length) {
         setSeedsInput(status.seeds.join('\n'));
       }
@@ -99,9 +101,9 @@ export default function DiscoveryPage() {
       const res = await runDiscoveryExplore(workspace, {
         siteUrl: siteUrl.trim(),
         description: description.trim(),
-        market: 'ar',
+        market,
         seeds,
-        includeSiteKeywords: true,
+        includeSiteKeywords: false,
         maxCandidates: 40,
       });
       setTop(res.top ?? []);
@@ -175,6 +177,20 @@ export default function DiscoveryPage() {
             />
           </label>
           <label className="block text-xs text-hub-muted">
+            Mercado
+            <select
+              value={market}
+              onChange={(e) => setMarket(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-hub-border bg-[#0b1220] px-3 py-2 text-sm text-white"
+            >
+              <option value="latam">Latam (proxy Argentina)</option>
+              <option value="ar">Argentina</option>
+              <option value="mx">México</option>
+              <option value="co">Colombia</option>
+              <option value="es">España</option>
+            </select>
+          </label>
+          <label className="block text-xs text-hub-muted sm:col-span-2">
             Descripción del negocio
             <input
               value={description}
