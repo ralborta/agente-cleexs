@@ -23,6 +23,11 @@ export type DiscoveryExploreInput = {
   seeds: string[];
   /** Incluir keywords_for_site (cuesta 1 request extra) */
   includeSiteKeywords?: boolean;
+  /**
+   * Expansión Labs: related_keywords + keyword_suggestions por semilla.
+   * Default true — sin esto solo hay ideas de Google Ads (pocas).
+   */
+  deepExpand?: boolean;
   /** Máx. candidatos a enriquecer con LLM / persistir */
   maxCandidates?: number;
 };
@@ -35,7 +40,11 @@ export type DiscoveryKeywordCandidate = {
   demandScore: number;
   trendScore: number;
   trendLabel: 'growing' | 'stable' | 'declining';
-  source: 'keywords_for_keywords' | 'keywords_for_site';
+  source:
+    | 'keywords_for_keywords'
+    | 'keywords_for_site'
+    | 'related_keywords'
+    | 'keyword_suggestions';
 };
 
 export type OpportunityBrief = {

@@ -1,7 +1,9 @@
 import { prisma } from '../../prisma';
 import {
+  fetchKeywordSuggestions,
   fetchKeywordsForKeywords,
   fetchKeywordsForSite,
+  fetchRelatedKeywords,
   isDataForSeoConfigured,
   resolveDataForSeoConfig,
   type DataForSeoKeywordRow,
@@ -46,12 +48,24 @@ function tokenize(...parts: string[]): Set<string> {
   return out;
 }
 
+function stripDiacritics(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 /** Descarta ideas sin overlap con semillas/negocio (evita basura tipo Seotools). */
 function overlapsBusiness(
   keyword: string,
   seeds: string[],
   description: string,
 ): boolean {
+  const normKw = stripDiacritics(keyword);
+  for (const seed of seeds) {
+    const s = stripDiacritics(seed).replace(/\s+/g, ' ').trim();
+    if (s.length >= 4 && normKw.includes(s)) return true;
+  }
   const business = tokenize(...seeds, description);
   if (!business.size) return true;
   const kw = tokenize(keyword);
@@ -221,6 +235,7 @@ export async function runDiscoveryExplore(
   ok: true;
   mode: 'sandbox' | 'live';
   cost: number;
+  pool: number;
   candidates: number;
   briefs: number;
   created: number;
@@ -250,7 +265,8 @@ export async function runDiscoveryExplore(
   const siteUrl = input.siteUrl.trim() || `https://${workspaceSlug}.net`;
   const description = input.description.trim() || workspace.name;
   const market = resolveMarket(input);
-  const maxCandidates = Math.min(80, Math.max(10, input.maxCandidates ?? 40));
+  const maxCandidates = Math.min(120, Math.max(10, input.maxCandidates ?? 80));
+  const deepExpand = input.deepExpand !== false;
 
   const agent = await ensureDiscoveryAgent(workspace.id);
 
@@ -258,13 +274,13 @@ export async function runDiscoveryExplore(
     workspaceId: workspace.id,
     agentId: agent.id,
     role: 'strategist',
-    message: `Discovery explorando demanda (${config.mode}): ${seeds.length} semillas · ${market.label}`,
+    message: `Discovery explorando demanda (${config.mode}): ${seeds.length} semillas · ${market.label}${deepExpand ? ' · expansión Labs' : ''}`,
   });
 
   const merged = new Map<string, DiscoveryKeywordCandidate>();
   let totalCost = 0;
 
-  // Batches de hasta 20 seeds (API limit)
+  // 1) Google Ads Keyword Planner — hasta 20 seeds en un request
   for (let i = 0; i < seeds.length; i += 20) {
     const batch = seeds.slice(i, i + 20);
     const { rows, cost } = await fetchKeywordsForKeywords(config, {
@@ -283,7 +299,61 @@ export async function runDiscoveryExplore(
     );
   }
 
-  if (input.includeSiteKeywords !== false && siteUrl) {
+  // 2) Labs related + suggestions — muchas más keywords (SERP / long-tail)
+  if (deepExpand) {
+    const relatedSeeds = seeds.slice(0, 8);
+    for (const seed of relatedSeeds) {
+      try {
+        const { rows, cost } = await fetchRelatedKeywords(config, {
+          keyword: seed,
+          locationCode: market.locationCode,
+          languageCode: market.languageCode,
+          depth: 2,
+          limit: 100,
+        });
+        totalCost += cost;
+        mergeCandidates(
+          merged,
+          rows
+            .map((row) => rowToCandidate(row, seed, 'related_keywords'))
+            .filter((c): c is DiscoveryKeywordCandidate => Boolean(c)),
+        );
+      } catch (err) {
+        console.warn(
+          '[discovery] related_keywords falló:',
+          seed,
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+
+    const suggestSeeds = seeds.slice(0, 5);
+    for (const seed of suggestSeeds) {
+      try {
+        const { rows, cost } = await fetchKeywordSuggestions(config, {
+          keyword: seed,
+          locationCode: market.locationCode,
+          languageCode: market.languageCode,
+          limit: 80,
+        });
+        totalCost += cost;
+        mergeCandidates(
+          merged,
+          rows
+            .map((row) => rowToCandidate(row, seed, 'keyword_suggestions'))
+            .filter((c): c is DiscoveryKeywordCandidate => Boolean(c)),
+        );
+      } catch (err) {
+        console.warn(
+          '[discovery] keyword_suggestions falló:',
+          seed,
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+  }
+
+  if (input.includeSiteKeywords === true && siteUrl) {
     try {
       const { rows, cost } = await fetchKeywordsForSite(config, {
         target: siteUrl,
@@ -305,6 +375,7 @@ export async function runDiscoveryExplore(
     }
   }
 
+  const rawPool = merged.size;
   const ranked = [...merged.values()]
     .filter((c) => overlapsBusiness(c.keyword, seeds, description))
     .sort((a, b) => (b.monthlySearches ?? 0) - (a.monthlySearches ?? 0) || b.demandScore - a.demandScore)
@@ -312,7 +383,7 @@ export async function runDiscoveryExplore(
 
   if (!ranked.length) {
     throw new Error(
-      'DataForSEO no devolvió keywords alineadas a tus semillas/negocio. Probá semillas más concretas (ej. logística + IA) o modo live.',
+      `DataForSEO trajo ${rawPool} keywords crudas pero ninguna alineada a semillas/negocio. Probá semillas más concretas o relajá la descripción.`,
     );
   }
 
@@ -352,13 +423,14 @@ export async function runDiscoveryExplore(
     agentId: agent.id,
     role: 'strategist',
     level: 'success',
-    message: `Discovery OK (${config.mode}): ${kept.length} briefs · +${created}/~${updated} · cost≈$${totalCost.toFixed(4)}`,
+    message: `Discovery OK (${config.mode}): pool ${rawPool} → ${ranked.length} candidatos → ${kept.length} briefs · +${created}/~${updated} · cost≈$${totalCost.toFixed(4)}`,
   });
 
   return {
     ok: true,
     mode: config.mode,
     cost: totalCost,
+    pool: rawPool,
     candidates: ranked.length,
     briefs: kept.length,
     created,

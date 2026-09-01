@@ -38,7 +38,7 @@ type DataForSeoTaskResponse = {
     status_code?: number;
     status_message?: string;
     cost?: number;
-    result?: DataForSeoKeywordRow[] | null;
+    result?: unknown;
   }>;
 };
 
@@ -99,16 +99,63 @@ async function dataForSeoPost<T>(
   return json;
 }
 
-function flattenKeywordResults(payload: DataForSeoTaskResponse): DataForSeoKeywordRow[] {
+function flattenAdsKeywordResults(payload: DataForSeoTaskResponse): DataForSeoKeywordRow[] {
   const rows: DataForSeoKeywordRow[] = [];
   for (const task of payload.tasks ?? []) {
     if (task.status_code && task.status_code >= 40000) {
       console.warn('[dataforseo] task error', task.status_code, task.status_message);
       continue;
     }
-    for (const row of task.result ?? []) {
+    const result = task.result;
+    if (!Array.isArray(result)) continue;
+    for (const row of result as DataForSeoKeywordRow[]) {
       if (!row?.keyword) continue;
       rows.push(row);
+    }
+  }
+  return rows;
+}
+
+type LabsKeywordInfo = {
+  search_volume?: number | null;
+  competition?: number | null;
+  cpc?: number | null;
+  monthly_searches?: MonthlySearchPoint[] | null;
+};
+
+type LabsItem = {
+  keyword_data?: {
+    keyword?: string;
+    keyword_info?: LabsKeywordInfo;
+  };
+  keyword?: string;
+  keyword_info?: LabsKeywordInfo;
+};
+
+function flattenLabsItems(payload: DataForSeoTaskResponse): DataForSeoKeywordRow[] {
+  const rows: DataForSeoKeywordRow[] = [];
+  for (const task of payload.tasks ?? []) {
+    if (task.status_code && task.status_code >= 40000) {
+      console.warn('[dataforseo] labs task error', task.status_code, task.status_message);
+      continue;
+    }
+    const results = Array.isArray(task.result) ? task.result : [];
+    for (const block of results as Array<{ items?: LabsItem[] }>) {
+      for (const item of block.items ?? []) {
+        const keyword = (item.keyword_data?.keyword ?? item.keyword ?? '').trim();
+        if (!keyword) continue;
+        const info = item.keyword_data?.keyword_info ?? item.keyword_info;
+        rows.push({
+          keyword,
+          search_volume: info?.search_volume ?? null,
+          competition_index:
+            typeof info?.competition === 'number'
+              ? Math.round(info.competition * 100)
+              : null,
+          cpc: info?.cpc ?? null,
+          monthly_searches: info?.monthly_searches ?? null,
+        });
+      }
     }
   }
   return rows;
@@ -121,7 +168,7 @@ export type KeywordsForKeywordsInput = {
   sortBy?: 'relevance' | 'search_volume' | 'competition_index';
 };
 
-/** Hasta 20 seeds → ideas + volumen (Google Ads). */
+/** Hasta 20 seeds → ideas + volumen (Google Ads Keyword Planner). */
 export async function fetchKeywordsForKeywords(
   config: DataForSeoConfig,
   input: KeywordsForKeywordsInput,
@@ -152,7 +199,7 @@ export async function fetchKeywordsForKeywords(
   );
 
   return {
-    rows: flattenKeywordResults(payload),
+    rows: flattenAdsKeywordResults(payload),
     cost: payload.cost ?? 0,
     mode: config.mode,
   };
@@ -183,7 +230,82 @@ export async function fetchKeywordsForSite(
   );
 
   return {
-    rows: flattenKeywordResults(payload),
+    rows: flattenAdsKeywordResults(payload),
+    cost: payload.cost ?? 0,
+    mode: config.mode,
+  };
+}
+
+export type RelatedKeywordsInput = {
+  keyword: string;
+  locationCode: number;
+  languageCode: string;
+  /** 1≈8, 2≈72, 3≈584 related */
+  depth?: number;
+  limit?: number;
+};
+
+/** “Búsquedas relacionadas” de Google SERP (Labs) — mucha más expansión. */
+export async function fetchRelatedKeywords(
+  config: DataForSeoConfig,
+  input: RelatedKeywordsInput,
+): Promise<{ rows: DataForSeoKeywordRow[]; cost: number; mode: DataForSeoMode }> {
+  const keyword = input.keyword.replace(/\s+/g, ' ').trim().toLowerCase();
+  if (!keyword) return { rows: [], cost: 0, mode: config.mode };
+
+  const payload = await dataForSeoPost<DataForSeoTaskResponse>(
+    config,
+    '/v3/dataforseo_labs/google/related_keywords/live',
+    [
+      {
+        keyword,
+        location_code: input.locationCode,
+        language_code: input.languageCode,
+        depth: input.depth ?? 2,
+        limit: input.limit ?? 100,
+        include_seed_keyword: true,
+      },
+    ],
+  );
+
+  return {
+    rows: flattenLabsItems(payload),
+    cost: payload.cost ?? 0,
+    mode: config.mode,
+  };
+}
+
+export type KeywordSuggestionsInput = {
+  keyword: string;
+  locationCode: number;
+  languageCode: string;
+  limit?: number;
+};
+
+/** Long-tails que contienen la frase semilla (full-text Labs). */
+export async function fetchKeywordSuggestions(
+  config: DataForSeoConfig,
+  input: KeywordSuggestionsInput,
+): Promise<{ rows: DataForSeoKeywordRow[]; cost: number; mode: DataForSeoMode }> {
+  const keyword = input.keyword.replace(/\s+/g, ' ').trim().toLowerCase();
+  if (!keyword) return { rows: [], cost: 0, mode: config.mode };
+
+  const payload = await dataForSeoPost<DataForSeoTaskResponse>(
+    config,
+    '/v3/dataforseo_labs/google/keyword_suggestions/live',
+    [
+      {
+        keyword,
+        location_code: input.locationCode,
+        language_code: input.languageCode,
+        limit: input.limit ?? 80,
+        include_seed_keyword: true,
+      },
+    ],
+  );
+
+  return {
+    rows: flattenLabsItems(payload),
     cost: payload.cost ?? 0,
     mode: config.mode,
   };

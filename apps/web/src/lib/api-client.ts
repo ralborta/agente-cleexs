@@ -817,6 +817,7 @@ export type DiscoveryExploreResult = {
   ok: true;
   mode: 'sandbox' | 'live';
   cost: number;
+  pool?: number;
   candidates: number;
   briefs: number;
   created: number;
@@ -844,6 +845,7 @@ export async function runDiscoveryExplore(
     languageCode?: string;
     seeds: string[];
     includeSiteKeywords?: boolean;
+    deepExpand?: boolean;
     maxCandidates?: number;
   },
 ) {

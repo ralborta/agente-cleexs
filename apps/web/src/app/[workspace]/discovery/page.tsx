@@ -104,11 +104,12 @@ export default function DiscoveryPage() {
         market,
         seeds,
         includeSiteKeywords: false,
-        maxCandidates: 40,
+        deepExpand: true,
+        maxCandidates: 80,
       });
       setTop(res.top ?? []);
       setMessage(
-        `Listo (${res.mode}): ${res.briefs} briefs · +${res.created} / ~${res.updated} · cost≈$${res.cost.toFixed(4)}`,
+        `Listo (${res.mode}): pool ${res.pool ?? '—'} → ${res.candidates} candidatos → ${res.briefs} briefs · +${res.created} / ~${res.updated} · cost≈$${res.cost.toFixed(4)}`,
       );
       await load();
     } catch (e) {
@@ -127,8 +128,8 @@ export default function DiscoveryPage() {
           </p>
           <h2 className="mt-1 text-3xl font-semibold text-white">Discovery</h2>
           <p className="mt-2 max-w-2xl text-sm text-hub-muted">
-            Descubre qué busca el mercado (DataForSEO + score). Teo no inventa temas: consume estos
-            briefs desde Oportunidades.
+            Expande semillas con Google Ads + Labs (related + suggestions), puntúa demanda y arma
+            briefs. Teo no inventa temas: consume esta cola desde Oportunidades.
           </p>
         </div>
         <button
@@ -200,7 +201,8 @@ export default function DiscoveryPage() {
           </label>
         </div>
         <label className="mt-3 block text-xs text-hub-muted">
-          Semillas (una por línea)
+          Semillas (una por línea) — con expansión profunda se usan hasta 8 para related y 5 para
+          long-tails Labs
           <textarea
             value={seedsInput}
             onChange={(e) => setSeedsInput(e.target.value)}
@@ -208,6 +210,10 @@ export default function DiscoveryPage() {
             className="mt-1 w-full rounded-xl border border-hub-border bg-[#0b1220] px-3 py-2 text-sm text-white outline-none ring-violet-500/40 focus:ring-2"
           />
         </label>
+        <p className="mt-2 text-xs text-hub-muted">
+          Antes solo corría Keyword Planner (pocas ideas). Ahora también Labs related keywords +
+          suggestions. Puede tardar 30–90s y gastar más crédito DataForSEO.
+        </p>
         <button
           type="button"
           disabled={running || !configured}

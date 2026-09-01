@@ -12,8 +12,9 @@ const exploreSchema = z.object({
   market: z.string().min(2).max(32).optional().default('ar'),
   languageCode: z.string().min(2).max(8).optional(),
   seeds: z.array(z.string().min(2).max(80)).min(1).max(20),
-  includeSiteKeywords: z.boolean().optional().default(true),
-  maxCandidates: z.number().int().min(10).max(80).optional(),
+  includeSiteKeywords: z.boolean().optional().default(false),
+  deepExpand: z.boolean().optional().default(true),
+  maxCandidates: z.number().int().min(10).max(120).optional(),
 });
 
 const discoveryRoutes: FastifyPluginAsync = async (server) => {
