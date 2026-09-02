@@ -10,6 +10,17 @@ const nextConfig = {
       ],
     },
   },
+  async rewrites() {
+    const api = (
+      process.env.API_INTERNAL_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:4000'
+    ).replace(/\/$/, '');
+    return [
+      { source: '/api/:path*', destination: `${api}/api/:path*` },
+      { source: '/health', destination: `${api}/health` },
+    ];
+  },
 };
 
 module.exports = nextConfig;

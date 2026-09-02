@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+import { getApiBaseUrl } from '@/lib/api-client';
 
 export default function PublicVozPage() {
   const params = useParams<{ token: string }>();
@@ -23,7 +23,7 @@ export default function PublicVozPage() {
     if (!token) return;
     (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/voice/public/${token}`);
+        const res = await fetch(`${getApiBaseUrl()}/api/voice/public/${token}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Link inválido');
         setTopic(data.topic);
@@ -51,7 +51,7 @@ export default function PublicVozPage() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/voice/public/${token}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/voice/public/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quotes: list, authorLabel: 'Founder' }),
