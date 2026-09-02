@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { getAuthToken, getStoredUser } from '@/lib/auth-client';
 import { workspaceHref } from '@/lib/workspace';
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
 
@@ -16,7 +15,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     if (!token || !user) {
       const fallback = workspaceHref(user?.workspaceSlug || 'cleexs');
       const next = encodeURIComponent(pathname || fallback);
-      router.replace(`/login?next=${next}`);
+      window.location.replace(`/login?next=${next}`);
       return;
     }
 
@@ -31,12 +30,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
       routeWs !== user.workspaceSlug
     ) {
       const rest = pathname?.replace(/^\/[^/]+/, '') || '';
-      router.replace(workspaceHref(user.workspaceSlug, rest.replace(/^\//, '')));
+      window.location.replace(workspaceHref(user.workspaceSlug, rest.replace(/^\//, '')));
       return;
     }
 
     setReady(true);
-  }, [pathname, router]);
+  }, [pathname]);
 
   if (!ready) {
     return (

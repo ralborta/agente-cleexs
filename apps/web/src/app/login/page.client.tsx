@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Sparkles } from 'lucide-react';
 import { login } from '@/lib/api-client';
 import { saveAuthSession } from '@/lib/auth-client';
@@ -9,7 +9,6 @@ import { PLATFORM_NAME } from '@/lib/branding';
 import { buttonPrimaryClassName, FieldLabel, inputClassName } from '@/components/config/settings-section';
 
 export default function LoginPageClient() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get('next') || '';
 
@@ -39,7 +38,7 @@ export default function LoginPageClient() {
           : next.startsWith('/') && !next.startsWith('/login')
             ? home
             : home;
-      router.replace(dest);
+      window.location.replace(dest);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión');
     } finally {
