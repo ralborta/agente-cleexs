@@ -11,8 +11,10 @@ const nextConfig = {
     },
   },
   async rewrites() {
+    // En build/prod Docker: siempre red interna (no TLS público → evita socket hang up).
     const api = (
       process.env.API_INTERNAL_URL ||
+      (process.env.NODE_ENV === 'production' ? 'http://agente-cleexs_api:4000' : '') ||
       process.env.NEXT_PUBLIC_API_URL ||
       'http://localhost:4000'
     ).replace(/\/$/, '');

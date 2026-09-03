@@ -277,13 +277,20 @@ export async function enrichBriefsWithYoutube(
   const rest = briefs.slice(limit);
   let totalCost = 0;
   let enriched = 0;
-  const out: OpportunityBrief[] = [];
 
-  for (const brief of target) {
-    const result = await enrichBriefWithYoutube(config, brief, market);
-    totalCost += result.cost;
-    if (result.brief.sources?.youtube) enriched += 1;
-    out.push(result.brief);
+  const concurrency = 3;
+  const out: OpportunityBrief[] = new Array(target.length);
+
+  for (let i = 0; i < target.length; i += concurrency) {
+    const batch = target.slice(i, i + concurrency);
+    const results = await Promise.all(
+      batch.map((brief) => enrichBriefWithYoutube(config, brief, market)),
+    );
+    results.forEach((result, idx) => {
+      out[i + idx] = result.brief;
+      totalCost += result.cost;
+      if (result.brief.sources?.youtube) enriched += 1;
+    });
   }
 
   return {

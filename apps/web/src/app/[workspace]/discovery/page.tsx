@@ -114,7 +114,7 @@ export default function DiscoveryPage() {
         includeSiteKeywords: false,
         deepExpand: true,
         includeYoutube: true,
-        youtubeMaxKeywords: 10,
+        youtubeMaxKeywords: 8,
         maxCandidates: 80,
       });
       setTop(res.top ?? []);
@@ -301,27 +301,80 @@ export default function DiscoveryPage() {
               <thead className="bg-[#0b1220]/60 text-xs uppercase tracking-wide text-hub-muted">
                 <tr>
                   <th className="px-4 py-3 font-medium">Keyword</th>
+                  <th className="px-4 py-3 font-medium">Canales</th>
                   <th className="px-4 py-3 font-medium">Vol</th>
                   <th className="px-4 py-3 font-medium">Opp</th>
-                  <th className="px-4 py-3 font-medium">Fuente</th>
+                  <th className="px-4 py-3 font-medium">YT / Topics</th>
                 </tr>
               </thead>
               <tbody>
-                {recent.map((row) => (
-                  <tr key={row.id} className="border-t border-hub-border/70">
-                    <td className="px-4 py-3 text-slate-100">
-                      <div className="font-medium">{row.keyword}</div>
-                      <div className="text-xs text-hub-muted">{row.cluster}</div>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums text-slate-300">
-                      {row.monthlySearches ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 tabular-nums text-violet-200">
-                      {row.opportunityScore ?? row.priority}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-hub-muted">{row.source}</td>
-                  </tr>
-                ))}
+                {recent.map((row) => {
+                  const brief = (row.brief ?? null) as {
+                    channels?: Array<'google' | 'youtube'>;
+                    sources?: {
+                      youtube?: {
+                        interest?: number | null;
+                        trend?: string;
+                        relatedQueries?: Array<{ query: string }>;
+                        relatedTopics?: Array<{ title: string }>;
+                        topVideos?: Array<{ title: string }>;
+                      };
+                    };
+                  } | null;
+                  const channels = brief?.channels ?? ['google'];
+                  const yt = brief?.sources?.youtube;
+                  const ytTopics = [
+                    ...(yt?.relatedQueries?.map((q) => q.query) ?? []),
+                    ...(yt?.relatedTopics?.map((t) => t.title) ?? []),
+                  ]
+                    .filter(Boolean)
+                    .slice(0, 4);
+                  return (
+                    <tr key={row.id} className="border-t border-hub-border/70 align-top">
+                      <td className="px-4 py-3 text-slate-100">
+                        <div className="font-medium">{row.keyword}</div>
+                        <div className="text-xs text-hub-muted">{row.cluster}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {channels.map((ch) => (
+                            <span
+                              key={ch}
+                              className="rounded-md border border-hub-border bg-[#0b1220] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-300"
+                            >
+                              {ch === 'youtube' ? 'YouTube' : 'Google'}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 tabular-nums text-slate-300">
+                        {row.monthlySearches ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums text-violet-200">
+                        {row.opportunityScore ?? row.priority}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-hub-muted">
+                        {yt ? (
+                          <div className="space-y-1">
+                            <div>
+                              interest {yt.interest ?? '—'}
+                              {yt.trend ? ` · ${yt.trend}` : ''}
+                            </div>
+                            {ytTopics.length ? (
+                              <div className="text-slate-400">{ytTopics.join(' · ')}</div>
+                            ) : yt.topVideos?.[0] ? (
+                              <div className="text-slate-400">{yt.topVideos[0].title}</div>
+                            ) : (
+                              <span>—</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-hub-muted/70">sin YT (corrida vieja)</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -168,12 +168,20 @@ async function persistBriefs(
 ): Promise<{ created: number; updated: number }> {
   let created = 0;
   let updated = 0;
+  const seen = new Set<string>();
 
   for (const brief of briefs) {
     const keyword = titleCaseKeyword(brief.primaryQuery);
-    const existing = await prisma.keywordOpportunity.findUnique({
+    const dedupeKey = keyword.toLowerCase();
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    const channelsLabel = (brief.channels ?? ['google']).join('+');
+    const yt = brief.sources?.youtube;
+    const existing = await prisma.keywordOpportunity.findFirst({
       where: {
-        workspaceId_keyword: { workspaceId, keyword },
+        workspaceId,
+        keyword: { equals: keyword, mode: 'insensitive' },
       },
     });
 
@@ -193,16 +201,24 @@ async function persistBriefs(
       trendScore: brief.trendScore,
       relevanceScore: brief.relevanceScore,
       opportunityScore: brief.opportunityScore,
-      scoreReason: `Discovery: demanda ${brief.demandScore} · tendencia ${brief.trendScore} · relevancia ${brief.relevanceScore} → ${brief.opportunityScore}`,
+      scoreReason: `Discovery [${channelsLabel}]: demanda ${brief.demandScore} · tendencia ${brief.trendScore} · relevancia ${brief.relevanceScore} → ${brief.opportunityScore}${yt?.interest != null ? ` · YT interest ${yt.interest}` : ''}`,
       scoredAt: new Date(),
       brief: brief as object,
       notes: [
         brief.suggestedAngle,
+        `Canales: ${channelsLabel}`,
         `Contenido: ${brief.recommendedContent}`,
         `Target: ${brief.target}`,
         brief.relatedQueries.length
           ? `Related: ${brief.relatedQueries.join(' · ')}`
           : null,
+        yt?.relatedQueries?.length
+          ? `YT queries: ${yt.relatedQueries
+              .slice(0, 8)
+              .map((q) => q.query)
+              .join(' · ')}`
+          : null,
+        yt?.topVideos?.[0] ? `YT top: ${yt.topVideos[0].title}` : null,
       ]
         .filter(Boolean)
         .join('\n'),
@@ -211,18 +227,38 @@ async function persistBriefs(
     if (existing) {
       await prisma.keywordOpportunity.update({
         where: { id: existing.id },
-        data,
+        data: {
+          ...data,
+          // Mantener casing canónico del registro existente
+          keyword: existing.keyword,
+        },
       });
       updated += 1;
     } else {
-      await prisma.keywordOpportunity.create({
-        data: {
-          workspaceId,
-          keyword,
-          ...data,
-        },
-      });
-      created += 1;
+      try {
+        await prisma.keywordOpportunity.create({
+          data: {
+            workspaceId,
+            keyword,
+            ...data,
+          },
+        });
+        created += 1;
+      } catch (err) {
+        // Carrera / casing: reintentar update
+        const raced = await prisma.keywordOpportunity.findFirst({
+          where: {
+            workspaceId,
+            keyword: { equals: keyword, mode: 'insensitive' },
+          },
+        });
+        if (!raced) throw err;
+        await prisma.keywordOpportunity.update({
+          where: { id: raced.id },
+          data,
+        });
+        updated += 1;
+      }
     }
   }
 

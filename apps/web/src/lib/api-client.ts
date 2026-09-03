@@ -32,7 +32,12 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(typeof err.detail === 'string' ? err.detail : err.error || 'Error API');
+    const msg =
+      (typeof err.error === 'string' && err.error) ||
+      (typeof err.message === 'string' && err.message) ||
+      (typeof err.detail === 'string' && err.detail) ||
+      `Error API (${res.status})`;
+    throw new Error(msg);
   }
   return res.json() as Promise<T>;
 }
