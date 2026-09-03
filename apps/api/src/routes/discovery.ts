@@ -14,6 +14,8 @@ const exploreSchema = z.object({
   seeds: z.array(z.string().min(2).max(80)).min(1).max(20),
   includeSiteKeywords: z.boolean().optional().default(false),
   deepExpand: z.boolean().optional().default(true),
+  includeYoutube: z.boolean().optional().default(true),
+  youtubeMaxKeywords: z.number().int().min(0).max(20).optional(),
   maxCandidates: z.number().int().min(10).max(120).optional(),
 });
 

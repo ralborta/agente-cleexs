@@ -46,6 +46,14 @@ export default function DiscoveryPage() {
       monthlySearches: number | null;
       suggestedAngle: string;
       cluster: string;
+      channels?: Array<'google' | 'youtube'>;
+      sources?: {
+        youtube?: {
+          interest: number | null;
+          trend: string;
+          topVideos?: Array<{ title: string; views: number | null }>;
+        };
+      };
     }>
   >([]);
   const [recent, setRecent] = useState<KeywordOpportunity[]>([]);
@@ -105,11 +113,13 @@ export default function DiscoveryPage() {
         seeds,
         includeSiteKeywords: false,
         deepExpand: true,
+        includeYoutube: true,
+        youtubeMaxKeywords: 10,
         maxCandidates: 80,
       });
       setTop(res.top ?? []);
       setMessage(
-        `Listo (${res.mode}): pool ${res.pool ?? '—'} → ${res.candidates} candidatos → ${res.briefs} briefs · +${res.created} / ~${res.updated} · cost≈$${res.cost.toFixed(4)}`,
+        `Listo (${res.mode}): pool ${res.pool ?? '—'} → ${res.candidates} candidatos → ${res.briefs} briefs${typeof res.youtubeEnriched === 'number' ? ` · YT ${res.youtubeEnriched}` : ''} · +${res.created} / ~${res.updated} · cost≈$${res.cost.toFixed(4)}`,
       );
       await load();
     } catch (e) {
@@ -128,8 +138,8 @@ export default function DiscoveryPage() {
           </p>
           <h2 className="mt-1 text-3xl font-semibold text-white">Discovery</h2>
           <p className="mt-2 max-w-2xl text-sm text-hub-muted">
-            Expande semillas con Google Ads + Labs (related + suggestions), puntúa demanda y arma
-            briefs. Teo no inventa temas: consume esta cola desde Oportunidades.
+            Expande semillas con Google (Ads + Labs) y enriquece con YouTube (SERP + Trends). Teo no
+            inventa temas: consume esta cola desde Oportunidades.
           </p>
         </div>
         <button
@@ -211,8 +221,8 @@ export default function DiscoveryPage() {
           />
         </label>
         <p className="mt-2 text-xs text-hub-muted">
-          Antes solo corría Keyword Planner (pocas ideas). Ahora también Labs related keywords +
-          suggestions. Puede tardar 30–90s y gastar más crédito DataForSEO.
+          Google: Keyword Planner + Labs. YouTube: SERP organic + Trends (graph/queries) sobre el
+          top 10. Puede tardar 1–3 min y gastar más crédito DataForSEO.
         </p>
         <button
           type="button"
@@ -237,9 +247,27 @@ export default function DiscoveryPage() {
                   <p className="font-medium text-white">{b.primaryQuery}</p>
                   <p className="text-sm tabular-nums text-violet-200">Opp {b.opportunityScore}</p>
                 </div>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {(b.channels ?? ['google']).map((ch) => (
+                    <span
+                      key={ch}
+                      className="rounded-md border border-hub-border bg-[#0b1220] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-300"
+                    >
+                      {ch === 'youtube' ? 'YouTube' : 'Google'}
+                    </span>
+                  ))}
+                  {b.sources?.youtube?.interest != null ? (
+                    <span className="text-[10px] text-hub-muted">
+                      YT interest {b.sources.youtube.interest} · {b.sources.youtube.trend}
+                    </span>
+                  ) : null}
+                </div>
                 <p className="mt-1 text-xs text-hub-muted">
                   {b.cluster}
                   {b.monthlySearches != null ? ` · vol ${b.monthlySearches}` : ''}
+                  {b.sources?.youtube?.topVideos?.[0]
+                    ? ` · YT: ${b.sources.youtube.topVideos[0].title.slice(0, 60)}`
+                    : ''}
                 </p>
                 <p className="mt-1 text-sm text-slate-300">{b.suggestedAngle}</p>
               </li>

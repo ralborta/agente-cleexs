@@ -310,3 +310,334 @@ export async function fetchKeywordSuggestions(
     mode: config.mode,
   };
 }
+
+// ─── YouTube Discovery (SERP + Trends) ─────────────────────────────────────
+
+export type YoutubeSerpVideo = {
+  type: 'youtube_video' | 'youtube_video_paid';
+  title: string;
+  videoId: string;
+  url: string | null;
+  channelName: string | null;
+  channelId: string | null;
+  channelUrl: string | null;
+  viewsCount: number | null;
+  rankAbsolute: number | null;
+  publicationDate: string | null;
+  isShorts: boolean;
+};
+
+export type YoutubeSerpChannel = {
+  type: 'youtube_channel';
+  name: string;
+  channelId: string | null;
+  url: string | null;
+  videoCount: number | null;
+  rankAbsolute: number | null;
+};
+
+export type YoutubeOrganicInput = {
+  keyword: string;
+  locationName?: string;
+  locationCode?: number;
+  languageCode?: string;
+  blockDepth?: number;
+};
+
+type YoutubeSerpItem = {
+  type?: string;
+  title?: string;
+  name?: string;
+  url?: string;
+  video_id?: string;
+  channel_id?: string;
+  channel_name?: string;
+  channel_url?: string;
+  views_count?: number | null;
+  video_count?: number | null;
+  rank_absolute?: number | null;
+  publication_date?: string | null;
+  is_shorts?: boolean;
+};
+
+function flattenYoutubeOrganic(payload: DataForSeoTaskResponse): {
+  videos: YoutubeSerpVideo[];
+  channels: YoutubeSerpChannel[];
+} {
+  const videos: YoutubeSerpVideo[] = [];
+  const channels: YoutubeSerpChannel[] = [];
+
+  for (const task of payload.tasks ?? []) {
+    if (task.status_code && task.status_code >= 40000) {
+      console.warn('[dataforseo] youtube serp task error', task.status_code, task.status_message);
+      continue;
+    }
+    const results = Array.isArray(task.result) ? task.result : [];
+    for (const block of results as Array<{ items?: YoutubeSerpItem[] }>) {
+      for (const item of block.items ?? []) {
+        const type = item.type ?? '';
+        if (type === 'youtube_video' || type === 'youtube_video_paid') {
+          const title = (item.title ?? '').trim();
+          const videoId = (item.video_id ?? '').trim();
+          if (!title || !videoId) continue;
+          videos.push({
+            type,
+            title,
+            videoId,
+            url: item.url ?? null,
+            channelName: item.channel_name ?? null,
+            channelId: item.channel_id ?? null,
+            channelUrl: item.channel_url ?? null,
+            viewsCount: typeof item.views_count === 'number' ? item.views_count : null,
+            rankAbsolute: typeof item.rank_absolute === 'number' ? item.rank_absolute : null,
+            publicationDate: item.publication_date ?? null,
+            isShorts: Boolean(item.is_shorts),
+          });
+        } else if (type === 'youtube_channel') {
+          const name = (item.name ?? item.title ?? '').trim();
+          if (!name) continue;
+          channels.push({
+            type: 'youtube_channel',
+            name,
+            channelId: item.channel_id ?? null,
+            url: item.url ?? null,
+            videoCount: typeof item.video_count === 'number' ? item.video_count : null,
+            rankAbsolute: typeof item.rank_absolute === 'number' ? item.rank_absolute : null,
+          });
+        }
+      }
+    }
+  }
+
+  return { videos, channels };
+}
+
+/** SERP orgánico de YouTube para una keyword. */
+export async function fetchYoutubeOrganicSerp(
+  config: DataForSeoConfig,
+  input: YoutubeOrganicInput,
+): Promise<{
+  videos: YoutubeSerpVideo[];
+  channels: YoutubeSerpChannel[];
+  cost: number;
+  mode: DataForSeoMode;
+}> {
+  const keyword = input.keyword.replace(/\s+/g, ' ').trim();
+  if (!keyword) {
+    return { videos: [], channels: [], cost: 0, mode: config.mode };
+  }
+
+  const task: Record<string, unknown> = {
+    keyword,
+    block_depth: input.blockDepth ?? 20,
+  };
+  if (input.locationName) task.location_name = input.locationName;
+  else if (input.locationCode) task.location_code = input.locationCode;
+  else task.location_name = 'Argentina';
+
+  if (input.languageCode) task.language_code = input.languageCode;
+  else task.language_code = 'es';
+
+  const payload = await dataForSeoPost<DataForSeoTaskResponse>(
+    config,
+    '/v3/serp/youtube/organic/live/advanced',
+    [task],
+  );
+
+  const flat = flattenYoutubeOrganic(payload);
+  return {
+    ...flat,
+    cost: payload.cost ?? 0,
+    mode: config.mode,
+  };
+}
+
+export type TrendsExploreInput = {
+  keywords: string[];
+  type?: 'web' | 'news' | 'youtube' | 'images' | 'froogle';
+  locationName?: string;
+  locationCode?: number;
+  languageCode?: string;
+  timeRange?: string;
+  itemTypes?: Array<
+    | 'google_trends_graph'
+    | 'google_trends_map'
+    | 'google_trends_topics_list'
+    | 'google_trends_queries_list'
+  >;
+};
+
+export type TrendsGraphPoint = {
+  dateFrom: string | null;
+  dateTo: string | null;
+  values: Array<number | null>;
+};
+
+export type TrendsRelatedItem = {
+  query?: string;
+  title?: string;
+  value: string;
+  kind: 'top' | 'rising';
+};
+
+export type TrendsExploreResult = {
+  averages: number[];
+  graph: TrendsGraphPoint[];
+  relatedQueries: TrendsRelatedItem[];
+  relatedTopics: TrendsRelatedItem[];
+  cost: number;
+  mode: DataForSeoMode;
+};
+
+type TrendsItem = {
+  type?: string;
+  averages?: number[] | null;
+  data?:
+    | Array<{
+        date_from?: string;
+        date_to?: string;
+        values?: Array<number | null>;
+      }>
+    | {
+        top?: Array<{
+          query?: string;
+          topic_title?: string;
+          title?: string;
+          value?: string | number;
+        }>;
+        rising?: Array<{
+          query?: string;
+          topic_title?: string;
+          title?: string;
+          value?: string | number;
+        }>;
+      }
+    | null;
+};
+
+function flattenTrendsExplore(
+  payload: DataForSeoTaskResponse,
+): Omit<TrendsExploreResult, 'cost' | 'mode'> {
+  const graph: TrendsGraphPoint[] = [];
+  const relatedQueries: TrendsRelatedItem[] = [];
+  const relatedTopics: TrendsRelatedItem[] = [];
+  let averages: number[] = [];
+
+  for (const task of payload.tasks ?? []) {
+    if (task.status_code && task.status_code >= 40000) {
+      console.warn('[dataforseo] trends task error', task.status_code, task.status_message);
+      continue;
+    }
+    const results = Array.isArray(task.result) ? task.result : [];
+    for (const block of results as Array<{ items?: TrendsItem[] }>) {
+      for (const item of block.items ?? []) {
+        const type = item.type ?? '';
+        if (type === 'google_trends_graph') {
+          if (Array.isArray(item.averages)) averages = item.averages;
+          if (Array.isArray(item.data)) {
+            for (const point of item.data) {
+              graph.push({
+                dateFrom: point.date_from ?? null,
+                dateTo: point.date_to ?? null,
+                values: Array.isArray(point.values) ? point.values : [],
+              });
+            }
+          }
+        } else if (type === 'google_trends_queries_list' && item.data && !Array.isArray(item.data)) {
+          for (const row of item.data.top ?? []) {
+            const query = (row.query ?? '').trim();
+            if (!query) continue;
+            relatedQueries.push({
+              query,
+              value: String(row.value ?? ''),
+              kind: 'top',
+            });
+          }
+          for (const row of item.data.rising ?? []) {
+            const query = (row.query ?? '').trim();
+            if (!query) continue;
+            relatedQueries.push({
+              query,
+              value: String(row.value ?? ''),
+              kind: 'rising',
+            });
+          }
+        } else if (type === 'google_trends_topics_list' && item.data && !Array.isArray(item.data)) {
+          for (const row of item.data.top ?? []) {
+            const title = (row.topic_title ?? row.title ?? row.query ?? '').trim();
+            if (!title) continue;
+            relatedTopics.push({
+              title,
+              value: String(row.value ?? ''),
+              kind: 'top',
+            });
+          }
+          for (const row of item.data.rising ?? []) {
+            const title = (row.topic_title ?? row.title ?? row.query ?? '').trim();
+            if (!title) continue;
+            relatedTopics.push({
+              title,
+              value: String(row.value ?? ''),
+              kind: 'rising',
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return { averages, graph, relatedQueries, relatedTopics };
+}
+
+/** Google Trends Explore (web / youtube / …). */
+export async function fetchGoogleTrendsExplore(
+  config: DataForSeoConfig,
+  input: TrendsExploreInput,
+): Promise<TrendsExploreResult> {
+  const keywords = [
+    ...new Set(
+      input.keywords
+        .map((k) => k.replace(/\s+/g, ' ').trim())
+        .filter((k) => k.length >= 2 && k.length <= 100),
+    ),
+  ].slice(0, 5);
+
+  if (!keywords.length) {
+    return {
+      averages: [],
+      graph: [],
+      relatedQueries: [],
+      relatedTopics: [],
+      cost: 0,
+      mode: config.mode,
+    };
+  }
+
+  const itemTypes = input.itemTypes ?? ['google_trends_graph'];
+  const needsSingleKeyword = itemTypes.some(
+    (t) => t === 'google_trends_queries_list' || t === 'google_trends_topics_list',
+  );
+  const taskKeywords = needsSingleKeyword ? keywords.slice(0, 1) : keywords;
+
+  const task: Record<string, unknown> = {
+    keywords: taskKeywords,
+    type: input.type ?? 'web',
+    item_types: itemTypes,
+    time_range: input.timeRange ?? 'past_12_months',
+  };
+  if (input.locationName) task.location_name = input.locationName;
+  else if (input.locationCode) task.location_code = input.locationCode;
+  if (input.languageCode) task.language_code = input.languageCode;
+
+  const payload = await dataForSeoPost<DataForSeoTaskResponse>(
+    config,
+    '/v3/keywords_data/google_trends/explore/live',
+    [task],
+  );
+
+  return {
+    ...flattenTrendsExplore(payload),
+    cost: payload.cost ?? 0,
+    mode: config.mode,
+  };
+}

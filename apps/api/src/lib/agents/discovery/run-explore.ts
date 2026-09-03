@@ -18,6 +18,7 @@ import {
   type DiscoverySettings,
   type OpportunityBrief,
 } from './types';
+import { enrichBriefsWithYoutube } from './youtube-enrich';
 
 function normalizeKeyword(value: string): string {
   return value.replace(/\s+/g, ' ').trim().toLowerCase();
@@ -238,6 +239,7 @@ export async function runDiscoveryExplore(
   pool: number;
   candidates: number;
   briefs: number;
+  youtubeEnriched: number;
   created: number;
   updated: number;
   top: OpportunityBrief[];
@@ -267,6 +269,8 @@ export async function runDiscoveryExplore(
   const market = resolveMarket(input);
   const maxCandidates = Math.min(120, Math.max(10, input.maxCandidates ?? 80));
   const deepExpand = input.deepExpand !== false;
+  const includeYoutube = input.includeYoutube !== false;
+  const youtubeMaxKeywords = Math.min(20, Math.max(0, input.youtubeMaxKeywords ?? 10));
 
   const agent = await ensureDiscoveryAgent(workspace.id);
 
@@ -274,7 +278,7 @@ export async function runDiscoveryExplore(
     workspaceId: workspace.id,
     agentId: agent.id,
     role: 'strategist',
-    message: `Discovery explorando demanda (${config.mode}): ${seeds.length} semillas · ${market.label}${deepExpand ? ' · expansión Labs' : ''}`,
+    message: `Discovery explorando demanda (${config.mode}): ${seeds.length} semillas · ${market.label}${deepExpand ? ' · expansión Labs' : ''}${includeYoutube ? ` · YouTube top ${youtubeMaxKeywords}` : ''}`,
   });
 
   const merged = new Map<string, DiscoveryKeywordCandidate>();
@@ -396,10 +400,31 @@ export async function runDiscoveryExplore(
 
   // Descartar relevancia baja; en live exigimos más alineación al negocio
   const minRelevance = config.mode === 'live' ? 50 : 35;
-  const kept = briefs
+  let kept = briefs
     .filter((b) => b.relevanceScore >= minRelevance)
     .filter((b) => overlapsBusiness(b.primaryQuery, seeds, description))
     .slice(0, maxCandidates);
+
+  let youtubeEnriched = 0;
+  if (includeYoutube && kept.length && youtubeMaxKeywords > 0) {
+    try {
+      const yt = await enrichBriefsWithYoutube(
+        config,
+        kept,
+        market,
+        youtubeMaxKeywords,
+      );
+      kept = yt.briefs;
+      totalCost += yt.cost;
+      youtubeEnriched = yt.enriched;
+    } catch (err) {
+      console.warn(
+        '[discovery] youtube enrich falló:',
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
   const { created, updated } = await persistBriefs(workspace.id, kept, seeds[0] ?? 'seed');
 
   const settings: DiscoverySettings = {
@@ -408,6 +433,7 @@ export async function runDiscoveryExplore(
     market: input.market ?? 'ar',
     languageCode: market.languageCode,
     seeds,
+    includeYoutube,
   };
 
   await prisma.agentConfig.updateMany({
@@ -423,7 +449,7 @@ export async function runDiscoveryExplore(
     agentId: agent.id,
     role: 'strategist',
     level: 'success',
-    message: `Discovery OK (${config.mode}): pool ${rawPool} → ${ranked.length} candidatos → ${kept.length} briefs · +${created}/~${updated} · cost≈$${totalCost.toFixed(4)}`,
+    message: `Discovery OK (${config.mode}): pool ${rawPool} → ${ranked.length} candidatos → ${kept.length} briefs${youtubeEnriched ? ` · YT ${youtubeEnriched}` : ''} · +${created}/~${updated} · cost≈$${totalCost.toFixed(4)}`,
   });
 
   return {
@@ -433,6 +459,7 @@ export async function runDiscoveryExplore(
     pool: rawPool,
     candidates: ranked.length,
     briefs: kept.length,
+    youtubeEnriched,
     created,
     updated,
     top: kept.slice(0, 10),

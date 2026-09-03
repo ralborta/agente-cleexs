@@ -828,6 +828,7 @@ export type DiscoveryExploreResult = {
   pool?: number;
   candidates: number;
   briefs: number;
+  youtubeEnriched?: number;
   created: number;
   updated: number;
   top: Array<{
@@ -837,6 +838,14 @@ export type DiscoveryExploreResult = {
     monthlySearches: number | null;
     suggestedAngle: string;
     cluster: string;
+    channels?: Array<'google' | 'youtube'>;
+    sources?: {
+      youtube?: {
+        interest: number | null;
+        trend: string;
+        topVideos?: Array<{ title: string; views: number | null }>;
+      };
+    };
   }>;
 };
 
@@ -854,6 +863,8 @@ export async function runDiscoveryExplore(
     seeds: string[];
     includeSiteKeywords?: boolean;
     deepExpand?: boolean;
+    includeYoutube?: boolean;
+    youtubeMaxKeywords?: number;
     maxCandidates?: number;
   },
 ) {

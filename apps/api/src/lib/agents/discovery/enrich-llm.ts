@@ -202,6 +202,16 @@ ${JSON.stringify(list, null, 2)}`;
       target: enrich.target,
       provider: 'dataforseo',
       providerMode: ctx.providerMode,
+      channels: ['google'],
+      sources: {
+        google: {
+          monthlySearches: candidate.monthlySearches,
+          demandScore: candidate.demandScore,
+          trendScore: candidate.trendScore,
+          trendLabel: candidate.trendLabel,
+          dfsSources: [candidate.source],
+        },
+      },
     });
 
     void byKey;
