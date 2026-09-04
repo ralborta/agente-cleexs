@@ -13,6 +13,7 @@ const BRAND_TEMPLATE_LABELS: Record<BrandTemplateId, string> = {
   minimal: 'Minimal',
   corporate: 'Corporate (con logo)',
   editorial: 'Editorial PRO (hero oscuro, secciones numeradas)',
+  modern: 'Modern Blog (Stitch clean light)',
 };
 
 const brandCtaSchema = z.object({

@@ -342,6 +342,84 @@ function renderReferences(refs: ArticleReference[]): string {
 
 const EDITORIAL_INK = '#04182b';
 
+/** Estilo Clean Light (Stitch Modern Blog) — sin nav/sidebar/footer; solo pieza. */
+export function buildModernCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
+  const t = brandCssTokens(kit);
+  const ctaBtn = kit.cta?.buttonColor || t.primary;
+  const ctaBtnFg = contrastText(ctaBtn, '#0f172a');
+  const surface = '#f8fafc';
+  const ink = '#0f172a';
+  return `
+body.single-post .entry-header{display:none}
+.cleexs-editorial{font-family:${t.fontFamily};color:#334155;line-height:1.75;font-size:18px;max-width:780px;margin:0 auto}
+@media (min-width:921px){
+body.single-post .ast-container,body.single-post .entry-content{max-width:1120px}
+.cleexs-editorial{max-width:920px}
+}
+.cleexs-editorial *{box-sizing:border-box}
+.cleexs-editorial__hero{position:relative;overflow:hidden;background:linear-gradient(180deg,#ffffff 0%,${surface} 100%);border:1px solid #e2e8f0;border-radius:20px;padding:40px 40px 36px;margin:0 0 40px}
+.cleexs-editorial__cover{display:block;width:100%;height:auto;border-radius:16px;margin:0 0 24px;object-fit:cover;max-height:340px;border:1px solid #e2e8f0}
+.cleexs-editorial__hero:after{content:"";position:absolute;right:-80px;top:-80px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,${t.primary}22,transparent 70%);pointer-events:none}
+.cleexs-editorial__kicker,.cleexs-editorial p.cleexs-editorial__kicker{position:relative;z-index:1;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:${t.primary};margin:0 0 16px}
+.cleexs-editorial__title{position:relative;z-index:1;font-size:36px;line-height:1.15;font-weight:800;letter-spacing:-.025em;color:${ink};margin:0 0 20px}
+.cleexs-editorial__author{position:relative;z-index:1;display:flex;align-items:center;gap:12px;margin:0 0 20px}
+.cleexs-editorial__avatar{flex:0 0 48px;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,${t.primary},${t.secondary});color:#fff;font-weight:700;font-size:17px;line-height:48px;text-align:center;overflow:hidden}
+.cleexs-editorial__avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.cleexs-editorial__author-name{font-size:14px;font-weight:700;color:${ink};line-height:1.35}
+.cleexs-editorial__author-role{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#64748b;line-height:1.35}
+.cleexs-editorial__lead,.cleexs-editorial p.cleexs-editorial__lead{position:relative;z-index:1;font-size:18px;line-height:1.7;color:#475569;margin:0 0 12px}
+.cleexs-editorial__section{margin:0 0 40px}
+.cleexs-editorial__section-head{display:flex;gap:16px;align-items:flex-start;margin:0 0 18px;padding-bottom:14px;border-bottom:1px solid #e2e8f0}
+.cleexs-editorial__num{flex:0 0 auto;font-size:34px;font-weight:800;line-height:1;letter-spacing:-.03em;color:${t.primary}55}
+.cleexs-editorial h2{font-size:22px;line-height:1.3;font-weight:700;color:${ink};margin:0;padding:0;border:none}
+.cleexs-editorial p{margin:0 0 16px;color:#475569}
+.cleexs-editorial a{color:${t.primary};text-decoration:none}
+.cleexs-editorial a:hover{text-decoration:underline}
+.cleexs-editorial__list{list-style:none;margin:0 0 22px;padding:0;counter-reset:cxitem}
+.cleexs-editorial__list li{counter-increment:cxitem;position:relative;padding-left:44px;margin:0 0 14px;color:#475569}
+.cleexs-editorial__list li:before{content:counter(cxitem);position:absolute;left:0;top:2px;width:28px;height:28px;border-radius:8px;background:${t.primarySoft};color:${t.primary};font-size:13px;font-weight:700;line-height:28px;text-align:center}
+.cleexs-editorial__check{list-style:none;margin:0 0 22px;padding:0}
+.cleexs-editorial__check li{position:relative;padding-left:32px;margin:0 0 12px;color:#475569}
+.cleexs-editorial__check li:before{content:"✓";position:absolute;left:0;top:0;color:#10b981;font-weight:800}
+.cleexs-editorial__quote{border-left:4px solid ${t.primary};background:#eff6ff;border-radius:0 14px 14px 0;padding:16px 20px;margin:22px 0;color:#1e3a5f;font-style:italic}
+.cleexs-editorial__quote--founder{border-left-color:#ea580c;background:#fff7ed;color:#9a3412}
+.cleexs-editorial__note{display:flex;gap:14px;align-items:flex-start;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:16px 18px;margin:20px 0}
+.cleexs-editorial__note-icon{flex:0 0 26px;width:26px;height:26px;border-radius:50%;background:#10b981;color:#fff;font-size:15px;font-weight:700;font-style:italic;line-height:26px;text-align:center}
+.cleexs-editorial__note strong{display:block;font-size:15px;color:${ink};margin:0 0 4px}
+.cleexs-editorial__note p{margin:0;font-size:15px;color:#334155}
+.cleexs-editorial__faq{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px;margin:0 0 10px}
+.cleexs-editorial__faq strong{display:block;color:${ink};margin:0 0 6px}
+.cleexs-editorial__table-wrap{overflow-x:auto;margin:22px 0;border:1px solid #e2e8f0;border-radius:14px}
+.cleexs-editorial__table{width:100%;border-collapse:collapse;font-size:14px}
+.cleexs-editorial__table th{background:#f1f5f9;color:${ink};font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;text-align:left;padding:12px 14px;border-bottom:1px solid #e2e8f0}
+.cleexs-editorial__table td{padding:12px 14px;border-bottom:1px solid #f1f5f9;color:#475569;vertical-align:top}
+.cleexs-editorial__table td:first-child{font-weight:600;color:${ink}}
+.cleexs-editorial__table tr:last-child td{border-bottom:none}
+.cleexs-editorial__fig{margin:24px 0;text-align:center}
+.cleexs-editorial__fig img{max-width:100%;height:auto;border-radius:14px;border:1px solid #e2e8f0}
+.cleexs-editorial__fig figcaption{margin-top:10px;font-size:12px;color:#94a3b8}
+.cleexs-editorial__refs{margin:36px 0 0;padding:24px 26px;background:${surface};border:1px solid #e2e8f0;border-radius:16px}
+.cleexs-editorial__refs h2{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin:0 0 14px}
+.cleexs-editorial__refs ol{margin:0;padding-left:20px}
+.cleexs-editorial__refs li{margin:0 0 10px;font-size:14px;color:#475569}
+.cleexs-editorial__cta{background:linear-gradient(135deg,${t.primary},${t.secondary});border-radius:18px;padding:32px 28px;margin:32px 0 0;text-align:center}
+.cleexs-editorial__cta h3{margin:0 0 8px;font-size:21px;font-weight:700;color:#fff}
+.cleexs-editorial__cta p{margin:0 0 18px;font-size:15px;color:#e2e8f0}
+.cleexs-editorial__cta a,.cleexs-editorial__cta button{display:inline-block;background:${ctaBtn};color:${ctaBtnFg};font-weight:700;padding:13px 28px;border-radius:10px;text-decoration:none;border:none;cursor:pointer;font-size:15px;font-family:inherit}
+.cleexs-editorial__cta .cleexs-cta__form{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:stretch;max-width:520px;margin:0 auto}
+.cleexs-editorial__cta .cleexs-cta__form input[type="url"]{flex:1 1 220px;min-width:0;border:none;border-radius:10px;padding:12px 14px;font-size:15px;color:#0f172a;background:#fff}
+.cleexs-editorial__cta .cleexs-cta__hint{margin:12px 0 0;font-size:12px;color:#cbd5e1}
+.cleexs-editorial .cleexs-meta{margin:28px 0 0;padding-top:18px;border-top:1px solid #e2e8f0;font-size:13px;color:#94a3b8}
+@media (max-width:640px){
+.cleexs-editorial{font-size:17px}
+.cleexs-editorial__hero{padding:24px 18px;border-radius:16px}
+.cleexs-editorial__title{font-size:26px}
+.cleexs-editorial__num{font-size:26px}
+.cleexs-editorial h2{font-size:19px}
+}
+`;
+}
+
 export function buildEditorialCss(kit: BrandKit = DEFAULT_BRAND_KIT): string {
   const t = brandCssTokens(kit);
   const ctaBtn = kit.cta?.buttonColor || t.primary;
@@ -580,7 +658,7 @@ function renderEditorialArticle(
   data.ctaVariant = variant;
   const { headline, body, actionHtml } = buildCtaActionHtml(data, kit, variant, opts);
 
-  return `<style>${buildEditorialCss(kit)}</style>
+  return `<style>${kit.templateId === 'modern' ? buildModernCss(kit) : buildEditorialCss(kit)}</style>
 <article class="cleexs-editorial">
   <header class="cleexs-editorial__hero">
     ${
@@ -615,7 +693,7 @@ export function renderArticleHtml(
   kit: BrandKit = DEFAULT_BRAND_KIT,
   opts?: RenderArticleOpts,
 ): string {
-  if (kit.templateId === 'editorial') {
+  if (kit.templateId === 'editorial' || kit.templateId === 'modern') {
     return renderEditorialArticle(data, kit, opts);
   }
 
