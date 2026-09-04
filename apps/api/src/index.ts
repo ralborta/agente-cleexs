@@ -12,6 +12,7 @@ import activityRoutes from './routes/activity';
 import contentRoutes from './routes/content';
 import opportunityRoutes from './routes/opportunities';
 import discoveryRoutes from './routes/discovery';
+import growthRoutes from './routes/growth';
 import voiceRoutes from './routes/voice';
 import cronRoutes from './routes/cron';
 import integrationRoutes from './routes/integrations';
@@ -57,6 +58,7 @@ async function bootstrap() {
   await server.register(contentRoutes, { prefix: '/api/content' });
   await server.register(opportunityRoutes, { prefix: '/api/opportunities' });
   await server.register(discoveryRoutes, { prefix: '/api/discovery' });
+  await server.register(growthRoutes, { prefix: '/api/growth' });
   await server.register(voiceRoutes, { prefix: '/api/voice' });
   await server.register(cronRoutes, { prefix: '/api/cron' });
   await server.register(integrationRoutes, { prefix: '/api/integrations' });

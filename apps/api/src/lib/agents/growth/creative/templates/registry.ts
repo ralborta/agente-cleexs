@@ -1,0 +1,267 @@
+import type { CreativeTemplateConfig } from '../types';
+
+function t(
+  partial: Omit<CreativeTemplateConfig, 'version' | 'maxBodyLineLength' | 'maxBodyLines' | 'allowedImage' | 'allowedIcon' | 'visualTypeDefault' | 'defaultFormat'> &
+    Partial<
+      Pick<
+        CreativeTemplateConfig,
+        | 'version'
+        | 'maxBodyLineLength'
+        | 'maxBodyLines'
+        | 'allowedImage'
+        | 'allowedIcon'
+        | 'visualTypeDefault'
+        | 'defaultFormat'
+      >
+    >,
+): CreativeTemplateConfig {
+  return {
+    version: 1,
+    maxBodyLineLength: 70,
+    maxBodyLines: 5,
+    allowedImage: false,
+    allowedIcon: false,
+    visualTypeDefault: 'typographic',
+    defaultFormat: partial.aspectRatio === '1.91:1' ? 'linkedin_landscape' : 'linkedin_square',
+    ...partial,
+  };
+}
+
+/** Catálogo V1 — 20 templates tipográficos por intención. */
+export const CREATIVE_TEMPLATE_CATALOG: CreativeTemplateConfig[] = [
+  t({
+    templateKey: 'headline_01',
+    category: 'headline',
+    name: 'Headline tipográfico',
+    fields: ['headline', 'subheadline', 'cta'],
+    maxHeadlineLength: 64,
+    maxSubheadlineLength: 100,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'center_stack',
+  }),
+  t({
+    templateKey: 'question_01',
+    category: 'question',
+    name: 'Pregunta provocadora',
+    fields: ['headline', 'subheadline', 'cta'],
+    maxHeadlineLength: 72,
+    maxSubheadlineLength: 90,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'center_stack',
+  }),
+  t({
+    templateKey: 'statistic_01',
+    category: 'statistic',
+    name: 'Dato / estadística',
+    fields: ['statValue', 'statLabel', 'headline', 'cta'],
+    maxHeadlineLength: 60,
+    maxSubheadlineLength: 80,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'stat_focus',
+  }),
+  t({
+    templateKey: 'problem_01',
+    category: 'problem',
+    name: 'Problema',
+    fields: ['headline', 'subheadline', 'cta'],
+    maxHeadlineLength: 70,
+    maxSubheadlineLength: 110,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'center_stack',
+  }),
+  t({
+    templateKey: 'solution_01',
+    category: 'solution',
+    name: 'Solución',
+    fields: ['headline', 'subheadline', 'cta'],
+    maxHeadlineLength: 70,
+    maxSubheadlineLength: 110,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'center_stack',
+  }),
+  t({
+    templateKey: 'problem_solution_01',
+    category: 'problem_solution',
+    name: 'Problema → Solución',
+    fields: ['leftLabel', 'rightLabel', 'headline', 'cta'],
+    maxHeadlineLength: 56,
+    maxSubheadlineLength: 80,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'split_vertical',
+  }),
+  t({
+    templateKey: 'list_3_01',
+    category: 'list_3',
+    name: 'Lista de 3',
+    fields: ['headline', 'bodyLines', 'cta'],
+    maxHeadlineLength: 60,
+    maxSubheadlineLength: 80,
+    maxCtaLength: 24,
+    maxBodyLines: 3,
+    aspectRatio: '1:1',
+    layout: 'list_stack',
+  }),
+  t({
+    templateKey: 'list_5_01',
+    category: 'list_5',
+    name: 'Lista de 5',
+    fields: ['headline', 'bodyLines', 'cta'],
+    maxHeadlineLength: 56,
+    maxSubheadlineLength: 80,
+    maxCtaLength: 24,
+    maxBodyLines: 5,
+    aspectRatio: '1:1',
+    layout: 'list_stack',
+  }),
+  t({
+    templateKey: 'quote_01',
+    category: 'quote',
+    name: 'Cita / quote',
+    fields: ['quote', 'subheadline', 'cta'],
+    maxHeadlineLength: 50,
+    maxSubheadlineLength: 60,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'quote_focus',
+  }),
+  t({
+    templateKey: 'insight_01',
+    category: 'insight',
+    name: 'Insight',
+    fields: ['headline', 'subheadline', 'cta'],
+    maxHeadlineLength: 70,
+    maxSubheadlineLength: 120,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'center_stack',
+  }),
+  t({
+    templateKey: 'before_after_01',
+    category: 'before_after',
+    name: 'Antes / Después',
+    fields: ['leftLabel', 'rightLabel', 'headline', 'cta'],
+    maxHeadlineLength: 50,
+    maxSubheadlineLength: 70,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'split_vertical',
+  }),
+  t({
+    templateKey: 'comparison_01',
+    category: 'comparison',
+    name: 'Comparación',
+    fields: ['leftLabel', 'rightLabel', 'headline', 'cta'],
+    maxHeadlineLength: 54,
+    maxSubheadlineLength: 70,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'split_vertical',
+  }),
+  t({
+    templateKey: 'myth_fact_01',
+    category: 'myth_fact',
+    name: 'Mito vs Hecho',
+    fields: ['leftLabel', 'rightLabel', 'cta'],
+    maxHeadlineLength: 48,
+    maxSubheadlineLength: 70,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'split_vertical',
+  }),
+  t({
+    templateKey: 'step_by_step_01',
+    category: 'step_by_step',
+    name: 'Paso a paso',
+    fields: ['headline', 'bodyLines', 'cta'],
+    maxHeadlineLength: 56,
+    maxSubheadlineLength: 80,
+    maxCtaLength: 24,
+    maxBodyLines: 4,
+    aspectRatio: '1:1',
+    layout: 'list_stack',
+  }),
+  t({
+    templateKey: 'checklist_01',
+    category: 'checklist',
+    name: 'Checklist',
+    fields: ['headline', 'bodyLines', 'cta'],
+    maxHeadlineLength: 56,
+    maxSubheadlineLength: 80,
+    maxCtaLength: 24,
+    maxBodyLines: 5,
+    aspectRatio: '1:1',
+    layout: 'list_stack',
+  }),
+  t({
+    templateKey: 'mini_case_01',
+    category: 'mini_case',
+    name: 'Mini caso',
+    fields: ['headline', 'subheadline', 'cta'],
+    maxHeadlineLength: 64,
+    maxSubheadlineLength: 120,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'center_stack',
+  }),
+  t({
+    templateKey: 'article_cover_01',
+    category: 'article_cover',
+    name: 'Cover de artículo',
+    fields: ['headline', 'subheadline', 'cta'],
+    maxHeadlineLength: 70,
+    maxSubheadlineLength: 100,
+    maxCtaLength: 24,
+    aspectRatio: '1.91:1',
+    layout: 'cover_hero',
+    defaultFormat: 'linkedin_landscape',
+  }),
+  t({
+    templateKey: 'strong_cta_01',
+    category: 'strong_cta',
+    name: 'CTA fuerte',
+    fields: ['headline', 'cta'],
+    maxHeadlineLength: 60,
+    maxSubheadlineLength: 60,
+    maxCtaLength: 28,
+    aspectRatio: '1:1',
+    layout: 'cta_band',
+  }),
+  t({
+    templateKey: 'trend_01',
+    category: 'trend',
+    name: 'Tendencia',
+    fields: ['headline', 'subheadline', 'cta'],
+    maxHeadlineLength: 64,
+    maxSubheadlineLength: 100,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'center_stack',
+  }),
+  t({
+    templateKey: 'data_point_01',
+    category: 'data_point',
+    name: 'Data point',
+    fields: ['statValue', 'statLabel', 'subheadline', 'cta'],
+    maxHeadlineLength: 50,
+    maxSubheadlineLength: 90,
+    maxCtaLength: 24,
+    aspectRatio: '1:1',
+    layout: 'stat_focus',
+  }),
+];
+
+export const DEFAULT_FALLBACK_TEMPLATE_KEY = 'article_cover_01';
+
+export function getTemplateConfig(templateKey: string): CreativeTemplateConfig | undefined {
+  return CREATIVE_TEMPLATE_CATALOG.find((x) => x.templateKey === templateKey);
+}
+
+export function listTemplateConfigs(): CreativeTemplateConfig[] {
+  return CREATIVE_TEMPLATE_CATALOG;
+}

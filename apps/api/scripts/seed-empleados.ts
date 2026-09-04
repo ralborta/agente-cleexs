@@ -23,6 +23,16 @@ const EMPLEADOS_BRANDING = {
     urlInput: false,
     placeholder: 'https://tu-empresa.com',
   },
+  distribution: {
+    accentColor: '#F97316',
+    backgroundColor: '#0B1220',
+    fontPrimary: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+    fontSecondary: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+    visualStyle: 'clean_corporate',
+    defaultCta: 'Leer artículo',
+    website: 'https://empliados.net',
+    socialHandles: { linkedin: 'empleados' },
+  },
 };
 
 async function main() {
@@ -44,6 +54,17 @@ async function main() {
       name: 'Discovery',
       description:
         'Agente de descubrimiento de demanda — keywords, tendencia y briefs para Teo',
+    },
+  });
+
+  const growth = await prisma.agent.upsert({
+    where: { slug: 'growth' },
+    update: {},
+    create: {
+      slug: 'growth',
+      name: 'Growth',
+      description:
+        'Agente de distribución — Creative Engine y canales (LinkedIn). No publica en el sitio.',
     },
   });
 
@@ -131,6 +152,25 @@ async function main() {
     },
   });
 
+  await prisma.agentConfig.upsert({
+    where: {
+      workspaceId_agentId: {
+        workspaceId: workspace.id,
+        agentId: growth.id,
+      },
+    },
+    update: {
+      branding: EMPLEADOS_BRANDING,
+    },
+    create: {
+      workspaceId: workspace.id,
+      agentId: growth.id,
+      frequency: 'on-publish',
+      autoPublish: false,
+      branding: EMPLEADOS_BRANDING,
+    },
+  });
+
   const passwordHash = await bcrypt.hash('empleados2026', 10);
   await prisma.user.upsert({
     where: { email: 'admin@empleados.net' },
@@ -150,7 +190,7 @@ async function main() {
 
   console.log('Seed empleados OK:', {
     workspace: workspace.slug,
-    agents: [teo.slug, discovery.slug],
+    agents: [teo.slug, discovery.slug, growth.slug],
     user: 'admin@empleados.net',
     password: 'empleados2026',
   });

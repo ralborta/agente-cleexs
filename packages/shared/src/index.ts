@@ -1,6 +1,7 @@
 export const AGENT_SLUGS = {
   TEO: 'teo',
   DISCOVERY: 'discovery',
+  GROWTH: 'growth',
 } as const;
 
 export type AgentSlug = (typeof AGENT_SLUGS)[keyof typeof AGENT_SLUGS];
@@ -66,6 +67,20 @@ export type BrandCta = {
   placeholder?: string;
 };
 
+/** Campos de distribución social (Growth / Creative Engine). */
+export type BrandDistributionKit = {
+  accentColor?: string;
+  backgroundColor?: string;
+  fontPrimary?: string;
+  fontSecondary?: string;
+  visualStyle?: string;
+  defaultCta?: string;
+  website?: string;
+  socialHandles?: {
+    linkedin?: string;
+  };
+};
+
 /** Kit de marca por workspace — parametriza plantillas de artículo en WordPress. */
 export type BrandKit = {
   templateId?: BrandTemplateId;
@@ -82,6 +97,8 @@ export type BrandKit = {
   ctaB?: BrandCta;
   /** Si hay ctaB, habilita rotación A/B (default true). */
   ctaAbEnabled?: boolean;
+  /** Identidad para piezas de distribución (LinkedIn, etc.). */
+  distribution?: BrandDistributionKit;
 };
 
 export const DEFAULT_BRAND_KIT: BrandKit = {

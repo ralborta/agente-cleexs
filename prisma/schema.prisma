@@ -35,6 +35,10 @@ model Workspace {
   founderNotes  FounderVoiceNote[]
   founderInvites FounderVoiceInvite[]
   ctaEvents     CtaEvent[]
+  creativeRequests  CreativeRequest[]
+  creativeAssets    CreativeAsset[]
+  distributionPosts DistributionPost[]
+  creativePerformances CreativePerformance[]
 
   @@map("workspaces")
 }
@@ -243,6 +247,7 @@ model ContentPiece {
   cluster     ContentCluster? @relation(fields: [clusterId], references: [id])
   approval    Approval?
   publication Publication?
+  creativeRequests CreativeRequest[]
 
   @@index([workspaceId, status])
   @@index([missionId])
@@ -299,6 +304,7 @@ model Publication {
 
   workspace Workspace    @relation(fields: [workspaceId], references: [id])
   piece     ContentPiece @relation(fields: [pieceId], references: [id])
+  creativeRequests CreativeRequest[]
 
   @@index([workspaceId])
   @@map("publications")
@@ -559,4 +565,147 @@ model WhatsAppMessage {
   @@index([chatId, createdAt])
   @@index([phoneDigits])
   @@map("whatsapp_messages")
+}
+
+// ============================================
+// GROWTH — Creative Engine
+// ============================================
+
+enum CreativeRequestStatus {
+  queued
+  planning
+  rendering
+  preview
+  approved
+  blocked
+  failed
+}
+
+enum DistributionChannel {
+  linkedin
+}
+
+enum DistributionPostStatus {
+  draft
+  preview
+  published
+  failed
+}
+
+/// Catálogo versionado de templates creativos (no sobrescribir en silencio).
+model CreativeTemplate {
+  id          String   @id @default(uuid())
+  templateKey String   @map("template_key")
+  version     Int      @default(1)
+  category    String
+  name        String
+  config      Json
+  deprecated  Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  assets CreativeAsset[]
+
+  @@unique([templateKey, version])
+  @@index([category])
+  @@map("creative_templates")
+}
+
+model CreativeRequest {
+  id              String                @id @default(uuid())
+  workspaceId     String                @map("workspace_id")
+  pieceId         String                @map("piece_id")
+  publicationId   String?               @map("publication_id")
+  channel         DistributionChannel   @default(linkedin)
+  status          CreativeRequestStatus @default(queued)
+  input           Json?
+  plannerOutput   Json?                 @map("planner_output")
+  errorMessage    String?               @map("error_message") @db.Text
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id])
+  piece       ContentPiece  @relation(fields: [pieceId], references: [id])
+  publication Publication?  @relation(fields: [publicationId], references: [id])
+  assets      CreativeAsset[]
+  posts       DistributionPost[]
+
+  @@index([workspaceId, status, createdAt])
+  @@index([pieceId])
+  @@map("creative_requests")
+}
+
+model CreativeAsset {
+  id                String   @id @default(uuid())
+  workspaceId       String   @map("workspace_id")
+  requestId         String   @map("request_id")
+  templateId        String   @map("template_id")
+  templateKey       String   @map("template_key")
+  templateVersion   Int      @map("template_version")
+  filePath          String   @map("file_path")
+  mimeType          String   @default("image/png") @map("mime_type")
+  width             Int
+  height            Int
+  format            String   // linkedin_square | linkedin_landscape
+  payload           Json?
+  version           Int      @default(1)
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  workspace Workspace         @relation(fields: [workspaceId], references: [id])
+  request   CreativeRequest   @relation(fields: [requestId], references: [id])
+  template  CreativeTemplate  @relation(fields: [templateId], references: [id])
+  posts     DistributionPost[]
+  performances CreativePerformance[]
+
+  @@index([workspaceId, createdAt])
+  @@index([requestId])
+  @@index([templateKey, templateVersion])
+  @@map("creative_assets")
+}
+
+model DistributionPost {
+  id             String                 @id @default(uuid())
+  workspaceId    String                 @map("workspace_id")
+  requestId      String                 @map("request_id")
+  assetId        String                 @map("asset_id")
+  channel        DistributionChannel    @default(linkedin)
+  status         DistributionPostStatus @default(draft)
+  externalPostId String?                @map("external_post_id")
+  caption        String?                @db.Text
+  publishedAt    DateTime?              @map("published_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id])
+  request   CreativeRequest @relation(fields: [requestId], references: [id])
+  asset     CreativeAsset   @relation(fields: [assetId], references: [id])
+  performances CreativePerformance[]
+
+  @@index([workspaceId, channel, status])
+  @@index([assetId])
+  @@map("distribution_posts")
+}
+
+model CreativePerformance {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  assetId     String   @map("asset_id")
+  postId      String?  @map("post_id")
+  templateKey String   @map("template_key")
+  impressions Int?
+  clicks      Int?
+  reactions   Int?
+  comments    Int?
+  shares      Int?
+  ctr         Float?
+  engagements Int?
+  collectedAt DateTime @map("collected_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace         @relation(fields: [workspaceId], references: [id])
+  asset     CreativeAsset     @relation(fields: [assetId], references: [id])
+  post      DistributionPost? @relation(fields: [postId], references: [id])
+
+  @@index([workspaceId, templateKey, collectedAt])
+  @@index([assetId])
+  @@map("creative_performances")
 }

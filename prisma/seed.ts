@@ -26,6 +26,17 @@ async function main() {
     },
   });
 
+  const growth = await prisma.agent.upsert({
+    where: { slug: 'growth' },
+    update: {},
+    create: {
+      slug: 'growth',
+      name: 'Growth',
+      description:
+        'Agente de distribución — Creative Engine y canales (LinkedIn). No publica en el sitio.',
+    },
+  });
+
   const workspace = await prisma.workspace.upsert({
     where: { slug: 'cleexs' },
     update: {},
@@ -91,6 +102,49 @@ async function main() {
     },
   });
 
+  await prisma.agentConfig.upsert({
+    where: {
+      workspaceId_agentId: {
+        workspaceId: workspace.id,
+        agentId: growth.id,
+      },
+    },
+    update: {
+      branding: {
+        ...DEFAULT_BRAND_KIT,
+        distribution: {
+          accentColor: '#F97316',
+          backgroundColor: '#0F172A',
+          fontPrimary: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+          fontSecondary: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+          visualStyle: 'clean_corporate',
+          defaultCta: 'Leer artículo',
+          website: 'https://cleexs.net',
+          socialHandles: { linkedin: 'cleexs' },
+        },
+      },
+    },
+    create: {
+      workspaceId: workspace.id,
+      agentId: growth.id,
+      frequency: 'on-publish',
+      autoPublish: false,
+      branding: {
+        ...DEFAULT_BRAND_KIT,
+        distribution: {
+          accentColor: '#F97316',
+          backgroundColor: '#0F172A',
+          fontPrimary: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+          fontSecondary: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+          visualStyle: 'clean_corporate',
+          defaultCta: 'Leer artículo',
+          website: 'https://cleexs.net',
+          socialHandles: { linkedin: 'cleexs' },
+        },
+      },
+    },
+  });
+
   const passwordHash = await bcrypt.hash('demo1234', 10);
   await prisma.user.upsert({
     where: { email: 'admin@cleexs.net' },
@@ -123,7 +177,10 @@ async function main() {
     });
   }
 
-  console.log('Seed OK:', { workspace: workspace.slug, agents: [teo.slug, discovery.slug] });
+  console.log('Seed OK:', {
+    workspace: workspace.slug,
+    agents: [teo.slug, discovery.slug, growth.slug],
+  });
 }
 
 main()

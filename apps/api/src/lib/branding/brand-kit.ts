@@ -124,6 +124,37 @@ export function resolveBrandKit(
       typeof raw.ctaAbEnabled === 'boolean'
         ? raw.ctaAbEnabled
         : Boolean(raw.ctaB && (raw.ctaB.headline || raw.ctaB.label || raw.ctaB.body)),
+    distribution: raw.distribution
+      ? {
+          accentColor: sanitizeColor(
+            raw.distribution.accentColor,
+            raw.primaryColor || DEFAULT_BRAND_KIT.primaryColor || '#2563EB',
+          ),
+          backgroundColor: sanitizeColor(
+            raw.distribution.backgroundColor,
+            '#0F172A',
+          ),
+          fontPrimary:
+            raw.distribution.fontPrimary?.trim() ||
+            raw.fontFamily?.trim() ||
+            DEFAULT_BRAND_KIT.fontFamily,
+          fontSecondary:
+            raw.distribution.fontSecondary?.trim() ||
+            raw.fontFamily?.trim() ||
+            DEFAULT_BRAND_KIT.fontFamily,
+          visualStyle: raw.distribution.visualStyle?.trim() || 'clean_corporate',
+          defaultCta:
+            raw.distribution.defaultCta?.trim() ||
+            raw.cta?.label?.trim() ||
+            'Leer artículo',
+          website: sanitizeUrl(raw.distribution.website),
+          socialHandles: raw.distribution.socialHandles
+            ? {
+                linkedin: raw.distribution.socialHandles.linkedin?.trim() || undefined,
+              }
+            : undefined,
+        }
+      : undefined,
   };
 }
 

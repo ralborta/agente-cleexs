@@ -18,6 +18,7 @@ import {
   uploadWordPressMedia,
 } from './wordpress';
 import { submitUrlAfterPublishSafe } from './url-submit';
+import { enqueueCreativeFromPublication } from '../agents/growth';
 
 const DEFAULT_CATEGORY = 'Artículos';
 
@@ -134,6 +135,13 @@ export async function publishAndRecordPiece(
       url: wpResult.url,
       pieceId: piece.id,
       wpStatus: wpResult.status,
+    });
+
+    const publication = await prisma.publication.findUnique({ where: { pieceId: piece.id } });
+    void enqueueCreativeFromPublication({
+      workspaceId,
+      pieceId: piece.id,
+      publicationId: publication?.id,
     });
   }
 

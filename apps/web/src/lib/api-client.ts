@@ -879,6 +879,80 @@ export async function runDiscoveryExplore(
   });
 }
 
+// ——— Growth / Creative Engine ———
+
+export type CreativeRequestRow = {
+  id: string;
+  status: string;
+  channel: string;
+  errorMessage?: string | null;
+  plannerOutput?: {
+    templateKey?: string;
+    headline?: string;
+    cta?: string;
+    format?: string;
+    meta?: { source?: string; attempts?: number };
+  } | null;
+  createdAt: string;
+  piece: { id: string; title: string; slug: string | null };
+  assets: Array<{
+    id: string;
+    templateKey: string;
+    templateVersion: number;
+    mimeType: string;
+    width: number;
+    height: number;
+    format: string;
+    createdAt: string;
+  }>;
+  posts: Array<{ id: string; status: string; channel: string }>;
+};
+
+export async function fetchCreativeRequests(workspace: string) {
+  return api<{ workspace: string; requests: CreativeRequestRow[] }>(
+    `/api/growth/${workspace}/creative/requests`,
+  );
+}
+
+export async function createCreativeFromPiece(workspace: string, pieceId: string) {
+  return api<{
+    workspace: string;
+    requestId: string;
+    result: { status: string; assetId?: string; templateKey?: string };
+  }>(`/api/growth/${workspace}/creative/from-piece/${pieceId}`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
+
+export async function approveCreativeRequest(workspace: string, requestId: string, caption?: string) {
+  return api<{ workspace: string; requestId: string; status: string; note?: string }>(
+    `/api/growth/${workspace}/creative/requests/${requestId}/approve`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ caption }),
+    },
+  );
+}
+
+export async function reprocessCreativeRequest(workspace: string, requestId: string) {
+  return api<{ workspace: string; requestId: string; result: { status: string } }>(
+    `/api/growth/${workspace}/creative/requests/${requestId}/reprocess`,
+    { method: 'POST', body: JSON.stringify({}) },
+  );
+}
+
+/** Descarga el asset con auth y devuelve object URL para <img>. */
+export async function fetchCreativeAssetObjectUrl(workspace: string, assetId: string) {
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/growth/${workspace}/creative/assets/${assetId}`,
+    { headers: { ...authHeaders() }, cache: 'no-store' },
+  );
+  if (!res.ok) throw new Error('No se pudo cargar el asset');
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
 export async function updateOpportunity(
   id: string,
   data: Partial<{

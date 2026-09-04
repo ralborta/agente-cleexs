@@ -19,6 +19,7 @@ import {
   Sparkles,
   Target,
   Mic2,
+  Megaphone,
 } from 'lucide-react';
 import { PLATFORM_NAME } from '@/lib/branding';
 import { clearAuthSession, getStoredUser } from '@/lib/auth-client';
@@ -37,6 +38,7 @@ function buildNav(workspace: string) {
   ];
   const agentsNav = [
     { href: workspaceHref(workspace, 'discovery'), label: 'Discovery', icon: Sparkles },
+    { href: workspaceHref(workspace, 'growth'), label: 'Growth', icon: Megaphone },
     { href: workspaceHref(workspace, 'config/teo'), label: 'Teo · temas', icon: Settings },
   ];
   const operationNav = [
@@ -52,6 +54,7 @@ function buildNav(workspace: string) {
 
 const agents = [
   { slug: 'discovery', name: 'Discovery', hrefSuffix: 'discovery', status: 'online' as const },
+  { slug: 'growth', name: 'Growth', hrefSuffix: 'growth', status: 'online' as const },
   { slug: 'teo', name: 'Teo', hrefSuffix: 'config/teo', status: 'online' as const },
 ];
 
@@ -138,7 +141,7 @@ export function CentroSidebar({ workspaceName, pendingApprovals: pendingProp }: 
           {PLATFORM_NAME}
         </p>
         <h1 className="mt-1 text-lg font-semibold text-white">{workspaceName}</h1>
-        <p className="mt-1 text-xs text-emerald-400">Teo + Discovery activos</p>
+        <p className="mt-1 text-xs text-emerald-400">Teo + Discovery + Growth</p>
       </div>
 
       <div className="min-h-0 flex-1 space-y-8 overflow-y-auto pr-1">
