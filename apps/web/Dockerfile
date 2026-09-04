@@ -9,9 +9,10 @@ RUN npm ci --workspace=@agente/web --include-workspace-root
 
 FROM base AS builder
 ARG NEXT_PUBLIC_API_URL=http://localhost:4000
-ARG WEB_BUILD_ID=20260904-growth-creative-v1
+ARG WEB_BUILD_ID=20260904-growth-sidebar-2
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-RUN echo "web build ${WEB_BUILD_ID}"
+# Bust de cache: fuerza rebuild cuando el sidebar no refleja main
+RUN echo "web build ${WEB_BUILD_ID}" && date -u
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json ./
 COPY tsconfig.json ./

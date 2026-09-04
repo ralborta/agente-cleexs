@@ -38,7 +38,7 @@ function buildNav(workspace: string) {
   ];
   const agentsNav = [
     { href: workspaceHref(workspace, 'discovery'), label: 'Discovery', icon: Sparkles },
-    { href: workspaceHref(workspace, 'growth'), label: 'Growth', icon: Megaphone },
+    { href: workspaceHref(workspace, 'growth'), label: 'Growth · Creative', icon: Megaphone },
     { href: workspaceHref(workspace, 'config/teo'), label: 'Teo · temas', icon: Settings },
   ];
   const operationNav = [
