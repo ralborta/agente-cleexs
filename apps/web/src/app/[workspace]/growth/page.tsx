@@ -169,12 +169,13 @@ export default function GrowthPage() {
         <div>
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 text-xs font-medium text-orange-100">
             <Sparkles className="h-3.5 w-3.5" />
-            Growth · Creative Engine
+            Agente Growth · distribución y adquisición
           </div>
-          <h2 className="text-3xl font-semibold text-white">Creative Engine</h2>
+          <h2 className="text-3xl font-semibold text-white">Growth</h2>
           <p className="mt-2 max-w-2xl text-sm text-hub-muted">
-            Convierte artículos de Teo en piezas visuales LinkedIn con templates de marca. Preview
-            manual · Publisher LinkedIn en una fase posterior.
+            Lleva el contenido de Teo <strong className="font-medium text-slate-300">fuera del sitio</strong>,
+            mide adquisición y aprende qué mensajes convierten. Creative Engine es un módulo; LinkedIn
+            es el primer canal — no todo Growth.
           </p>
         </div>
         <button
@@ -185,6 +186,41 @@ export default function GrowthPage() {
           <RefreshCw className="h-4 w-4" /> Recargar
         </button>
       </div>
+
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border border-orange-500/40 bg-gradient-to-br from-orange-500/15 via-hub-card to-hub-card p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-200">Activo · V1</p>
+          <p className="mt-2 text-sm font-semibold text-white">Creative Engine</p>
+          <p className="mt-1 text-xs text-hub-muted">Templates → PNG. Canal inicial: LinkedIn.</p>
+        </div>
+        <div className="rounded-2xl border border-hub-border bg-hub-card p-4 opacity-70">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-hub-muted">Próximo</p>
+          <p className="mt-2 text-sm font-semibold text-white">Publisher</p>
+          <p className="mt-1 text-xs text-hub-muted">Publicar en LinkedIn (+ otros canales). Aún no.</p>
+        </div>
+        <div className="rounded-2xl border border-hub-border bg-hub-card p-4 opacity-70">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-hub-muted">Próximo</p>
+          <p className="mt-2 text-sm font-semibold text-white">Performance</p>
+          <p className="mt-1 text-xs text-hub-muted">CTR / reacciones por template y canal.</p>
+        </div>
+        <div className="rounded-2xl border border-hub-border bg-hub-card p-4 opacity-70">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-hub-muted">Roadmap</p>
+          <p className="mt-2 text-sm font-semibold text-white">Multi-canal</p>
+          <p className="mt-1 text-xs text-hub-muted">Email, X, WhatsApp, etc. sin mezclar con Teo.</p>
+        </div>
+      </div>
+
+      <div className="mb-4 flex items-center gap-2">
+        <ImageIcon className="h-4 w-4 text-orange-300" />
+        <h3 className="text-lg font-semibold text-white">Creative Engine</h3>
+        <span className="rounded-md border border-hub-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-hub-muted">
+          módulo
+        </span>
+      </div>
+      <p className="mb-6 max-w-2xl text-sm text-hub-muted">
+        Genera piezas visuales con templates de marca a partir de artículos publicados. Hoy: preview
+        LinkedIn. El Publisher y la medición viven en otras capas de Growth.
+      </p>
 
       {message ? (
         <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
