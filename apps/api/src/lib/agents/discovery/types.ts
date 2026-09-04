@@ -110,9 +110,17 @@ export type YoutubeTopChannel = {
   totalViews: number;
 };
 
+export type YoutubeInterestPoint = {
+  dateFrom: string | null;
+  dateTo: string | null;
+  value: number | null;
+};
+
 export type YoutubeSourceData = {
   interest: number | null;
   trend: 'growing' | 'stable' | 'declining' | 'unknown';
+  /** Serie temporal Trends (YouTube) para el dashboard. */
+  interestGraph?: YoutubeInterestPoint[];
   relatedQueries: YoutubeRelatedQuery[];
   relatedTopics: YoutubeRelatedTopic[];
   topVideos: YoutubeTopVideo[];

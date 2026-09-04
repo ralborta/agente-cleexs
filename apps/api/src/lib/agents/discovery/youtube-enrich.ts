@@ -122,6 +122,7 @@ export async function enrichBriefWithYoutube(
   let youtube: YoutubeSourceData = {
     interest: null,
     trend: 'unknown',
+    interestGraph: [],
     relatedQueries: [],
     relatedTopics: [],
     topVideos: [],
@@ -173,44 +174,33 @@ export async function enrichBriefWithYoutube(
   }
 
   try {
-    const graph = await fetchGoogleTrendsExplore(config, {
+    // Un solo call Trends: graph + queries + topics (como el Explore dashboard de DFS)
+    const trends = await fetchGoogleTrendsExplore(config, {
       keywords: [keyword],
       type: 'youtube',
       locationName: market.locationName,
       languageCode: market.languageCode,
       timeRange: 'past_12_months',
-      itemTypes: ['google_trends_graph'],
+      itemTypes: [
+        'google_trends_graph',
+        'google_trends_queries_list',
+        'google_trends_topics_list',
+      ],
     });
-    cost += graph.cost;
-    const trendInfo = trendFromGraphValues(graph.graph);
+    cost += trends.cost;
+    const trendInfo = trendFromGraphValues(trends.graph);
     const avgInterest =
-      graph.averages.find((v) => typeof v === 'number') ?? trendInfo.interest;
+      trends.averages.find((v) => typeof v === 'number') ?? trendInfo.interest;
     youtube = {
       ...youtube,
       interest: typeof avgInterest === 'number' ? Math.round(avgInterest) : trendInfo.interest,
       trend: trendInfo.trend,
-    };
-  } catch (err) {
-    console.warn(
-      '[discovery] youtube trends graph falló:',
-      keyword,
-      err instanceof Error ? err.message : err,
-    );
-  }
-
-  try {
-    const queries = await fetchGoogleTrendsExplore(config, {
-      keywords: [keyword],
-      type: 'youtube',
-      locationName: market.locationName,
-      languageCode: market.languageCode,
-      timeRange: 'past_12_months',
-      itemTypes: ['google_trends_queries_list'],
-    });
-    cost += queries.cost;
-    youtube = {
-      ...youtube,
-      relatedQueries: queries.relatedQueries
+      interestGraph: trends.graph.map((p) => ({
+        dateFrom: p.dateFrom,
+        dateTo: p.dateTo,
+        value: (p.values ?? []).find((v): v is number => typeof v === 'number') ?? null,
+      })),
+      relatedQueries: trends.relatedQueries
         .filter((q): q is typeof q & { query: string } => Boolean(q.query))
         .map((q) => ({
           query: q.query!,
@@ -218,10 +208,18 @@ export async function enrichBriefWithYoutube(
           kind: q.kind,
         }))
         .slice(0, 20),
+      relatedTopics: trends.relatedTopics
+        .filter((t): t is typeof t & { title: string } => Boolean(t.title))
+        .map((t) => ({
+          title: t.title!,
+          value: t.value,
+          kind: t.kind,
+        }))
+        .slice(0, 20),
     };
   } catch (err) {
     console.warn(
-      '[discovery] youtube trends queries falló:',
+      '[discovery] youtube trends explore falló:',
       keyword,
       err instanceof Error ? err.message : err,
     );
@@ -240,7 +238,9 @@ export async function enrichBriefWithYoutube(
   const hasYoutubeSignal =
     youtube.topVideos.length > 0 ||
     (typeof youtube.interest === 'number' && youtube.interest > 0) ||
-    youtube.relatedQueries.length > 0;
+    youtube.relatedQueries.length > 0 ||
+    youtube.relatedTopics.length > 0 ||
+    (youtube.interestGraph?.length ?? 0) > 0;
 
   const channels = new Set<DiscoveryChannel>(brief.channels ?? ['google']);
   if (hasYoutubeSignal) channels.add('youtube');
