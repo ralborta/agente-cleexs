@@ -20,9 +20,10 @@ export function parseMissionPlanHints(mission: {
 
   return {
     ...(topicMatch?.[1]?.trim() ? { topic: topicMatch[1].trim() } : {}),
+    // Solo pieceType explícito — no inferir pillar desde depth:pro (bloqueaba Discovery→Teo).
     ...(pieceMatch?.[1]?.trim() ? { pieceType: pieceMatch[1].trim() } : {}),
     ...(titleMatch?.[1]?.trim() ? { title: titleMatch[1].trim() } : {}),
-    ...(wantsPro ? { depth: 'pro' as const, pieceType: pieceMatch?.[1]?.trim() || 'pillar' } : {}),
+    ...(wantsPro ? { depth: 'pro' as const } : {}),
   };
 }
 

@@ -62,14 +62,18 @@ const missionRoutes: FastifyPluginAsync = async (server) => {
       return reply.status(404).send({ error: 'Workspace o agente no encontrado' });
     }
 
-    const articleTitle =
-      title && !/^Misión manual\s*[—\-]\s*\d/i.test(title) ? title.trim() : undefined;
+    // Title de la misión ≠ título del artículo. Solo embeber [title:] si viene
+    // un título editorial explícito (no labels tipo "Misión …" / "Artículo desde …").
+    const missionTitle = title ?? `Misión manual — ${new Date().toLocaleDateString('es-AR')}`;
+    const looksLikeMissionLabel =
+      /^Misión\b/i.test(missionTitle) || /^Artículo desde\b/i.test(missionTitle);
+    const articleTitle = title && !looksLikeMissionLabel ? title.trim() : undefined;
 
     const mission = await prisma.mission.create({
       data: {
         workspaceId: workspace.id,
         agentId: agent.id,
-        title: title ?? `Misión manual — ${new Date().toLocaleDateString('es-AR')}`,
+        title: missionTitle,
         objective: buildMissionObjective(objective, {
           topic,
           pieceType,
