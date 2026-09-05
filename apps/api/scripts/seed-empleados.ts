@@ -9,10 +9,10 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 const LOGISTICS_TOPICS = [
-  'agentes de IA',
-  'logística con IA',
-  'centros logísticos',
-  'automatización de flotas',
+  'agentes de IA logística',
+  'automatización centros logísticos',
+  'IA para flotas',
+  'WMS con inteligencia artificial',
 ];
 
 const DISCOVERY_SEEDS = [
@@ -51,7 +51,7 @@ const EMPLEADOS_BRANDING = {
 };
 
 const TONE =
-  'Profesional, claro, orientado a operaciones logísticas que adoptan agentes de IA autónomos';
+  'Profesional, claro, solo sobre agentes de IA aplicados a logística (centros, flotas, WMS, warehouse, última milla). Nunca RRHH, marketing ni IA genérica.';
 
 async function main() {
   const teo = await prisma.agent.upsert({
