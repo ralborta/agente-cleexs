@@ -82,13 +82,13 @@ export default function DiscoveryPage() {
   );
   const [description, setDescription] = useState(
     workspace === 'empleados'
-      ? 'Plataforma de marca empleadora y atracción de talento'
-      : 'Plataforma de agentes IA especializados en Logística',
+      ? 'Agentes de IA orientados a logística: centros, flotas, warehouse y última milla'
+      : 'Plataforma de visibilidad en IA / AEO para PyMEs',
   );
   const [seedsInput, setSeedsInput] = useState(
     workspace === 'empleados'
-      ? 'marca empleadora\natracción de talento\nemployer branding\nreclutamiento con IA'
-      : 'agentes de IA\nlogística con IA\nvisibilidad en IA\nAEO para pymes',
+      ? 'agentes de IA logística\nautomatización centros logísticos\nIA para flotas\nagentes autónomos warehouse'
+      : 'visibilidad en IA\nAEO para pymes\nSEO para ChatGPT\nrecomendaciones en IA',
   );
   const [market, setMarket] = useState('latam');
   const [running, setRunning] = useState(false);

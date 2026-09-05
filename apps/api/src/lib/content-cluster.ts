@@ -38,8 +38,8 @@ const DEFAULT_CLUSTERS: Record<string, { name: string; pillarTopic: string }> = 
     pillarTopic: 'visibilidad en IA y SEO para PyMEs',
   },
   empleados: {
-    name: 'Marca empleadora / atracción de talento',
-    pillarTopic: 'marca empleadora y visibilidad en IA para HR',
+    name: 'Agentes de IA para logística',
+    pillarTopic: 'agentes de IA autónomos en centros logísticos y flotas',
   },
 };
 

@@ -1,5 +1,6 @@
 /**
  * Crea workspace empleados + AgentConfig Teo + user admin.
+ * Empliados.net = agentes de IA orientados a logística (no RRHH).
  * Uso (en API): npx tsx apps/api/scripts/seed-empleados.ts
  */
 import { PrismaClient } from '@prisma/client';
@@ -7,17 +8,31 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+const LOGISTICS_TOPICS = [
+  'agentes de IA',
+  'logística con IA',
+  'centros logísticos',
+  'automatización de flotas',
+];
+
+const DISCOVERY_SEEDS = [
+  'agentes de IA logística',
+  'automatización centros logísticos',
+  'IA para flotas',
+  'agentes autónomos warehouse',
+];
+
 const EMPLEADOS_BRANDING = {
-  brandName: 'Empleados',
+  brandName: 'Empliados',
   primaryColor: '#2563EB',
   secondaryColor: '#1D4ED8',
   fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-  authorLine: 'Por Teo · Agente de contenido Empleados',
-  templateId: 'editorial',
+  authorLine: 'Por Teo · Agente de contenido Empliados',
+  templateId: 'modern',
   cta: {
-    headline: 'Encontrá y retené mejor talento',
-    body: 'Pegá la URL de tu sitio y descubrí cómo potenciar tu marca empleadora.',
-    label: 'Empezá gratis',
+    headline: 'Agentes de IA para tu operación logística',
+    body: 'Descubrí cómo agentes autónomos optimizan centros, flotas y última milla.',
+    label: 'Conocé Empliados',
     url: 'https://empliados.net/',
     buttonColor: '#FFFFFF',
     urlInput: false,
@@ -34,6 +49,9 @@ const EMPLEADOS_BRANDING = {
     socialHandles: { linkedin: 'empleados' },
   },
 };
+
+const TONE =
+  'Profesional, claro, orientado a operaciones logísticas que adoptan agentes de IA autónomos';
 
 async function main() {
   const teo = await prisma.agent.upsert({
@@ -70,9 +88,9 @@ async function main() {
 
   const workspace = await prisma.workspace.upsert({
     where: { slug: 'empleados' },
-    update: { name: 'Empleados' },
+    update: { name: 'Empliados' },
     create: {
-      name: 'Empleados',
+      name: 'Empliados',
       slug: 'empleados',
     },
   });
@@ -86,25 +104,15 @@ async function main() {
     },
     update: {
       branding: EMPLEADOS_BRANDING,
-      tone: 'Profesional, claro, orientado a empresas que buscan y retienen talento',
-      topics: [
-        'marca empleadora',
-        'atracción de talento',
-        'visibilidad en IA',
-        'SEO para HR',
-      ],
+      tone: TONE,
+      topics: LOGISTICS_TOPICS,
       autoPublish: false,
     },
     create: {
       workspaceId: workspace.id,
       agentId: teo.id,
-      tone: 'Profesional, claro, orientado a empresas que buscan y retienen talento',
-      topics: [
-        'marca empleadora',
-        'atracción de talento',
-        'visibilidad en IA',
-        'SEO para HR',
-      ],
+      tone: TONE,
+      topics: LOGISTICS_TOPICS,
       frequency: '2/semana',
       autoPublish: false,
       branding: EMPLEADOS_BRANDING,
@@ -119,15 +127,11 @@ async function main() {
       },
     },
     update: {
-      topics: [
-        'marca empleadora',
-        'atracción de talento',
-        'employer branding',
-        'reclutamiento con IA',
-      ],
+      topics: DISCOVERY_SEEDS,
       settings: {
         siteUrl: 'https://empliados.net',
-        description: 'Plataforma de marca empleadora y atracción de talento',
+        description:
+          'Agentes de IA orientados a logística: centros, flotas, warehouse y última milla',
         market: 'ar',
         languageCode: 'es',
       },
@@ -137,15 +141,11 @@ async function main() {
       agentId: discovery.id,
       frequency: 'on-demand',
       autoPublish: false,
-      topics: [
-        'marca empleadora',
-        'atracción de talento',
-        'employer branding',
-        'reclutamiento con IA',
-      ],
+      topics: DISCOVERY_SEEDS,
       settings: {
         siteUrl: 'https://empliados.net',
-        description: 'Plataforma de marca empleadora y atracción de talento',
+        description:
+          'Agentes de IA orientados a logística: centros, flotas, warehouse y última milla',
         market: 'ar',
         languageCode: 'es',
       },
@@ -176,12 +176,12 @@ async function main() {
     where: { email: 'admin@empleados.net' },
     update: {
       workspaceId: workspace.id,
-      name: 'Admin Empleados',
+      name: 'Admin Empliados',
       role: 'admin',
     },
     create: {
       email: 'admin@empleados.net',
-      name: 'Admin Empleados',
+      name: 'Admin Empliados',
       passwordHash,
       role: 'admin',
       workspaceId: workspace.id,
@@ -193,6 +193,7 @@ async function main() {
     agents: [teo.slug, discovery.slug, growth.slug],
     user: 'admin@empleados.net',
     password: 'empleados2026',
+    topics: LOGISTICS_TOPICS,
   });
 }
 
@@ -201,4 +202,6 @@ main()
     console.error(e);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

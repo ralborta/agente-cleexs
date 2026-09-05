@@ -1,4 +1,6 @@
-# Onboarding Empleados.net (Teo multi-workspace)
+# Onboarding Empliados.net (Teo multi-workspace)
+
+**Producto:** agentes de IA orientados a **logística** (centros, flotas, warehouse). No es RRHH ni marca empleadora.
 
 ## Estado
 

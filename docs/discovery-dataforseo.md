@@ -61,9 +61,9 @@ Body ejemplo:
 ```json
 {
   "siteUrl": "https://empliados.net",
-  "description": "Plataforma de marca empleadora",
+  "description": "Agentes de IA orientados a logística",
   "market": "ar",
-  "seeds": ["marca empleadora", "atracción de talento"],
+  "seeds": ["agentes de IA logística", "automatización centros logísticos"],
   "includeSiteKeywords": false,
   "deepExpand": true,
   "includeYoutube": true,
