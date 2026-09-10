@@ -188,6 +188,76 @@ export async function fetchGa4BlogSessionTotals(
   };
 }
 
+export type Ga4CampaignContentRow = {
+  /** sessionManualAdContent / utm_content (attribution id). */
+  content: string;
+  campaign: string;
+  source: string;
+  medium: string;
+  sessions: number;
+};
+
+/**
+ * Sesiones GA4 filtradas por campaña/contenido de atribución Growth Conversations
+ * (utm_source=growth_conversations) o por lista de attributionIds (utm_content).
+ */
+export async function fetchGa4SessionsByCampaignContent(
+  config: GoogleMetricsConfig,
+  options?: { days?: number; attributionIds?: string[] },
+): Promise<Ga4CampaignContentRow[]> {
+  if (!config.ga4PropertyId) {
+    throw new Error('GA4 propertyId no configurado');
+  }
+
+  const days = options?.days ?? 28;
+  const attributionIds = (options?.attributionIds ?? [])
+    .map((id) => id.trim())
+    .filter(Boolean);
+
+  const orExpressions: Array<Record<string, unknown>> = [
+    {
+      filter: {
+        fieldName: 'sessionSource',
+        stringFilter: { matchType: 'EXACT', value: 'growth_conversations' },
+      },
+    },
+  ];
+
+  if (attributionIds.length) {
+    orExpressions.push({
+      filter: {
+        fieldName: 'sessionManualAdContent',
+        inListFilter: { values: attributionIds.slice(0, 50) },
+      },
+    });
+  }
+
+  const body: Record<string, unknown> = {
+    dateRanges: [dateRangeBody(days)],
+    dimensions: [
+      { name: 'sessionManualAdContent' },
+      { name: 'sessionCampaignName' },
+      { name: 'sessionSource' },
+      { name: 'sessionMedium' },
+    ],
+    metrics: [{ name: 'sessions' }],
+    dimensionFilter: {
+      orGroup: { expressions: orExpressions },
+    },
+    limit: 10000,
+  };
+
+  const data = await runGa4Report(config, body);
+
+  return (data.rows ?? []).map((row) => ({
+    content: row.dimensionValues?.[0]?.value ?? '(not set)',
+    campaign: row.dimensionValues?.[1]?.value ?? '(not set)',
+    source: row.dimensionValues?.[2]?.value ?? '(not set)',
+    medium: row.dimensionValues?.[3]?.value ?? '(not set)',
+    sessions: Number(row.metricValues?.[0]?.value ?? 0),
+  }));
+}
+
 export async function testGa4Connection(config: GoogleMetricsConfig) {
   const rows = await fetchGa4PageSessions(config, { days: 7, pathPrefix: '/' });
   return {

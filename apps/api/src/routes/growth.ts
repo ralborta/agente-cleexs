@@ -3,6 +3,7 @@ import { access } from 'fs/promises';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
+import growthConversationRoutes from './growth-conversations';
 import {
   createAndProcessFromPiece,
   ensureCreativeTemplatesSynced,
@@ -29,6 +30,7 @@ async function assertWorkspaceAccess(
 }
 
 const growthRoutes: FastifyPluginAsync = async (server) => {
+  await server.register(growthConversationRoutes);
   server.get('/:workspaceSlug/creative/templates', async (request, reply) => {
     const { workspaceSlug } = request.params as { workspaceSlug: string };
     const workspace = await assertWorkspaceAccess(request, reply, workspaceSlug);

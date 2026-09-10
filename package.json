@@ -23,7 +23,8 @@
     "bot:dev": "npm run dev --prefix bot",
     "bot:install": "npm ci --prefix bot",
     "test:wp": "tsx apps/api/scripts/test-wordpress.ts",
-    "test:styled": "tsx apps/api/scripts/test-styled-article.ts"
+    "test:styled": "tsx apps/api/scripts/test-styled-article.ts",
+    "test:growth": "tsx --test apps/api/src/lib/agents/growth/conversations/__tests__/*.test.ts apps/api/src/lib/url-reader/__tests__/*.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -12,6 +12,7 @@ Growth    → distribuye + mide (fuera del sitio)
 
 | Módulo | Rol | Estado |
 |--------|-----|--------|
+| **Conversaciones** | SERP → oportunidades → borradores; publicación manual | **V1 activo** — ver [growth-conversations.md](./growth-conversations.md) |
 | **Creative Engine** | Templates de marca → PNG (copy corto, no IA en imagen) | **V1 activo** |
 | **Publisher** | Publicar assets en canales | Pendiente |
 | **Performance** | CTR / engagement por template y canal | Modelo listo, collector pendiente |

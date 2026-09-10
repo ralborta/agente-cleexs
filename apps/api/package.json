@@ -8,7 +8,8 @@
     "build": "tsc",
     "migrate:deploy": "prisma migrate deploy --schema=../../prisma/schema.prisma",
     "start": "npm run migrate:deploy && node dist/index.js",
-    "lint": "echo 'ok'"
+    "lint": "echo 'ok'",
+    "test:growth": "tsx --test src/lib/agents/growth/conversations/__tests__/*.test.ts src/lib/url-reader/__tests__/*.test.ts"
   },
   "dependencies": {
     "@agente/shared": "*",

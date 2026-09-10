@@ -9,6 +9,7 @@ import { tickDemandScoring } from './agents/teo/demand-scoring';
 import { tickQuestionCloud } from './agents/teo/keyword-questions';
 import { buildMissionObjective } from './agents/teo/mission-plan';
 import { logAgentActivity } from './agent-helpers';
+import { tickAgentJobs } from './agent-jobs/handlers';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -128,7 +129,8 @@ export async function runSchedulerTick() {
   const metrics = await tickMetricsSync();
   const refresher = await tickRefresherScans();
   const missions = await tickAutonomousMissions();
-  return { opportunities, demand, questions, missions, metrics, refresher };
+  const agentJobs = await tickAgentJobs();
+  return { opportunities, demand, questions, missions, metrics, refresher, agentJobs };
 }
 
 export function startAutonomousScheduler() {
@@ -136,7 +138,7 @@ export function startAutonomousScheduler() {
 
   const tick = () => {
     runSchedulerTick()
-      .then(({ opportunities, demand, questions, missions, metrics, refresher }) => {
+      .then(({ opportunities, demand, questions, missions, metrics, refresher, agentJobs }) => {
         if (opportunities.created > 0) {
           console.log(
             `[scheduler] Cloud oportunidades: +${opportunities.created} en ${opportunities.workspaces} workspace(s)`,
@@ -161,12 +163,28 @@ export function startAutonomousScheduler() {
         if (refresher.missionsSpawned > 0) {
           console.log(`[scheduler] Misiones refresco: ${refresher.missionsSpawned}`);
         }
+        if (agentJobs.processed > 0 || agentJobs.failed > 0) {
+          console.log(
+            `[scheduler] Agent jobs: processed=${agentJobs.processed} failed=${agentJobs.failed}`,
+          );
+        }
       })
       .catch((err) => console.error('[scheduler] Error:', err));
   };
 
+  // Cola persistente: tick más frecuente que autonomía (jobs Growth, etc.)
+  const jobsIntervalMs = Number(process.env.AGENT_JOBS_TICK_MS || 15_000);
+  setTimeout(() => {
+    tickAgentJobs().catch((err) => console.error('[agent-jobs] Error:', err));
+  }, 5_000);
+  setInterval(() => {
+    tickAgentJobs().catch((err) => console.error('[agent-jobs] Error:', err));
+  }, jobsIntervalMs);
+
   setTimeout(tick, 30_000);
   setInterval(tick, intervalMs);
 
-  console.log(`[scheduler] Autonomía + métricas activas — tick cada ${intervalMs / 1000}s`);
+  console.log(
+    `[scheduler] Autonomía + métricas activas — tick cada ${intervalMs / 1000}s; agent-jobs cada ${jobsIntervalMs / 1000}s`,
+  );
 }

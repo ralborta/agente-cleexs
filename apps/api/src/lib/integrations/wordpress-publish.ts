@@ -18,7 +18,10 @@ import {
   uploadWordPressMedia,
 } from './wordpress';
 import { submitUrlAfterPublishSafe } from './url-submit';
-import { enqueueCreativeFromPublication } from '../agents/growth';
+import {
+  enqueueCreativeFromPublication,
+  enqueueGrowthConversationFromPublication,
+} from '../agents/growth';
 
 const DEFAULT_CATEGORY = 'Artículos';
 
@@ -138,11 +141,19 @@ export async function publishAndRecordPiece(
     });
 
     const publication = await prisma.publication.findUnique({ where: { pieceId: piece.id } });
-    void enqueueCreativeFromPublication({
-      workspaceId,
-      pieceId: piece.id,
-      publicationId: publication?.id,
-    });
+    if (publication) {
+      void enqueueCreativeFromPublication({
+        workspaceId,
+        pieceId: piece.id,
+        publicationId: publication.id,
+      });
+      // Conversaciones: off por defecto (AgentConfig.settings.conversations.autoTriggerOnPublish)
+      void enqueueGrowthConversationFromPublication({
+        workspaceId,
+        pieceId: piece.id,
+        publicationId: publication.id,
+      });
+    }
   }
 
   return wpResult;

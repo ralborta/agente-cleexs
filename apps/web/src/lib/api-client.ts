@@ -953,6 +953,282 @@ export async function fetchCreativeAssetObjectUrl(workspace: string, assetId: st
   return URL.createObjectURL(blob);
 }
 
+// ——— Growth / Conversaciones ———
+
+export type GrowthConversationsStatus = {
+  workspace: string;
+  config: {
+    autoTriggerOnPublish: boolean;
+    maxQueries: number;
+    maxRecommended: number;
+    maxSpendUsd: number;
+    languageCode: string;
+    locationCode: number;
+    scoreWeights: Record<string, number>;
+    minOpportunityScore: number;
+  };
+  integrations: {
+    dataforseo: {
+      configured: boolean;
+      mode: 'sandbox' | 'live' | null;
+      note: string;
+    };
+    ga4: { configured: boolean; note: string };
+  };
+  limitations: string[];
+};
+
+export type GrowthConversationRunRow = {
+  id: string;
+  status: string;
+  trigger: string;
+  providerMode?: string | null;
+  queryCount: number;
+  serpHitCount: number;
+  verifiedCount: number;
+  opportunityCount: number;
+  costUsd?: number | null;
+  costEstimatedUsd?: number | null;
+  costIsEstimate?: boolean;
+  errorMessage?: string | null;
+  progressMessage?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  cancelledAt?: string | null;
+  createdAt: string;
+  piece: { id: string; title: string; slug: string | null; keyword: string | null };
+  publication?: { id: string; url: string; publishedAt: string } | null;
+};
+
+export type GrowthScoreBreakdown = {
+  factors?: {
+    problemFit?: number;
+    audienceFit?: number;
+    recentActivity?: number;
+    usefulReply?: number;
+    canParticipate?: number;
+  };
+  motives?: string[];
+};
+
+export type GrowthReplyDraftRow = {
+  id: string;
+  version: number;
+  body: string;
+  includeLink: boolean;
+  linkUrl?: string | null;
+  status: string;
+  approvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type GrowthInterventionMetricRow = {
+  id: string;
+  kind: string;
+  value?: number | null;
+  valueKnown: boolean;
+  source: string;
+  capturedAt: string;
+  notes?: string | null;
+  provenance?: string | null;
+};
+
+export type GrowthInterventionRow = {
+  id: string;
+  attributionId: string;
+  publishedUrl: string;
+  publishedAt: string;
+  articleUrlWithUtm?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  metrics: GrowthInterventionMetricRow[];
+};
+
+export type GrowthConversationPageRow = {
+  id: string;
+  url: string;
+  domain: string;
+  title?: string | null;
+  topic?: string | null;
+  questionText?: string | null;
+  threadCreatedAt?: string | null;
+  lastActivityAt?: string | null;
+  threadCreatedAtKnown: boolean;
+  lastActivityAtKnown: boolean;
+  allowsReplies?: boolean | null;
+  isClosed?: boolean | null;
+  isArchived?: boolean | null;
+  evidenceSnippet?: string | null;
+  verifyStatus: string;
+  verifyError?: string | null;
+};
+
+export type GrowthOpportunityRow = {
+  id: string;
+  opportunityScore: number;
+  evidenceConfidence: number;
+  scoreBreakdown: GrowthScoreBreakdown;
+  editorialStatus: string;
+  discardReason?: string | null;
+  recommendedRank?: number | null;
+  conversation: GrowthConversationPageRow;
+  drafts: GrowthReplyDraftRow[];
+  interventions: GrowthInterventionRow[];
+  serpHit?: {
+    id: string;
+    url: string;
+    title?: string | null;
+    snippet?: string | null;
+    position?: number | null;
+    resultType?: string;
+    providerMode?: string;
+  } | null;
+};
+
+export type GrowthConversationRunDetail = GrowthConversationRunRow & {
+  queries: Array<{
+    id: string;
+    query: string;
+    rationale?: string | null;
+    languageCode: string;
+    locationCode: number;
+  }>;
+  opportunities: GrowthOpportunityRow[];
+};
+
+export type GrowthTopicInsightRow = {
+  id: string;
+  topicKey: string;
+  summary: unknown;
+  status: string;
+  createdAt: string;
+  piece?: { id: string; title: string; keyword: string | null } | null;
+  run?: { id: string; status: string } | null;
+};
+
+export async function fetchGrowthConversationsStatus(workspace: string) {
+  return api<GrowthConversationsStatus>(`/api/growth/${workspace}/conversations/status`);
+}
+
+export async function fetchGrowthConversationRuns(workspace: string) {
+  return api<{ workspace: string; runs: GrowthConversationRunRow[] }>(
+    `/api/growth/${workspace}/conversations/runs`,
+  );
+}
+
+export async function fetchGrowthConversationRun(workspace: string, runId: string) {
+  return api<{
+    workspace: string;
+    run: GrowthConversationRunDetail;
+    synthesis?: unknown;
+  }>(`/api/growth/${workspace}/conversations/runs/${runId}`);
+}
+
+export async function startGrowthConversationFromPiece(workspace: string, pieceId: string) {
+  return api<{ workspace: string; run: GrowthConversationRunRow }>(
+    `/api/growth/${workspace}/conversations/from-piece/${pieceId}`,
+    { method: 'POST', body: JSON.stringify({}) },
+  );
+}
+
+export async function cancelGrowthConversationRun(workspace: string, runId: string) {
+  return api<{ workspace: string; run: GrowthConversationRunRow }>(
+    `/api/growth/${workspace}/conversations/runs/${runId}/cancel`,
+    { method: 'POST', body: JSON.stringify({}) },
+  );
+}
+
+export async function approveGrowthOpportunity(
+  workspace: string,
+  opportunityId: string,
+  body?: { draftId?: string; body?: string },
+) {
+  return api<{
+    workspace: string;
+    opportunityId: string;
+    draft: GrowthReplyDraftRow;
+    published: boolean;
+    note?: string;
+  }>(`/api/growth/${workspace}/conversations/opportunities/${opportunityId}/approve`, {
+    method: 'POST',
+    body: JSON.stringify(body ?? {}),
+  });
+}
+
+export async function discardGrowthOpportunity(
+  workspace: string,
+  opportunityId: string,
+  reason: string,
+) {
+  return api<{ workspace: string; opportunityId: string; editorialStatus: string }>(
+    `/api/growth/${workspace}/conversations/opportunities/${opportunityId}/discard`,
+    { method: 'POST', body: JSON.stringify({ reason }) },
+  );
+}
+
+export async function updateGrowthReplyDraft(
+  workspace: string,
+  draftId: string,
+  data: { body?: string; includeLink?: boolean; linkUrl?: string | null },
+) {
+  return api<{ workspace: string; draft: GrowthReplyDraftRow; note?: string }>(
+    `/api/growth/${workspace}/conversations/drafts/${draftId}`,
+    { method: 'PATCH', body: JSON.stringify(data) },
+  );
+}
+
+export async function registerGrowthPublished(
+  workspace: string,
+  opportunityId: string,
+  payload: { publishedUrl: string; publishedAt?: string; notes?: string; draftId?: string },
+) {
+  return api<{
+    workspace: string;
+    intervention: GrowthInterventionRow;
+    published: boolean;
+    note?: string;
+    limitations?: string[];
+  }>(`/api/growth/${workspace}/conversations/opportunities/${opportunityId}/register-published`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function collectGrowthInterventionMetrics(workspace: string, interventionId: string) {
+  return api<{
+    workspace: string;
+    collected: boolean;
+    reason?: string;
+    [key: string]: unknown;
+  }>(`/api/growth/${workspace}/conversations/interventions/${interventionId}/metrics/collect`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
+
+export async function registerGrowthManualMetric(
+  workspace: string,
+  interventionId: string,
+  payload: {
+    kind: 'contact_manual' | 'commercial_manual' | 'interaction_manual';
+    value: number;
+    notes?: string;
+    capturedAt?: string;
+  },
+) {
+  return api<{ workspace: string; metricId: string; note?: string }>(
+    `/api/growth/${workspace}/conversations/interventions/${interventionId}/metrics/manual`,
+    { method: 'POST', body: JSON.stringify(payload) },
+  );
+}
+
+export async function fetchGrowthTopicInsights(workspace: string) {
+  return api<{ workspace: string; insights: GrowthTopicInsightRow[]; note?: string }>(
+    `/api/growth/${workspace}/conversations/insights`,
+  );
+}
+
 export async function updateOpportunity(
   id: string,
   data: Partial<{

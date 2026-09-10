@@ -641,3 +641,147 @@ export async function fetchGoogleTrendsExplore(
     mode: config.mode,
   };
 }
+
+// ─── Google Organic SERP (live/advanced) — Growth Conversations ─────────────
+
+/**
+ * depth aumenta el volumen de resultados y el costo DataForSEO.
+ * Evitar operadores de búsqueda caros/abusivos en la keyword (p.ej. demasiados
+ * OR, inurl: complejos, etc.): preferí queries naturales de problema.
+ */
+export type GoogleOrganicSerpInput = {
+  keyword: string;
+  locationCode: number;
+  languageCode: string;
+  /** Profundidad SERP (más depth = más costo). Default 10. */
+  depth?: number;
+};
+
+export type GoogleOrganicSerpItemType =
+  | 'organic'
+  | 'discussions_and_forums'
+  | 'questions_and_answers'
+  | 'other';
+
+export type GoogleOrganicSerpItem = {
+  url: string;
+  title: string | null;
+  description: string | null;
+  position: number | null;
+  resultType: GoogleOrganicSerpItemType;
+  domain: string | null;
+  raw: unknown;
+};
+
+export type GoogleOrganicSerpResult = {
+  items: GoogleOrganicSerpItem[];
+  cost: number;
+  mode: DataForSeoMode;
+  /** false cuando el costo viene del payload API. */
+  costIsEstimate: false;
+};
+
+type SerpAdvancedItem = {
+  type?: string;
+  url?: string;
+  title?: string;
+  description?: string;
+  snippet?: string;
+  domain?: string;
+  rank_absolute?: number | null;
+  rank_group?: number | null;
+  items?: SerpAdvancedItem[];
+};
+
+function mapSerpResultType(type: string | undefined): GoogleOrganicSerpItemType {
+  if (type === 'organic') return 'organic';
+  if (type === 'discussions_and_forums') return 'discussions_and_forums';
+  if (type === 'questions_and_answers') return 'questions_and_answers';
+  return 'other';
+}
+
+function pushSerpItem(
+  out: GoogleOrganicSerpItem[],
+  item: SerpAdvancedItem,
+  forcedType?: GoogleOrganicSerpItemType,
+): void {
+  const url = (item.url ?? '').trim();
+  if (!url) return;
+  const resultType = forcedType ?? mapSerpResultType(item.type);
+  out.push({
+    url,
+    title: item.title?.trim() || null,
+    description: (item.description ?? item.snippet)?.trim() || null,
+    position:
+      typeof item.rank_absolute === 'number'
+        ? item.rank_absolute
+        : typeof item.rank_group === 'number'
+          ? item.rank_group
+          : null,
+    resultType,
+    domain: item.domain?.trim() || null,
+    raw: item,
+  });
+}
+
+function flattenGoogleOrganicSerp(payload: DataForSeoTaskResponse): GoogleOrganicSerpItem[] {
+  const out: GoogleOrganicSerpItem[] = [];
+  for (const task of payload.tasks ?? []) {
+    if (task.status_code && task.status_code >= 40000) {
+      console.warn('[dataforseo] google organic task error', task.status_code, task.status_message);
+      continue;
+    }
+    const results = Array.isArray(task.result) ? task.result : [];
+    for (const block of results as Array<{ items?: SerpAdvancedItem[] }>) {
+      for (const item of block.items ?? []) {
+        const type = item.type ?? '';
+        if (type === 'organic') {
+          pushSerpItem(out, item, 'organic');
+        } else if (type === 'discussions_and_forums') {
+          pushSerpItem(out, item, 'discussions_and_forums');
+          for (const nested of item.items ?? []) {
+            pushSerpItem(out, nested, 'discussions_and_forums');
+          }
+        } else if (type === 'questions_and_answers') {
+          pushSerpItem(out, item, 'questions_and_answers');
+          for (const nested of item.items ?? []) {
+            pushSerpItem(out, nested, 'questions_and_answers');
+          }
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** Google Organic SERP live/advanced — aplana organic + foros + Q&A. */
+export async function fetchGoogleOrganicSerp(
+  config: DataForSeoConfig,
+  input: GoogleOrganicSerpInput,
+): Promise<GoogleOrganicSerpResult> {
+  const keyword = input.keyword.replace(/\s+/g, ' ').trim();
+  if (!keyword) {
+    return { items: [], cost: 0, mode: config.mode, costIsEstimate: false };
+  }
+
+  const depth = Math.min(100, Math.max(1, input.depth ?? 10));
+  const payload = await dataForSeoPost<DataForSeoTaskResponse>(
+    config,
+    '/v3/serp/google/organic/live/advanced',
+    [
+      {
+        keyword,
+        location_code: input.locationCode,
+        language_code: input.languageCode,
+        depth,
+      },
+    ],
+  );
+
+  return {
+    items: flattenGoogleOrganicSerp(payload),
+    cost: typeof payload.cost === 'number' ? payload.cost : 0,
+    mode: config.mode,
+    costIsEstimate: false,
+  };
+}

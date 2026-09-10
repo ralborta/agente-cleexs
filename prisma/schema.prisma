@@ -39,6 +39,16 @@ model Workspace {
   creativeAssets    CreativeAsset[]
   distributionPosts DistributionPost[]
   creativePerformances CreativePerformance[]
+  agentJobs         AgentJob[]
+  growthConversationRuns GrowthConversationRun[]
+  growthSearchQueries    GrowthSearchQuery[]
+  growthSerpHits         GrowthSerpHit[]
+  growthConversationPages GrowthConversationPage[]
+  growthOpportunities    GrowthOpportunity[]
+  growthReplyDrafts      GrowthReplyDraft[]
+  growthInterventions    GrowthIntervention[]
+  growthInterventionMetrics GrowthInterventionMetric[]
+  growthTopicInsights    GrowthTopicInsight[]
 
   @@map("workspaces")
 }
@@ -61,6 +71,8 @@ model User {
 
   workspace Workspace  @relation(fields: [workspaceId], references: [id])
   approvals Approval[] @relation("ReviewedBy")
+  growthReplyApprovals GrowthReplyDraft[] @relation("GrowthReplyApprovedBy")
+  growthInterventions  GrowthIntervention[] @relation("GrowthInterventionRegisteredBy")
 
   @@index([workspaceId])
   @@map("users")
@@ -248,6 +260,10 @@ model ContentPiece {
   approval    Approval?
   publication Publication?
   creativeRequests CreativeRequest[]
+  growthConversationRuns GrowthConversationRun[]
+  growthSearchQueries    GrowthSearchQuery[]
+  growthOpportunities    GrowthOpportunity[]
+  growthTopicInsights    GrowthTopicInsight[]
 
   @@index([workspaceId, status])
   @@index([missionId])
@@ -305,6 +321,7 @@ model Publication {
   workspace Workspace    @relation(fields: [workspaceId], references: [id])
   piece     ContentPiece @relation(fields: [pieceId], references: [id])
   creativeRequests CreativeRequest[]
+  growthConversationRuns GrowthConversationRun[]
 
   @@index([workspaceId])
   @@map("publications")
@@ -708,4 +725,349 @@ model CreativePerformance {
   @@index([workspaceId, templateKey, collectedAt])
   @@index([assetId])
   @@map("creative_performances")
+}
+
+// ============================================
+// PERSISTENT JOBS (cola recuperable)
+// ============================================
+
+enum AgentJobStatus {
+  pending
+  running
+  completed
+  failed
+  cancelled
+}
+
+model AgentJob {
+  id          String         @id @default(uuid())
+  workspaceId String?        @map("workspace_id")
+  type        String
+  payload     Json
+  status      AgentJobStatus @default(pending)
+  attempts    Int            @default(0)
+  maxAttempts Int            @default(5) @map("max_attempts")
+  nextRunAt   DateTime       @default(now()) @map("next_run_at")
+  lockedAt    DateTime?      @map("locked_at")
+  lockedBy    String?        @map("locked_by")
+  lastError   String?        @map("last_error") @db.Text
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  completedAt DateTime?      @map("completed_at")
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id])
+
+  @@index([status, nextRunAt])
+  @@index([workspaceId, type, status])
+  @@map("agent_jobs")
+}
+
+// ============================================
+// GROWTH — Conversaciones (distribución contextual)
+// ============================================
+
+enum GrowthRunStatus {
+  queued
+  generating_queries
+  searching
+  verifying
+  scoring
+  drafting
+  completed
+  completed_partial
+  failed
+  cancelled
+}
+
+enum GrowthRunTrigger {
+  manual
+  auto_publish
+}
+
+enum GrowthSerpResultType {
+  organic
+  discussions_and_forums
+  questions_and_answers
+  other
+}
+
+enum GrowthVerifyStatus {
+  pending
+  verified
+  not_verifiable
+  excluded
+}
+
+/// Estado editorial de la oportunidad (aprobado ≠ publicado).
+enum GrowthOpportunityEditorialStatus {
+  candidate
+  draft_ready
+  approved
+  discarded
+}
+
+enum GrowthReplyDraftStatus {
+  pending_review
+  approved
+  discarded
+}
+
+enum GrowthMetricKind {
+  ga4_sessions
+  contact_manual
+  commercial_manual
+  interaction_manual
+}
+
+enum GrowthMetricSource {
+  ga4
+  manual
+}
+
+enum GrowthTopicInsightStatus {
+  draft_for_discovery
+  reviewed
+  dismissed
+}
+
+model GrowthConversationRun {
+  id                String           @id @default(uuid())
+  workspaceId       String           @map("workspace_id")
+  pieceId           String           @map("piece_id")
+  publicationId     String?          @map("publication_id")
+  status            GrowthRunStatus  @default(queued)
+  trigger           GrowthRunTrigger @default(manual)
+  configSnapshot    Json?            @map("config_snapshot")
+  providerMode      String?          @map("provider_mode") // sandbox | live | none
+  queryCount        Int              @default(0) @map("query_count")
+  serpHitCount      Int              @default(0) @map("serp_hit_count")
+  verifiedCount     Int              @default(0) @map("verified_count")
+  opportunityCount  Int              @default(0) @map("opportunity_count")
+  costUsd           Float?           @map("cost_usd")
+  costEstimatedUsd  Float?           @map("cost_estimated_usd")
+  costIsEstimate    Boolean          @default(true) @map("cost_is_estimate")
+  errorMessage      String?          @map("error_message") @db.Text
+  progressMessage   String?          @map("progress_message") @db.Text
+  startedAt         DateTime?        @map("started_at")
+  completedAt       DateTime?        @map("completed_at")
+  cancelledAt       DateTime?        @map("cancelled_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id])
+  piece       ContentPiece  @relation(fields: [pieceId], references: [id])
+  publication Publication?  @relation(fields: [publicationId], references: [id])
+  queries     GrowthSearchQuery[]
+  serpHits    GrowthSerpHit[]
+  opportunities GrowthOpportunity[]
+  topicInsights GrowthTopicInsight[]
+
+  @@index([workspaceId, status, createdAt])
+  @@index([pieceId, createdAt])
+  @@map("growth_conversation_runs")
+}
+
+model GrowthSearchQuery {
+  id              String   @id @default(uuid())
+  workspaceId     String   @map("workspace_id")
+  runId           String   @map("run_id")
+  pieceId         String   @map("piece_id")
+  query           String
+  queryNormalized String   @map("query_normalized")
+  rationale       String?  @db.Text
+  languageCode    String   @map("language_code")
+  locationCode    Int      @map("location_code")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  workspace Workspace            @relation(fields: [workspaceId], references: [id])
+  run       GrowthConversationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  piece     ContentPiece         @relation(fields: [pieceId], references: [id])
+  serpHits  GrowthSerpHit[]
+
+  @@unique([runId, queryNormalized])
+  @@index([workspaceId, pieceId])
+  @@map("growth_search_queries")
+}
+
+model GrowthSerpHit {
+  id              String              @id @default(uuid())
+  workspaceId     String              @map("workspace_id")
+  runId           String              @map("run_id")
+  queryId         String              @map("query_id")
+  url             String
+  urlNormalized   String              @map("url_normalized")
+  title           String?
+  snippet         String?             @db.Text
+  position        Int?
+  resultType      GrowthSerpResultType @default(organic) @map("result_type")
+  domain          String?
+  providerPayload Json?               @map("provider_payload")
+  providerMode    String              @map("provider_mode")
+  excludedReason  String?             @map("excluded_reason")
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  workspace Workspace             @relation(fields: [workspaceId], references: [id])
+  run       GrowthConversationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  query     GrowthSearchQuery     @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  opportunities GrowthOpportunity[]
+
+  @@unique([runId, urlNormalized])
+  @@index([workspaceId, urlNormalized])
+  @@index([runId])
+  @@map("growth_serp_hits")
+}
+
+model GrowthConversationPage {
+  id                     String             @id @default(uuid())
+  workspaceId            String             @map("workspace_id")
+  url                    String
+  urlNormalized          String             @map("url_normalized")
+  domain                 String
+  title                  String?
+  topic                  String?            @db.Text
+  questionText           String?            @map("question_text") @db.Text
+  audienceFitNotes       String?            @map("audience_fit_notes") @db.Text
+  threadCreatedAt        DateTime?          @map("thread_created_at")
+  lastActivityAt         DateTime?          @map("last_activity_at")
+  threadCreatedAtKnown   Boolean            @default(false) @map("thread_created_at_known")
+  lastActivityAtKnown    Boolean            @default(false) @map("last_activity_at_known")
+  participationSignals   Json?              @map("participation_signals")
+  allowsReplies          Boolean?           @map("allows_replies")
+  isClosed               Boolean?           @map("is_closed")
+  isArchived             Boolean?           @map("is_archived")
+  linkRulesNotes         String?            @map("link_rules_notes") @db.Text
+  evidenceSnippet        String?            @map("evidence_snippet") @db.Text
+  verifyStatus           GrowthVerifyStatus @default(pending) @map("verify_status")
+  verifiedAt             DateTime?          @map("verified_at")
+  verifyError            String?            @map("verify_error") @db.Text
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
+
+  workspace     Workspace          @relation(fields: [workspaceId], references: [id])
+  opportunities GrowthOpportunity[]
+
+  @@unique([workspaceId, urlNormalized])
+  @@index([workspaceId, verifyStatus])
+  @@map("growth_conversation_pages")
+}
+
+model GrowthOpportunity {
+  id                  String                          @id @default(uuid())
+  workspaceId         String                          @map("workspace_id")
+  runId               String                          @map("run_id")
+  pieceId             String                          @map("piece_id")
+  conversationId      String                          @map("conversation_id")
+  serpHitId           String?                         @map("serp_hit_id")
+  opportunityScore    Float                           @map("opportunity_score")
+  evidenceConfidence  Float                           @map("evidence_confidence")
+  scoreBreakdown      Json                            @map("score_breakdown")
+  editorialStatus     GrowthOpportunityEditorialStatus @default(candidate) @map("editorial_status")
+  discardReason       String?                         @map("discard_reason") @db.Text
+  recommendedRank     Int?                            @map("recommended_rank")
+  createdAt           DateTime                        @default(now()) @map("created_at")
+  updatedAt           DateTime                        @updatedAt @map("updated_at")
+
+  workspace    Workspace               @relation(fields: [workspaceId], references: [id])
+  run          GrowthConversationRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  piece        ContentPiece            @relation(fields: [pieceId], references: [id])
+  conversation GrowthConversationPage  @relation(fields: [conversationId], references: [id])
+  serpHit      GrowthSerpHit?          @relation(fields: [serpHitId], references: [id])
+  drafts       GrowthReplyDraft[]
+  interventions GrowthIntervention[]
+
+  @@unique([runId, conversationId])
+  @@index([workspaceId, editorialStatus])
+  @@index([pieceId])
+  @@map("growth_opportunities")
+}
+
+model GrowthReplyDraft {
+  id            String                 @id @default(uuid())
+  workspaceId   String                 @map("workspace_id")
+  opportunityId String                 @map("opportunity_id")
+  version       Int                    @default(1)
+  body          String                 @db.Text
+  includeLink   Boolean                @default(false) @map("include_link")
+  linkUrl       String?                @map("link_url")
+  sources       Json?
+  status        GrowthReplyDraftStatus @default(pending_review)
+  approvedById  String?                @map("approved_by_id")
+  approvedAt    DateTime?              @map("approved_at")
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @updatedAt @map("updated_at")
+
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id])
+  opportunity GrowthOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  approvedBy  User?             @relation("GrowthReplyApprovedBy", fields: [approvedById], references: [id])
+  interventions GrowthIntervention[]
+
+  @@index([workspaceId, status])
+  @@index([opportunityId, version])
+  @@map("growth_reply_drafts")
+}
+
+model GrowthIntervention {
+  id               String   @id @default(uuid())
+  workspaceId      String   @map("workspace_id")
+  opportunityId    String   @map("opportunity_id")
+  replyDraftId     String   @map("reply_draft_id")
+  attributionId    String   @unique @map("attribution_id")
+  publishedUrl     String   @map("published_url")
+  publishedAt      DateTime @map("published_at")
+  registeredById   String   @map("registered_by_id")
+  registeredAt     DateTime @default(now()) @map("registered_at")
+  articleUrlWithUtm String? @map("article_url_with_utm")
+  notes            String?  @db.Text
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id])
+  opportunity GrowthOpportunity @relation(fields: [opportunityId], references: [id])
+  replyDraft  GrowthReplyDraft  @relation(fields: [replyDraftId], references: [id])
+  registeredBy User             @relation("GrowthInterventionRegisteredBy", fields: [registeredById], references: [id])
+  metrics     GrowthInterventionMetric[]
+
+  @@index([workspaceId, publishedAt])
+  @@index([opportunityId])
+  @@map("growth_interventions")
+}
+
+model GrowthInterventionMetric {
+  id              String             @id @default(uuid())
+  workspaceId     String             @map("workspace_id")
+  interventionId  String             @map("intervention_id")
+  kind            GrowthMetricKind
+  value           Float?
+  valueKnown      Boolean            @default(false) @map("value_known")
+  source          GrowthMetricSource
+  capturedAt      DateTime           @map("captured_at")
+  notes           String?            @db.Text
+  provenance      String?            @db.Text
+  createdAt       DateTime           @default(now()) @map("created_at")
+
+  workspace    Workspace          @relation(fields: [workspaceId], references: [id])
+  intervention GrowthIntervention @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, kind, capturedAt])
+  @@index([interventionId])
+  @@map("growth_intervention_metrics")
+}
+
+model GrowthTopicInsight {
+  id          String                   @id @default(uuid())
+  workspaceId String                   @map("workspace_id")
+  pieceId     String?                  @map("piece_id")
+  runId       String?                  @map("run_id")
+  topicKey    String                   @map("topic_key")
+  summary     Json
+  status      GrowthTopicInsightStatus @default(draft_for_discovery)
+  createdAt   DateTime                 @default(now()) @map("created_at")
+  updatedAt   DateTime                 @updatedAt @map("updated_at")
+
+  workspace Workspace              @relation(fields: [workspaceId], references: [id])
+  piece     ContentPiece?          @relation(fields: [pieceId], references: [id])
+  run       GrowthConversationRun? @relation(fields: [runId], references: [id])
+
+  @@index([workspaceId, status, createdAt])
+  @@index([topicKey])
+  @@map("growth_topic_insights")
 }
