@@ -23,13 +23,13 @@ export default function GrowthPage() {
         <div>
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 text-xs font-medium text-orange-100">
             <Sparkles className="h-3.5 w-3.5" />
-            Agente Growth · distribución y adquisición
+            Agente Growth · comunicacional + creativos
           </div>
           <h2 className="text-3xl font-semibold text-white">Growth</h2>
           <p className="mt-2 max-w-2xl text-sm text-hub-muted">
-            Lleva el contenido de Teo <strong className="font-medium text-slate-300">fuera del sitio</strong>,
-            mide adquisición y aprende qué mensajes convierten. Conversaciones y Creative Engine son
-            módulos; LinkedIn creativo es un canal — no todo Growth.
+            Lleva el contenido de Teo <strong className="font-medium text-slate-300">fuera del sitio</strong>.
+            El módulo comunicacional encuentra conversaciones y prepara respuestas; Creative Engine arma
+            piezas para LinkedIn.
           </p>
         </div>
       </div>
@@ -37,8 +37,8 @@ export default function GrowthPage() {
       <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-orange-500/40 bg-gradient-to-br from-orange-500/15 via-hub-card to-hub-card p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-200">Activo · V1</p>
-          <p className="mt-2 text-sm font-semibold text-white">Conversaciones</p>
-          <p className="mt-1 text-xs text-hub-muted">SERP → borradores. Publicación manual.</p>
+          <p className="mt-2 text-sm font-semibold text-white">Comunicacional</p>
+          <p className="mt-1 text-xs text-hub-muted">Conversaciones → borradores. Publicación manual.</p>
         </div>
         <div className="rounded-2xl border border-orange-500/40 bg-gradient-to-br from-orange-500/15 via-hub-card to-hub-card p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-200">Activo · V1</p>
@@ -69,7 +69,7 @@ export default function GrowthPage() {
           )}
         >
           <MessageSquare className="h-4 w-4" />
-          Conversaciones
+          Comunicacional
         </button>
         <button
           type="button"

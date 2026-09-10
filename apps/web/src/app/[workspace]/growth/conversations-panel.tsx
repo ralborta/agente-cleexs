@@ -415,9 +415,9 @@ export function ConversationsPanel({ workspace }: Props) {
       <div className="mb-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-4 w-4 text-orange-300" />
-          <h3 className="text-lg font-semibold text-white">Conversaciones</h3>
+          <h3 className="text-lg font-semibold text-white">Comunicacional</h3>
           <span className="rounded-md border border-hub-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-hub-muted">
-            módulo
+            conversaciones
           </span>
         </div>
         <button
