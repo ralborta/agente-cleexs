@@ -4,12 +4,24 @@ import { prisma } from '../../prisma';
 import { isLinkedInAppConfigured, resolveLinkedInAppConfig } from './config';
 import type {
   LinkedInIntegrationConfig,
+  LinkedInOrganization,
   LinkedInStatusPublic,
   LinkedInTokenResponse,
 } from './types';
 
-const LINKEDIN_SCOPES = ['openid', 'profile', 'w_member_social'] as const;
-/** Requiere producto "Sign In with LinkedIn using OpenID Connect" + "Share on LinkedIn". */
+/**
+ * Publicamos solo como Company Page.
+ * Requiere productos: Sign In (OpenID) + Share on LinkedIn + Community Management API
+ * (scopes w_organization_social / r_organization_social).
+ */
+const LINKEDIN_SCOPES = [
+  'openid',
+  'profile',
+  'w_member_social',
+  'w_organization_social',
+  'r_organization_social',
+] as const;
+
 const OAUTH_STATE_TTL = '10m';
 
 type OAuthStatePayload = {
@@ -29,6 +41,15 @@ function jwtSecret(): string {
 function maskUrn(urn: string): string {
   if (urn.length <= 16) return `${urn.slice(0, 8)}…`;
   return `${urn.slice(0, 18)}…${urn.slice(-4)}`;
+}
+
+function linkedInApiHeaders(accessToken: string): Record<string, string> {
+  const config = resolveLinkedInAppConfig();
+  return {
+    Authorization: `Bearer ${accessToken}`,
+    'X-Restli-Protocol-Version': '2.0.0',
+    ...(config?.apiVersion ? { 'LinkedIn-Version': config.apiVersion } : {}),
+  };
 }
 
 export function createOAuthState(workspaceSlug: string, userId: string): string {
@@ -105,13 +126,7 @@ export async function fetchLinkedInMemberProfile(accessToken: string): Promise<{
   personId: string;
   personUrn: string;
 }> {
-  const config = resolveLinkedInAppConfig();
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-  };
-  if (config?.apiVersion) {
-    headers['LinkedIn-Version'] = config.apiVersion;
-  }
+  const headers = linkedInApiHeaders(accessToken);
 
   const userinfoRes = await fetch('https://api.linkedin.com/v2/userinfo', { headers });
   if (userinfoRes.ok) {
@@ -124,12 +139,7 @@ export async function fetchLinkedInMemberProfile(accessToken: string): Promise<{
     }
   }
 
-  const meRes = await fetch('https://api.linkedin.com/v2/me', {
-    headers: {
-      ...headers,
-      'X-Restli-Protocol-Version': '2.0.0',
-    },
-  });
+  const meRes = await fetch('https://api.linkedin.com/v2/me', { headers });
   if (!meRes.ok) {
     throw new Error(
       'No se pudo obtener el perfil de LinkedIn. Revisá los scopes openid/profile.',
@@ -143,6 +153,90 @@ export async function fetchLinkedInMemberProfile(accessToken: string): Promise<{
     personId: me.id,
     personUrn: `urn:li:person:${me.id}`,
   };
+}
+
+function orgIdFromUrn(urn: string): string | null {
+  const m = urn.match(/urn:li:organization:(\d+)/);
+  return m?.[1] || null;
+}
+
+async function fetchOrganizationName(
+  accessToken: string,
+  organizationId: string,
+): Promise<string | null> {
+  const headers = linkedInApiHeaders(accessToken);
+  const res = await fetch(
+    `https://api.linkedin.com/v2/organizations/${organizationId}?projection=(id,localizedName,vanityName)`,
+    { headers },
+  );
+  if (!res.ok) return null;
+  const data = (await res.json()) as { localizedName?: string; vanityName?: string };
+  return data.localizedName || data.vanityName || null;
+}
+
+/**
+ * Lista páginas donde el miembro es admin / content admin.
+ * Requiere r_organization_social (Community Management).
+ */
+export async function fetchAdministeredOrganizations(
+  accessToken: string,
+): Promise<LinkedInOrganization[]> {
+  const headers = linkedInApiHeaders(accessToken);
+  const url =
+    'https://api.linkedin.com/v2/organizationAcls?q=roleAssignee&role=ADMINISTRATOR&state=APPROVED&count=50';
+  const res = await fetch(url, { headers });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(
+      `No se pudieron listar Company Pages (${res.status}). Pedí Community Management API y reconectá. ${text.slice(0, 160)}`,
+    );
+  }
+
+  const data = (await res.json()) as {
+    elements?: Array<{
+      organizationalTarget?: string;
+      role?: string;
+    }>;
+  };
+
+  const orgs: LinkedInOrganization[] = [];
+  const seen = new Set<string>();
+
+  for (const el of data.elements || []) {
+    const urn = el.organizationalTarget;
+    if (!urn || !urn.includes('organization:')) continue;
+    const id = orgIdFromUrn(urn);
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    const name = (await fetchOrganizationName(accessToken, id)) || `Organization ${id}`;
+    orgs.push({ organizationUrn: `urn:li:organization:${id}`, organizationId: id, name });
+  }
+
+  return orgs;
+}
+
+/** Elige Empliados / env override / primera Page admin. */
+export async function resolvePublishOrganization(
+  accessToken: string,
+): Promise<LinkedInOrganization | null> {
+  const forcedId = resolveLinkedInAppConfig()?.organizationId;
+  if (forcedId) {
+    const name =
+      (await fetchOrganizationName(accessToken, forcedId)) || `Organization ${forcedId}`;
+    return {
+      organizationId: forcedId,
+      organizationUrn: `urn:li:organization:${forcedId}`,
+      name,
+    };
+  }
+
+  const orgs = await fetchAdministeredOrganizations(accessToken);
+  if (!orgs.length) return null;
+
+  const preferred = orgs.find((o) =>
+    /empliados|empleados/i.test(`${o.name} ${o.organizationId}`),
+  );
+  return preferred || orgs[0] || null;
 }
 
 function parseStoredConfig(raw: unknown): LinkedInIntegrationConfig | null {
@@ -194,18 +288,22 @@ export async function getLinkedInIntegration(workspaceId: string): Promise<Linke
       connected: false,
       status: appConfigured ? 'disconnected' : 'not_configured',
       appConfigured,
+      canPublishAsPage: false,
     };
   }
 
   const cfg = parseStoredConfig(row.config);
   const connected = row.status === 'connected' && Boolean(cfg?.accessToken);
+  const canPublishAsPage = Boolean(connected && cfg?.organizationUrn);
 
   return {
     connected,
     status: connected ? 'connected' : row.status === 'error' ? 'error' : 'disconnected',
     appConfigured,
+    canPublishAsPage,
     personId: cfg?.personId ?? null,
     personUrnMasked: cfg?.personUrn ? maskUrn(cfg.personUrn) : null,
+    organizationUrnMasked: cfg?.organizationUrn ? maskUrn(cfg.organizationUrn) : null,
     scopes: cfg?.scopes ?? [],
     connectedAt: cfg?.connectedAt ?? null,
     expiresAt: cfg?.expiresAt ?? null,
@@ -238,6 +336,7 @@ export function buildLinkedInConfigFromOAuth(params: {
   personId: string;
   personUrn: string;
   userId?: string;
+  organization?: LinkedInOrganization | null;
 }): LinkedInIntegrationConfig {
   const scopes = params.tokens.scope
     ? params.tokens.scope.split(/[,\s]+/).filter(Boolean)
@@ -256,7 +355,11 @@ export function buildLinkedInConfigFromOAuth(params: {
     scopes,
     connectedAt: new Date().toISOString(),
     connectedByUserId: params.userId,
-    lastError: null,
+    organizationUrn: params.organization?.organizationUrn ?? null,
+    organizationName: params.organization?.name ?? null,
+    lastError: params.organization
+      ? null
+      : 'Sin Company Page administrada. Pedí Community Management API, reconectá como admin de Empliados.',
   };
 }
 
@@ -267,3 +370,5 @@ export function resolveFrontendBaseUrl(): string {
     'http://localhost:3000'
   );
 }
+
+export { LINKEDIN_SCOPES };

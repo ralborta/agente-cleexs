@@ -8,6 +8,7 @@ export type LinkedInIntegrationConfig = {
   scopes: string[];
   connectedAt: string;
   connectedByUserId?: string;
+  /** Company Page (obligatorio para publicar). */
   organizationUrn?: string | null;
   organizationName?: string | null;
   lastError?: string | null;
@@ -17,8 +18,11 @@ export type LinkedInStatusPublic = {
   connected: boolean;
   status: 'connected' | 'disconnected' | 'error' | 'not_configured';
   appConfigured: boolean;
+  /** true si hay org URN y se puede publicar como Page */
+  canPublishAsPage: boolean;
   personId?: string | null;
   personUrnMasked?: string | null;
+  organizationUrnMasked?: string | null;
   scopes?: string[];
   connectedAt?: string | null;
   expiresAt?: string | null;
@@ -33,4 +37,10 @@ export type LinkedInTokenResponse = {
   refresh_token?: string;
   refresh_token_expires_in?: number;
   scope?: string;
+};
+
+export type LinkedInOrganization = {
+  organizationUrn: string;
+  organizationId: string;
+  name: string;
 };

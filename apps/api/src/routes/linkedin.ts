@@ -12,6 +12,7 @@ import {
   parseOAuthState,
   publishCreativeRequestToLinkedIn,
   resolveFrontendBaseUrl,
+  resolvePublishOrganization,
   upsertLinkedInIntegration,
 } from '../lib/integrations/linkedin';
 
@@ -87,13 +88,34 @@ const linkedinRoutes: FastifyPluginAsync = async (server) => {
 
       const tokens = await exchangeCodeForToken(query.code);
       const profile = await fetchLinkedInMemberProfile(tokens.access_token);
+      let organization = null;
+      let orgError: string | null = null;
+      try {
+        organization = await resolvePublishOrganization(tokens.access_token);
+      } catch (err) {
+        orgError = err instanceof Error ? err.message : 'No se pudo resolver la Company Page';
+      }
+
       const config = buildLinkedInConfigFromOAuth({
         tokens,
         personId: profile.personId,
         personUrn: profile.personUrn,
         userId: state.uid,
+        organization,
       });
+      if (orgError && !organization) {
+        config.lastError = orgError;
+      }
       await upsertLinkedInIntegration(workspace.id, config);
+
+      if (!organization) {
+        const reason = encodeURIComponent(
+          (config.lastError || 'Falta Company Page Empliados').slice(0, 280),
+        );
+        return reply.redirect(
+          `${frontend}/${workspace.slug}/growth?tab=creativos&linkedin=error&reason=${reason}`,
+        );
+      }
 
       return reply.redirect(
         `${frontend}/${workspace.slug}/growth?tab=creativos&linkedin=connected`,

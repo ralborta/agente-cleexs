@@ -974,8 +974,10 @@ export type LinkedInStatus = {
   connected: boolean;
   status: 'connected' | 'disconnected' | 'error' | 'not_configured';
   appConfigured: boolean;
+  canPublishAsPage?: boolean;
   personId?: string | null;
   personUrnMasked?: string | null;
+  organizationUrnMasked?: string | null;
   scopes?: string[];
   connectedAt?: string | null;
   expiresAt?: string | null;

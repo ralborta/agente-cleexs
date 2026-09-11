@@ -33,7 +33,7 @@ function mapLinkedInHttpError(status: number, bodyText: string): Error {
   }
   if (status === 403) {
     return new Error(
-      'LinkedIn rechazó la publicación (403). V1 publica en el perfil personal con Share on LinkedIn (w_member_social). Para Company Page necesitás Community Management API más adelante.',
+      'LinkedIn rechazó la publicación (403). Para Company Page Empliados necesitás Community Management API (w_organization_social) y rol admin en la Page.',
     );
   }
   const snippet = bodyText.slice(0, 280);
@@ -45,7 +45,7 @@ async function assertTokenUsable(cfg: LinkedInIntegrationConfig) {
     const expires = new Date(cfg.expiresAt).getTime();
     if (Number.isFinite(expires) && expires < Date.now() - 30_000) {
       throw new Error(
-        'El token de LinkedIn expiró. Reconectá LinkedIn (perfil personal) desde Growth.',
+        'El token de LinkedIn expiró. Reconectá LinkedIn (Company Page Empliados) desde Growth.',
       );
     }
   }
@@ -81,6 +81,7 @@ type RegisterUploadResponse = {
 
 async function registerImageUpload(
   cfg: LinkedInIntegrationConfig,
+  ownerUrn: string,
 ): Promise<{ assetUrn: string; uploadUrl: string; uploadHeaders: Record<string, string> }> {
   const res = await fetch('https://api.linkedin.com/v2/assets?action=registerUpload', {
     method: 'POST',
@@ -88,7 +89,7 @@ async function registerImageUpload(
     body: JSON.stringify({
       registerUploadRequest: {
         recipes: ['urn:li:digitalmediaRecipe:feedshare-image'],
-        owner: cfg.personUrn,
+        owner: ownerUrn,
         serviceRelationships: [
           {
             relationshipType: 'OWNER',
@@ -147,6 +148,7 @@ async function putImageBinary(
 
 async function createUgcImagePost(params: {
   cfg: LinkedInIntegrationConfig;
+  authorUrn: string;
   assetUrn: string;
   caption: string;
   title?: string;
@@ -155,7 +157,7 @@ async function createUgcImagePost(params: {
     method: 'POST',
     headers: linkedInHeaders(params.cfg.accessToken),
     body: JSON.stringify({
-      author: params.cfg.personUrn,
+      author: params.authorUrn,
       lifecycleState: 'PUBLISHED',
       specificContent: {
         'com.linkedin.ugc.ShareContent': {
@@ -230,11 +232,23 @@ export async function publishDistributionPostToLinkedIn(
   const cfg = await getLinkedInIntegrationConfig(workspaceId);
   if (!cfg) {
     throw new Error(
-      'LinkedIn no está conectado en este workspace. Conectá tu perfil personal desde Growth → Creativos.',
+      'LinkedIn no está conectado. Conectá como admin de la Company Page Empliados desde Growth → Creativos.',
     );
   }
 
   await assertTokenUsable(cfg);
+
+  const authorUrn = cfg.organizationUrn?.trim();
+  if (!authorUrn) {
+    throw new Error(
+      'Falta la Company Page Empliados en la conexión. Pedí Community Management API en LinkedIn Developers, reconectá como SUPER ADMIN de Empliados y volvé a publicar.',
+    );
+  }
+  if (!cfg.scopes?.includes('w_organization_social')) {
+    throw new Error(
+      'El token no tiene w_organization_social. Pedí Community Management API, desconectá y volvé a conectar LinkedIn.',
+    );
+  }
 
   const absolute = resolveAssetAbsolutePath(post.asset.filePath);
   let bytes: Buffer;
@@ -250,10 +264,11 @@ export async function publishDistributionPostToLinkedIn(
   });
 
   try {
-    const { assetUrn, uploadUrl, uploadHeaders } = await registerImageUpload(cfg);
+    const { assetUrn, uploadUrl, uploadHeaders } = await registerImageUpload(cfg, authorUrn);
     await putImageBinary(uploadUrl, uploadHeaders, bytes, cfg.accessToken);
     const created = await createUgcImagePost({
       cfg,
+      authorUrn,
       assetUrn,
       caption,
       title: (post.request.plannerOutput as { headline?: string } | null)?.headline,

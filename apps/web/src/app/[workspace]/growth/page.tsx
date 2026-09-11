@@ -56,7 +56,7 @@ export default function GrowthPage() {
         <div className="rounded-2xl border border-orange-500/40 bg-gradient-to-br from-orange-500/15 via-hub-card to-hub-card p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-200">Activo · V1</p>
           <p className="mt-2 text-sm font-semibold text-white">Publisher</p>
-          <p className="mt-1 text-xs text-hub-muted">LinkedIn V1 (perfil). Company Page más adelante.</p>
+          <p className="mt-1 text-xs text-hub-muted">Company Page Empliados (Community Management).</p>
         </div>
         <div className="rounded-2xl border border-hub-border bg-hub-card p-4 opacity-70">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-hub-muted">Próximo</p>

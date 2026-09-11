@@ -12,10 +12,12 @@ export {
   disconnectLinkedIn,
   exchangeCodeForToken,
   fetchLinkedInMemberProfile,
+  fetchAdministeredOrganizations,
   getLinkedInIntegration,
   getLinkedInIntegrationConfig,
   parseOAuthState,
   resolveFrontendBaseUrl,
+  resolvePublishOrganization,
   upsertLinkedInIntegration,
 } from './oauth';
 export {
