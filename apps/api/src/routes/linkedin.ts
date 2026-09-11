@@ -56,9 +56,14 @@ const linkedinRoutes: FastifyPluginAsync = async (server) => {
 
     if (query.error) {
       const ws = query.state ? parseOAuthState(query.state)?.ws : null;
+      const reason = encodeURIComponent(
+        (query.error_description || query.error || 'oauth_error')
+          .replace(/&quot;/g, '"')
+          .slice(0, 280),
+      );
       const target = ws
-        ? `${frontend}/${ws}/growth?tab=creativos&linkedin=error`
-        : `${frontend}/login?linkedin=error`;
+        ? `${frontend}/${ws}/growth?tab=creativos&linkedin=error&reason=${reason}`
+        : `${frontend}/login?linkedin=error&reason=${reason}`;
       return reply.redirect(target);
     }
 

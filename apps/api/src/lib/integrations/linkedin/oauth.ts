@@ -9,6 +9,7 @@ import type {
 } from './types';
 
 const LINKEDIN_SCOPES = ['openid', 'profile', 'w_member_social'] as const;
+/** Requiere producto "Sign In with LinkedIn using OpenID Connect" + "Share on LinkedIn". */
 const OAUTH_STATE_TTL = '10m';
 
 type OAuthStatePayload = {
