@@ -81,5 +81,6 @@ export function isPublicApiPath(pathname: string): boolean {
   if (pathname.startsWith('/api/voice/public/')) return true;
   // Solo el pixel público; /api/events/cta-stats requiere auth.
   if (pathname === '/api/events/cta') return true;
+  if (pathname === '/api/integrations/linkedin/callback') return true;
   return false;
 }

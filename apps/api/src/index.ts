@@ -16,6 +16,7 @@ import growthRoutes from './routes/growth';
 import voiceRoutes from './routes/voice';
 import cronRoutes from './routes/cron';
 import integrationRoutes from './routes/integrations';
+import linkedinRoutes from './routes/linkedin';
 import webhookRoutes from './routes/webhooks';
 import whatsappRoutes from './routes/whatsapp';
 import authRoutes from './routes/auth';
@@ -62,6 +63,7 @@ async function bootstrap() {
   await server.register(voiceRoutes, { prefix: '/api/voice' });
   await server.register(cronRoutes, { prefix: '/api/cron' });
   await server.register(integrationRoutes, { prefix: '/api/integrations' });
+  await server.register(linkedinRoutes, { prefix: '/api/integrations' });
   await server.register(webhookRoutes, { prefix: '/api/webhooks' });
   await server.register(whatsappRoutes, { prefix: '/api/whatsapp' });
   await server.register(eventsRoutes, { prefix: '/api/events' });

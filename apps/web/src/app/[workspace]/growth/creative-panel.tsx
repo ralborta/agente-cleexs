@@ -4,17 +4,25 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   CheckCircle2,
   ImageIcon,
+  Link2,
   Loader2,
   RefreshCw,
+  Share2,
+  Unlink,
 } from 'lucide-react';
 import {
   approveCreativeRequest,
+  connectLinkedIn,
   createCreativeFromPiece,
+  disconnectLinkedIn,
   fetchCreativeAssetObjectUrl,
   fetchCreativeRequests,
+  fetchLinkedInStatus,
   fetchPieces,
+  publishCreativeToLinkedIn,
   reprocessCreativeRequest,
   type CreativeRequestRow,
+  type LinkedInStatus,
 } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +35,7 @@ function StatusBadge({ status }: { status: string }) {
     queued: 'border-hub-border bg-hub-card text-hub-muted',
     planning: 'border-violet-500/40 bg-violet-500/10 text-violet-100',
     rendering: 'border-blue-500/40 bg-blue-500/10 text-blue-100',
+    published: 'border-sky-500/40 bg-sky-500/10 text-sky-100',
   };
   return (
     <span
@@ -54,20 +63,25 @@ export function CreativePanel({ workspace }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pieceId, setPieceId] = useState('');
+  const [linkedin, setLinkedin] = useState<LinkedInStatus | null>(null);
 
   const selected = requests.find((r) => r.id === selectedId) ?? requests[0] ?? null;
+  const distPost = selected?.posts[0] ?? null;
+  const alreadyPublished = distPost?.status === 'published';
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [reqRes, piecesRes] = await Promise.all([
+      const [reqRes, piecesRes, liRes] = await Promise.all([
         fetchCreativeRequests(workspace),
         fetchPieces(workspace).catch(() => ({
           pieces: [] as Array<{ id: string; title: string; status?: string }>,
         })),
+        fetchLinkedInStatus(workspace).catch(() => null),
       ]);
       setRequests(reqRes.requests);
+      if (liRes) setLinkedin(liRes.linkedin);
       setPieces(
         (piecesRes.pieces || [])
           .filter((p) => !p.status || p.status === 'published')
@@ -90,6 +104,26 @@ export function CreativePanel({ workspace }: Props) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const li = params.get('linkedin');
+    if (li === 'connected') {
+      setMessage('LinkedIn conectado (perfil personal). Ya podés publicar creatives aprobados.');
+      params.delete('linkedin');
+      const next = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, '');
+      window.history.replaceState({}, '', next);
+      fetchLinkedInStatus(workspace)
+        .then((res) => setLinkedin(res.linkedin))
+        .catch(() => undefined);
+    } else if (li === 'error') {
+      setError('No se pudo conectar LinkedIn. Reintentá o revisá la app OAuth.');
+      params.delete('linkedin');
+      const next = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, '');
+      window.history.replaceState({}, '', next);
+    }
+  }, [workspace]);
 
   useEffect(() => {
     let revoked: string | null = null;
@@ -161,7 +195,59 @@ export function CreativePanel({ workspace }: Props) {
     }
   }
 
+  async function handleConnectLinkedIn() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await connectLinkedIn(workspace);
+      window.location.href = res.authorizeUrl;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al iniciar conexión LinkedIn');
+      setBusy(false);
+    }
+  }
+
+  async function handleDisconnectLinkedIn() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await disconnectLinkedIn(workspace);
+      setLinkedin(res.linkedin);
+      setMessage('LinkedIn desconectado');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al desconectar LinkedIn');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handlePublishLinkedIn() {
+    if (!selected) return;
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await publishCreativeToLinkedIn(workspace, selected.id);
+      setMessage(
+        res.url
+          ? `Publicado en LinkedIn · ${res.url}`
+          : `Publicado en LinkedIn · ${res.externalPostId}`,
+      );
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al publicar en LinkedIn');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const plan = selected?.plannerOutput;
+  const canPublish =
+    Boolean(selected) &&
+    selected!.status === 'approved' &&
+    Boolean(distPost) &&
+    !alreadyPublished &&
+    Boolean(linkedin?.connected);
 
   return (
     <div>
@@ -182,9 +268,48 @@ export function CreativePanel({ workspace }: Props) {
         </button>
       </div>
       <p className="mb-6 max-w-2xl text-sm text-hub-muted">
-        Genera piezas visuales con templates de marca a partir de artículos publicados. Hoy: preview
-        LinkedIn. El Publisher y la medición viven en otras capas de Growth.
+        Genera piezas visuales con templates de marca a partir de artículos publicados. Aprobá el
+        preview y publicá en LinkedIn (perfil personal · V1).
       </p>
+
+      <section className="mb-6 rounded-2xl border border-hub-border bg-hub-card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-hub-muted">Publisher LinkedIn</p>
+            <p className="text-sm font-semibold text-white">
+              {linkedin?.connected ? 'Conectado' : 'No conectado'}
+              <span className="ml-2 font-normal text-hub-muted">· LinkedIn V1 (perfil)</span>
+            </p>
+            {linkedin?.personUrnMasked ? (
+              <p className="mt-1 text-xs text-hub-muted">{linkedin.personUrnMasked}</p>
+            ) : null}
+            {linkedin?.lastError ? (
+              <p className="mt-1 text-xs text-rose-300">{linkedin.lastError}</p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {linkedin?.connected ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={handleDisconnectLinkedIn}
+                className="inline-flex items-center gap-2 rounded-xl border border-hub-border bg-[#0b1220] px-3 py-2 text-sm text-slate-200 disabled:opacity-50"
+              >
+                <Unlink className="h-4 w-4" /> Desconectar
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={busy || linkedin?.appConfigured === false}
+                onClick={handleConnectLinkedIn}
+                className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                <Link2 className="h-4 w-4" /> Conectar LinkedIn
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
 
       {message ? (
         <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
@@ -258,6 +383,7 @@ export function CreativePanel({ workspace }: Props) {
                         <p className="mt-1 text-xs text-hub-muted">
                           {row.assets[0]?.templateKey || 'sin asset'} ·{' '}
                           {new Date(row.createdAt).toLocaleString('es-AR')}
+                          {row.posts[0]?.status === 'published' ? ' · publicado LI' : ''}
                         </p>
                       </button>
                     </li>
@@ -317,6 +443,18 @@ export function CreativePanel({ workspace }: Props) {
                   <p>
                     CTA: <span className="text-white">{plan?.cta || '—'}</span>
                   </p>
+                  <p>
+                    DistributionPost:{' '}
+                    <span className="text-white">{distPost?.status || '—'}</span>
+                  </p>
+                  {alreadyPublished && distPost?.publishedAt ? (
+                    <p>
+                      Publicado:{' '}
+                      <span className="text-white">
+                        {new Date(distPost.publishedAt).toLocaleString('es-AR')}
+                      </span>
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="mt-5 flex flex-wrap gap-2">
@@ -327,6 +465,28 @@ export function CreativePanel({ workspace }: Props) {
                     className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                   >
                     <CheckCircle2 className="h-4 w-4" /> Aprobar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy || !canPublish}
+                    onClick={handlePublishLinkedIn}
+                    className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                    title={
+                      !linkedin?.connected
+                        ? 'Conectá LinkedIn primero'
+                        : selected.status !== 'approved'
+                          ? 'Aprobá el creative primero'
+                          : alreadyPublished
+                            ? 'Ya publicado'
+                            : 'Publicar en perfil personal'
+                    }
+                  >
+                    {busy ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Share2 className="h-4 w-4" />
+                    )}
+                    {alreadyPublished ? 'Ya publicado en LinkedIn' : 'Publicar en LinkedIn'}
                   </button>
                   <button
                     type="button"

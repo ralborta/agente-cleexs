@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MessageSquare, ImageIcon, Sparkles } from 'lucide-react';
 import { CentroShell } from '@/components/shell/centro-shell';
 import { getStoredUser } from '@/lib/auth-client';
@@ -16,6 +16,14 @@ export default function GrowthPage() {
   const workspaceName =
     getStoredUser()?.workspaceName || getStoredUser()?.workspaceSlug || 'Workspace';
   const [tab, setTab] = useState<GrowthTab>('conversaciones');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'creativos' || params.get('linkedin')) {
+      setTab('creativos');
+    }
+  }, []);
 
   return (
     <CentroShell workspaceName={workspaceName}>
@@ -45,10 +53,10 @@ export default function GrowthPage() {
           <p className="mt-2 text-sm font-semibold text-white">Creative Engine</p>
           <p className="mt-1 text-xs text-hub-muted">Templates → PNG. Canal inicial: LinkedIn.</p>
         </div>
-        <div className="rounded-2xl border border-hub-border bg-hub-card p-4 opacity-70">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-hub-muted">Próximo</p>
+        <div className="rounded-2xl border border-orange-500/40 bg-gradient-to-br from-orange-500/15 via-hub-card to-hub-card p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-200">Activo · V1</p>
           <p className="mt-2 text-sm font-semibold text-white">Publisher</p>
-          <p className="mt-1 text-xs text-hub-muted">Publicar en LinkedIn (+ otros canales). Aún no.</p>
+          <p className="mt-1 text-xs text-hub-muted">LinkedIn V1 (perfil). Company Page más adelante.</p>
         </div>
         <div className="rounded-2xl border border-hub-border bg-hub-card p-4 opacity-70">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-hub-muted">Próximo</p>

@@ -11,6 +11,14 @@ import {
   processCreativeRequest,
 } from '../lib/agents/growth';
 import { resolveAssetAbsolutePath } from '../lib/agents/growth/creative/render';
+import {
+  buildAuthorizationUrl,
+  createOAuthState,
+  disconnectLinkedIn,
+  getLinkedInIntegration,
+  isLinkedInAppConfigured,
+  publishCreativeRequestToLinkedIn,
+} from '../lib/integrations/linkedin';
 
 async function assertWorkspaceAccess(
   request: { authUser?: { workspaceId: string; role: string } | null },
@@ -68,7 +76,13 @@ const growthRoutes: FastifyPluginAsync = async (server) => {
         posts: {
           orderBy: { createdAt: 'desc' },
           take: 1,
-          select: { id: true, status: true, channel: true },
+          select: {
+            id: true,
+            status: true,
+            channel: true,
+            externalPostId: true,
+            publishedAt: true,
+          },
         },
       },
     });
@@ -188,8 +202,72 @@ const growthRoutes: FastifyPluginAsync = async (server) => {
       workspace: workspaceSlug,
       requestId: id,
       status: 'approved',
-      note: 'Listo para LinkedIn Publisher (post-V1). Guardado como DistributionPost draft.',
+      note: 'Aprobado. Podés publicar en LinkedIn desde Creativos (perfil personal).',
     };
+  });
+
+  server.get('/:workspaceSlug/linkedin/status', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    const workspace = await assertWorkspaceAccess(request, reply, workspaceSlug);
+    if (!workspace) return;
+
+    const linkedin = await getLinkedInIntegration(workspace.id);
+    return { workspace: workspaceSlug, linkedin };
+  });
+
+  server.post('/:workspaceSlug/linkedin/connect', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    const workspace = await assertWorkspaceAccess(request, reply, workspaceSlug);
+    if (!workspace) return;
+    if (!request.authUser || !['admin', 'editor'].includes(request.authUser.role)) {
+      return reply.status(403).send({ error: 'Permiso insuficiente' });
+    }
+    if (!isLinkedInAppConfigured()) {
+      return reply.status(503).send({
+        error:
+          'LinkedIn no está configurado en el servidor (faltan variables de entorno de la app).',
+      });
+    }
+
+    const state = createOAuthState(workspaceSlug, request.authUser.id);
+    const authorizeUrl = buildAuthorizationUrl({ workspaceSlug, state });
+    return { workspace: workspaceSlug, authorizeUrl };
+  });
+
+  server.post('/:workspaceSlug/linkedin/disconnect', async (request, reply) => {
+    const { workspaceSlug } = request.params as { workspaceSlug: string };
+    const workspace = await assertWorkspaceAccess(request, reply, workspaceSlug);
+    if (!workspace) return;
+    if (!request.authUser || !['admin', 'editor'].includes(request.authUser.role)) {
+      return reply.status(403).send({ error: 'Permiso insuficiente' });
+    }
+
+    await disconnectLinkedIn(workspace.id);
+    const linkedin = await getLinkedInIntegration(workspace.id);
+    return { workspace: workspaceSlug, linkedin, disconnected: true };
+  });
+
+  server.post('/:workspaceSlug/creative/requests/:id/publish-linkedin', async (request, reply) => {
+    const { workspaceSlug, id } = request.params as { workspaceSlug: string; id: string };
+    const workspace = await assertWorkspaceAccess(request, reply, workspaceSlug);
+    if (!workspace) return;
+    if (!request.authUser || !['admin', 'editor'].includes(request.authUser.role)) {
+      return reply.status(403).send({ error: 'Permiso insuficiente' });
+    }
+
+    try {
+      const result = await publishCreativeRequestToLinkedIn(workspace.id, id);
+      return { workspace: workspaceSlug, ...result };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al publicar en LinkedIn';
+      const status =
+        message.includes('no está conectado') || message.includes('expiró')
+          ? 409
+          : message.includes('no encontrado') || message.includes('No hay DistributionPost')
+            ? 404
+            : 502;
+      return reply.status(status).send({ error: message });
+    }
   });
 
   server.get('/:workspaceSlug/creative/assets/:assetId', async (request, reply) => {

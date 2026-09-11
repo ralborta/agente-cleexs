@@ -905,7 +905,13 @@ export type CreativeRequestRow = {
     format: string;
     createdAt: string;
   }>;
-  posts: Array<{ id: string; status: string; channel: string }>;
+  posts: Array<{
+    id: string;
+    status: string;
+    channel: string;
+    externalPostId?: string | null;
+    publishedAt?: string | null;
+  }>;
 };
 
 export async function fetchCreativeRequests(workspace: string) {
@@ -951,6 +957,52 @@ export async function fetchCreativeAssetObjectUrl(workspace: string, assetId: st
   if (!res.ok) throw new Error('No se pudo cargar el asset');
   const blob = await res.blob();
   return URL.createObjectURL(blob);
+}
+
+export type LinkedInStatus = {
+  connected: boolean;
+  status: 'connected' | 'disconnected' | 'error' | 'not_configured';
+  appConfigured: boolean;
+  personId?: string | null;
+  personUrnMasked?: string | null;
+  scopes?: string[];
+  connectedAt?: string | null;
+  expiresAt?: string | null;
+  organizationName?: string | null;
+  lastError?: string | null;
+  updatedAt?: string | null;
+};
+
+export async function fetchLinkedInStatus(workspace: string) {
+  return api<{ workspace: string; linkedin: LinkedInStatus }>(
+    `/api/growth/${workspace}/linkedin/status`,
+  );
+}
+
+export async function connectLinkedIn(workspace: string) {
+  return api<{ workspace: string; authorizeUrl: string }>(
+    `/api/growth/${workspace}/linkedin/connect`,
+    { method: 'POST', body: JSON.stringify({}) },
+  );
+}
+
+export async function disconnectLinkedIn(workspace: string) {
+  return api<{ workspace: string; linkedin: LinkedInStatus; disconnected: boolean }>(
+    `/api/growth/${workspace}/linkedin/disconnect`,
+    { method: 'POST', body: JSON.stringify({}) },
+  );
+}
+
+export async function publishCreativeToLinkedIn(workspace: string, requestId: string) {
+  return api<{
+    workspace: string;
+    postId: string;
+    externalPostId: string;
+    url?: string;
+  }>(`/api/growth/${workspace}/creative/requests/${requestId}/publish-linkedin`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
 }
 
 // ——— Growth / Conversaciones ———

@@ -365,6 +365,7 @@ enum IntegrationType {
   wordpress
   google_analytics
   google_search_console
+  linkedin
 }
 
 enum IntegrationStatus {
