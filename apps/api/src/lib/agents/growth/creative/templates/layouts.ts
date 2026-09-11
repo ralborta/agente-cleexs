@@ -1,5 +1,6 @@
 import type { CreativePlan, CreativeTemplateConfig, ResolvedDistributionBrand } from '../types';
 import { FORMAT_SIZES } from '../types';
+import { loadBackgroundDataUri } from './backgrounds';
 
 function esc(text: string): string {
   return text
@@ -131,11 +132,158 @@ function shell(
 </html>`;
 }
 
+function brandPhotoShell(
+  brand: ResolvedDistributionBrand,
+  template: CreativeTemplateConfig,
+  plan: CreativePlan,
+  bgUri: string,
+): string {
+  const size = FORMAT_SIZES[plan.format];
+  const isSol = template.templateKey.includes('sol');
+  const purple = isSol ? '#6B21A8' : '#7C3AED';
+  const headlineColor = isSol ? '#1e1b4b' : '#2e1065';
+  const ctaText = plan.cta?.trim() || brand.defaultCta || 'Leer más';
+
+  // Zonas calibradas al hueco blanco de cada fondo.
+  const zones = isSol
+    ? {
+        textTop: '22%',
+        textLeft: '4.5%',
+        textWidth: '42%',
+        headlineSize: 46,
+        subSize: 22,
+        ctaTop: '48%',
+        ctaLeft: '4.5%',
+      }
+    : {
+        textTop: '16%',
+        textLeft: '5.5%',
+        textWidth: '46%',
+        headlineSize: 52,
+        subSize: 24,
+        ctaTop: '52%',
+        ctaLeft: '5.5%',
+      };
+
+  const eyebrow = isSol ? 'SOL · AGENTES IA' : 'EMPLIADOS.NET';
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: ${size.width}px;
+    height: ${size.height}px;
+    overflow: hidden;
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+    background: #fff;
+  }
+  .frame {
+    position: relative;
+    width: ${size.width}px;
+    height: ${size.height}px;
+    overflow: hidden;
+  }
+  .bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+  .text-zone {
+    position: absolute;
+    top: ${zones.textTop};
+    left: ${zones.textLeft};
+    width: ${zones.textWidth};
+    z-index: 2;
+  }
+  .eyebrow {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: ${isSol ? '#ede9fe' : 'transparent'};
+    color: ${isSol ? purple : '#334155'};
+    font-size: ${isSol ? 16 : 18}px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .cover-cat {
+    position: absolute;
+    top: 12.5%;
+    left: 5.5%;
+    width: 42%;
+    height: 36px;
+    background: #ffffff;
+    z-index: 1;
+  }
+  .headline {
+    color: ${headlineColor};
+    font-size: ${zones.headlineSize}px;
+    line-height: 1.12;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .sub {
+    margin-top: 16px;
+    color: #475569;
+    font-size: ${zones.subSize}px;
+    line-height: 1.35;
+    font-weight: 500;
+    max-width: 28ch;
+  }
+  .cta {
+    position: absolute;
+    top: ${zones.ctaTop};
+    left: ${zones.ctaLeft};
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, ${purple}, #9333ea);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+    box-shadow: 0 10px 28px ${purple}55;
+  }
+</style>
+</head>
+<body>
+  <div class="frame" data-template="${esc(template.templateKey)}">
+    <img class="bg" src="${bgUri}" alt="" />
+    ${isSol ? '' : '<div class="cover-cat" aria-hidden="true"></div>'}
+    <div class="text-zone">
+      <div class="eyebrow">${esc(eyebrow)}</div>
+      <div class="headline">${esc(plan.headline)}</div>
+      ${plan.subheadline ? `<div class="sub">${esc(plan.subheadline)}</div>` : ''}
+    </div>
+    <div class="cta">${esc(ctaText)} →</div>
+  </div>
+</body>
+</html>`;
+}
+
 export function buildCreativeHtml(
   brand: ResolvedDistributionBrand,
   template: CreativeTemplateConfig,
   plan: CreativePlan,
 ): string {
+  if (template.layout === 'brand_photo_left' && template.backgroundAsset) {
+    const bgUri = loadBackgroundDataUri(template.backgroundAsset);
+    if (bgUri) {
+      return brandPhotoShell(brand, template, plan, bgUri);
+    }
+    // Sin fondo: cae al tipográfico.
+  }
+
   const cta = plan.cta ? `<div class="cta">${esc(plan.cta)}</div>` : '';
 
   if (template.layout === 'stat_focus') {
@@ -219,7 +367,7 @@ export function buildCreativeHtml(
     );
   }
 
-  // center_stack + cover_hero
+  // center_stack + cover_hero + brand_photo fallback tipográfico
   return shell(
     brand,
     template,

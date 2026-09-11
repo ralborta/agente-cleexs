@@ -14,14 +14,13 @@ function clip(text: string, max: number): string {
 
 function pickTemplateForContent(input: CreativeContentInput): CreativeTemplateConfig {
   const title = input.title.toLowerCase();
+  const blob = `${title} ${input.summary} ${input.mainInsight}`.toLowerCase();
+
   if (/\d+\s/.test(title) || /tareas|pasos|checklist|lista/.test(title)) {
     return (
       getTemplateConfig(input.keyPoints.length >= 5 ? 'list_5_01' : 'list_3_01') ||
       CREATIVE_TEMPLATE_CATALOG[0]!
     );
-  }
-  if (/\?|cómo|como |por qué|porque/.test(title)) {
-    return getTemplateConfig('question_01') || CREATIVE_TEMPLATE_CATALOG[0]!;
   }
   if (/vs|versus|compar/.test(title)) {
     return getTemplateConfig('comparison_01') || CREATIVE_TEMPLATE_CATALOG[0]!;
@@ -32,6 +31,16 @@ function pickTemplateForContent(input: CreativeContentInput): CreativeTemplateCo
   if (/%|\d+%|dato|estad/.test(title)) {
     return getTemplateConfig('statistic_01') || CREATIVE_TEMPLATE_CATALOG[0]!;
   }
+
+  // Templates de marca con foto (auto): SOL vs Empleados.
+  if (/sol\b|logístic|logistic|ruta|camion|camión|pod|tms|erp|cadena de suministro|supply/.test(blob)) {
+    return getTemplateConfig('brand_sol_truck_01') || getTemplateConfig(DEFAULT_FALLBACK_TEMPLATE_KEY)!;
+  }
+
+  if (/\?|cómo|como |por qué|porque/.test(title)) {
+    return getTemplateConfig('question_01') || CREATIVE_TEMPLATE_CATALOG[0]!;
+  }
+
   return getTemplateConfig(DEFAULT_FALLBACK_TEMPLATE_KEY) || CREATIVE_TEMPLATE_CATALOG[0]!;
 }
 
@@ -53,7 +62,7 @@ export function deterministicPlan(input: CreativeContentInput): CreativePlan {
     subheadline: clip(input.mainInsight || input.summary, template.maxSubheadlineLength),
     bodyLines: points.slice(0, template.maxBodyLines).map((p) => clip(p, template.maxBodyLineLength)),
     cta: clip(input.cta || 'Leer artículo', template.maxCtaLength),
-    visualType: 'typographic',
+    visualType: template.visualTypeDefault,
     format: template.defaultFormat,
   };
 
@@ -102,6 +111,11 @@ async function callOpenAiPlan(
   const prompt = `Sos el Creative Planner de Growth. Elegí UN template y generá copy corto para LinkedIn.
 No inventes datos numéricos falsos. Una sola idea principal. CTA corto.
 Intento #${attempt}. Si reintentás, ACORTÁ los textos.
+
+Preferí templates de marca con foto cuando el artículo sea cover / insight general:
+- brand_empleados_desk_01 → talento, personas, marca Empleados
+- brand_sol_truck_01 → SOL, logística, rutas, operación, IA logística
+Usá tipográficos (list/question/statistic/comparison) solo si el contenido lo pide claramente.
 
 Templates disponibles:
 ${JSON.stringify(catalog)}
@@ -169,7 +183,7 @@ Respondé SOLO JSON:
     quote: parsed.quote ? String(parsed.quote) : undefined,
     statValue: parsed.statValue ? String(parsed.statValue) : undefined,
     statLabel: parsed.statLabel ? String(parsed.statLabel) : undefined,
-    visualType: 'typographic',
+    visualType: template.visualTypeDefault,
     format: parsed.format === 'linkedin_landscape' ? 'linkedin_landscape' : template.defaultFormat,
   };
 }
@@ -235,7 +249,7 @@ export async function planCreative(input: CreativeContentInput): Promise<{
     headline: clip(input.title, fallbackTemplate.maxHeadlineLength),
     subheadline: clip(input.mainInsight || input.summary, fallbackTemplate.maxSubheadlineLength),
     cta: clip(input.cta || 'Leer artículo', fallbackTemplate.maxCtaLength),
-    visualType: 'typographic',
+    visualType: fallbackTemplate.visualTypeDefault,
     format: fallbackTemplate.defaultFormat,
   };
 

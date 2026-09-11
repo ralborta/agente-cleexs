@@ -37,6 +37,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/apps/api/scripts/start-production.sh ./apps/api/scripts/start-production.sh
+COPY --from=builder /app/apps/api/src/lib/agents/growth/creative/templates/backgrounds ./apps/api/dist/lib/agents/growth/creative/templates/backgrounds
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./packages/shared/
 COPY --from=builder /app/prisma ./prisma

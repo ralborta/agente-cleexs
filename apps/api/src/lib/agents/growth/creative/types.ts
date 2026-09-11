@@ -31,7 +31,8 @@ export type CreativeLayout =
   | 'quote_focus'
   | 'stat_focus'
   | 'cover_hero'
-  | 'cta_band';
+  | 'cta_band'
+  | 'brand_photo_left';
 
 export type CreativeField =
   | 'headline'
@@ -61,6 +62,8 @@ export type CreativeTemplateConfig = {
   allowedImage: boolean;
   allowedIcon: boolean;
   visualTypeDefault: 'typographic' | 'icon' | 'image';
+  /** Archivo en templates/backgrounds (solo layout brand_photo_*). */
+  backgroundAsset?: string;
 };
 
 export type CreativeContentInput = {

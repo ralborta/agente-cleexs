@@ -254,9 +254,42 @@ export const CREATIVE_TEMPLATE_CATALOG: CreativeTemplateConfig[] = [
     aspectRatio: '1:1',
     layout: 'stat_focus',
   }),
+  t({
+    templateKey: 'brand_empleados_desk_01',
+    category: 'article_cover',
+    name: 'Empleados · escritorio (foto)',
+    fields: ['headline', 'subheadline', 'cta'],
+    maxHeadlineLength: 72,
+    maxSubheadlineLength: 90,
+    maxCtaLength: 26,
+    aspectRatio: '1:1',
+    layout: 'brand_photo_left',
+    allowedImage: true,
+    visualTypeDefault: 'image',
+    backgroundAsset: 'empleados-desk-square.jpg',
+  }),
+  t({
+    templateKey: 'brand_sol_truck_01',
+    category: 'article_cover',
+    name: 'SOL · camión (foto)',
+    fields: ['headline', 'subheadline', 'cta'],
+    maxHeadlineLength: 68,
+    maxSubheadlineLength: 100,
+    maxCtaLength: 28,
+    aspectRatio: '1:1',
+    layout: 'brand_photo_left',
+    allowedImage: true,
+    visualTypeDefault: 'image',
+    backgroundAsset: 'sol-truck-square.jpg',
+  }),
 ];
 
-export const DEFAULT_FALLBACK_TEMPLATE_KEY = 'article_cover_01';
+export const DEFAULT_FALLBACK_TEMPLATE_KEY = 'brand_empleados_desk_01';
+
+export const BRAND_PHOTO_TEMPLATE_KEYS = [
+  'brand_empleados_desk_01',
+  'brand_sol_truck_01',
+] as const;
 
 export function getTemplateConfig(templateKey: string): CreativeTemplateConfig | undefined {
   return CREATIVE_TEMPLATE_CATALOG.find((x) => x.templateKey === templateKey);
