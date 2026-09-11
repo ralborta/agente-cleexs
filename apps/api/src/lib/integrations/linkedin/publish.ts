@@ -12,6 +12,7 @@ export type LinkedInPublishResult = {
   postId: string;
   externalPostId: string;
   url?: string;
+  landingUrl?: string | null;
 };
 
 function linkedInHeaders(accessToken: string, extra?: Record<string, string>) {
@@ -51,45 +52,170 @@ async function assertTokenUsable(cfg: LinkedInIntegrationConfig) {
   }
 }
 
+function extractHttpUrl(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const m = text.match(/https?:\/\/[^\s<>"']+/i);
+  if (!m?.[0]) return null;
+  return m[0].replace(/[.,;:)\]}]+$/g, '');
+}
+
 function buildCaption(params: {
   caption: string | null;
   plannerOutput: unknown;
-}): string {
-  if (params.caption?.trim()) return params.caption.trim();
+  landingUrl?: string | null;
+}): { text: string; landingUrl: string | null } {
   const plan = params.plannerOutput as
     | { headline?: string; cta?: string }
     | null
     | undefined;
-  const parts = [plan?.headline, plan?.cta].filter(
-    (p): p is string => Boolean(p && String(p).trim()),
-  );
-  if (parts.length) return parts.join('\n\n');
-  return 'Nuevo contenido';
+
+  let text = params.caption?.trim() || '';
+  if (!text) {
+    const parts = [plan?.headline, plan?.cta].filter(
+      (p): p is string => Boolean(p && String(p).trim()),
+    );
+    text = parts.length ? parts.join('\n\n') : 'Nuevo contenido';
+  }
+
+  const landingUrl =
+    params.landingUrl?.trim() ||
+    extractHttpUrl(params.caption) ||
+    extractHttpUrl(text) ||
+    null;
+
+  if (landingUrl && !text.includes(landingUrl)) {
+    const cta = plan?.cta?.trim() || 'Leer más';
+    text = `${text}\n\n${cta}: ${landingUrl}`;
+  }
+
+  return { text: text.slice(0, 3000), landingUrl };
 }
 
-type RegisterUploadResponse = {
-  value?: {
-    asset?: string;
-    uploadMechanism?: {
-      'com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'?: {
-        uploadUrl?: string;
-        headers?: Record<string, string>;
-      };
-    };
-  };
-};
-
-async function registerImageUpload(
-  cfg: LinkedInIntegrationConfig,
-  ownerUrn: string,
-): Promise<{ assetUrn: string; uploadUrl: string; uploadHeaders: Record<string, string> }> {
-  const res = await fetch('https://api.linkedin.com/v2/assets?action=registerUpload', {
+/** Images API (REST) → urn:li:image:* para Posts API con contentLandingPage. */
+async function uploadOrganizationImage(params: {
+  cfg: LinkedInIntegrationConfig;
+  ownerUrn: string;
+  bytes: Buffer;
+}): Promise<string> {
+  const initRes = await fetch('https://api.linkedin.com/rest/images?action=initializeUpload', {
     method: 'POST',
-    headers: linkedInHeaders(cfg.accessToken),
+    headers: linkedInHeaders(params.cfg.accessToken),
+    body: JSON.stringify({
+      initializeUploadRequest: {
+        owner: params.ownerUrn,
+      },
+    }),
+  });
+  const initText = await initRes.text();
+  if (!initRes.ok) throw mapLinkedInHttpError(initRes.status, initText);
+
+  let initData: {
+    value?: { uploadUrl?: string; image?: string };
+  };
+  try {
+    initData = JSON.parse(initText) as { value?: { uploadUrl?: string; image?: string } };
+  } catch {
+    throw new Error('LinkedIn devolvió JSON inválido al inicializar upload de imagen');
+  }
+
+  const uploadUrl = initData.value?.uploadUrl;
+  const imageUrn = initData.value?.image;
+  if (!uploadUrl || !imageUrn) {
+    throw new Error('LinkedIn no devolvió uploadUrl o image URN');
+  }
+
+  const putRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${params.cfg.accessToken}`,
+      'Content-Type': 'image/png',
+    },
+    body: params.bytes,
+  });
+  if (!putRes.ok) {
+    const text = await putRes.text().catch(() => '');
+    throw mapLinkedInHttpError(putRes.status, text);
+  }
+
+  return imageUrn;
+}
+
+/**
+ * Posts API: imagen clickeable vía contentLandingPage.
+ * Al tocar la imagen / CTA, LinkedIn abre el artículo.
+ */
+async function createOrgImagePostWithLanding(params: {
+  cfg: LinkedInIntegrationConfig;
+  authorUrn: string;
+  imageUrn: string;
+  commentary: string;
+  landingUrl: string;
+  title?: string;
+}): Promise<{ id: string }> {
+  const res = await fetch('https://api.linkedin.com/rest/posts', {
+    method: 'POST',
+    headers: linkedInHeaders(params.cfg.accessToken),
+    body: JSON.stringify({
+      author: params.authorUrn,
+      commentary: params.commentary,
+      visibility: 'PUBLIC',
+      distribution: {
+        feedDistribution: 'MAIN_FEED',
+        targetEntities: [],
+        thirdPartyDistributionChannels: [],
+      },
+      content: {
+        media: {
+          title: (params.title || 'Creative Cleexs').slice(0, 200),
+          id: params.imageUrn,
+        },
+      },
+      contentLandingPage: params.landingUrl,
+      contentCallToActionLabel: 'LEARN_MORE',
+      lifecycleState: 'PUBLISHED',
+      isReshareDisabledByAuthor: false,
+    }),
+  });
+
+  const text = await res.text();
+  if (!res.ok) throw mapLinkedInHttpError(res.status, text);
+
+  const headerId =
+    res.headers.get('x-restli-id') ||
+    res.headers.get('X-RestLi-Id') ||
+    res.headers.get('location')?.split('/').pop();
+
+  if (headerId) {
+    const id = decodeURIComponent(headerId);
+    return { id: id.startsWith('urn:') ? id : `urn:li:share:${id}` };
+  }
+
+  try {
+    const data = JSON.parse(text) as { id?: string };
+    if (data.id) return { id: data.id };
+  } catch {
+    // ignore
+  }
+
+  throw new Error('LinkedIn no devolvió id del post (Posts API)');
+}
+
+/** Fallback legacy ugcPosts (sin contentLandingPage nativo). */
+async function createUgcImagePostFallback(params: {
+  cfg: LinkedInIntegrationConfig;
+  authorUrn: string;
+  bytes: Buffer;
+  caption: string;
+  landingUrl: string | null;
+  title?: string;
+}): Promise<{ id: string }> {
+  const resReg = await fetch('https://api.linkedin.com/v2/assets?action=registerUpload', {
+    method: 'POST',
+    headers: linkedInHeaders(params.cfg.accessToken),
     body: JSON.stringify({
       registerUploadRequest: {
         recipes: ['urn:li:digitalmediaRecipe:feedshare-image'],
-        owner: ownerUrn,
+        owner: params.authorUrn,
         serviceRelationships: [
           {
             relationshipType: 'OWNER',
@@ -99,60 +225,51 @@ async function registerImageUpload(
       },
     }),
   });
+  const regText = await resReg.text();
+  if (!resReg.ok) throw mapLinkedInHttpError(resReg.status, regText);
 
-  const text = await res.text();
-  if (!res.ok) throw mapLinkedInHttpError(res.status, text);
-
-  let data: RegisterUploadResponse;
-  try {
-    data = JSON.parse(text) as RegisterUploadResponse;
-  } catch {
-    throw new Error('LinkedIn devolvió JSON inválido al registrar upload');
-  }
-
-  const mechanism =
-    data.value?.uploadMechanism?.['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'];
-  const uploadUrl = mechanism?.uploadUrl;
-  const assetUrn = data.value?.asset;
-  if (!uploadUrl || !assetUrn) {
-    throw new Error('LinkedIn no devolvió uploadUrl o asset URN');
-  }
-
-  return {
-    assetUrn,
-    uploadUrl,
-    uploadHeaders: mechanism?.headers ?? {},
+  const regData = JSON.parse(regText) as {
+    value?: {
+      asset?: string;
+      uploadMechanism?: {
+        'com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'?: {
+          uploadUrl?: string;
+          headers?: Record<string, string>;
+        };
+      };
+    };
   };
-}
+  const mechanism =
+    regData.value?.uploadMechanism?.['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'];
+  const uploadUrl = mechanism?.uploadUrl;
+  const assetUrn = regData.value?.asset;
+  if (!uploadUrl || !assetUrn) {
+    throw new Error('LinkedIn no devolvió uploadUrl o asset URN (fallback)');
+  }
 
-async function putImageBinary(
-  uploadUrl: string,
-  uploadHeaders: Record<string, string>,
-  bytes: Buffer,
-  accessToken: string,
-) {
-  const res = await fetch(uploadUrl, {
+  const putRes = await fetch(uploadUrl, {
     method: 'PUT',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${params.cfg.accessToken}`,
       'Content-Type': 'image/png',
-      ...uploadHeaders,
+      ...(mechanism?.headers ?? {}),
     },
-    body: bytes,
+    body: params.bytes,
   });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw mapLinkedInHttpError(res.status, text);
+  if (!putRes.ok) {
+    throw mapLinkedInHttpError(putRes.status, await putRes.text().catch(() => ''));
   }
-}
 
-async function createUgcImagePost(params: {
-  cfg: LinkedInIntegrationConfig;
-  authorUrn: string;
-  assetUrn: string;
-  caption: string;
-  title?: string;
-}): Promise<{ id: string }> {
+  const mediaItem: Record<string, unknown> = {
+    status: 'READY',
+    description: { text: params.caption.slice(0, 200) },
+    media: assetUrn,
+    title: { text: (params.title || 'Creative Cleexs').slice(0, 200) },
+  };
+  if (params.landingUrl) {
+    mediaItem.originalUrl = params.landingUrl;
+  }
+
   const res = await fetch('https://api.linkedin.com/v2/ugcPosts', {
     method: 'POST',
     headers: linkedInHeaders(params.cfg.accessToken),
@@ -163,14 +280,7 @@ async function createUgcImagePost(params: {
         'com.linkedin.ugc.ShareContent': {
           shareCommentary: { text: params.caption.slice(0, 3000) },
           shareMediaCategory: 'IMAGE',
-          media: [
-            {
-              status: 'READY',
-              description: { text: params.caption.slice(0, 200) },
-              media: params.assetUrn,
-              title: { text: (params.title || 'Creative Cleexs').slice(0, 200) },
-            },
-          ],
+          media: [mediaItem],
         },
       },
       visibility: {
@@ -181,21 +291,12 @@ async function createUgcImagePost(params: {
 
   const text = await res.text();
   if (!res.ok) throw mapLinkedInHttpError(res.status, text);
-
-  let data: { id?: string };
-  try {
-    data = JSON.parse(text) as { id?: string };
-  } catch {
-    throw new Error('LinkedIn devolvió JSON inválido al crear ugcPost');
-  }
-  if (!data.id) {
-    throw new Error('LinkedIn no devolvió id del post');
-  }
+  const data = JSON.parse(text) as { id?: string };
+  if (!data.id) throw new Error('LinkedIn no devolvió id del post (ugcPosts)');
   return { id: data.id };
 }
 
 function postUrlFromExternalId(externalPostId: string): string | undefined {
-  // urn:li:share:123 or urn:li:ugcPost:123
   const match = externalPostId.match(/urn:li:(?:share|ugcPost):(\d+)/);
   if (!match?.[1]) return undefined;
   return `https://www.linkedin.com/feed/update/${externalPostId}`;
@@ -215,7 +316,14 @@ export async function publishDistributionPostToLinkedIn(
     where: { id: postId, workspaceId },
     include: {
       asset: true,
-      request: { select: { id: true, plannerOutput: true, status: true } },
+      request: {
+        select: {
+          id: true,
+          plannerOutput: true,
+          status: true,
+          publication: { select: { url: true } },
+        },
+      },
     },
   });
   if (!post) {
@@ -258,21 +366,47 @@ export async function publishDistributionPostToLinkedIn(
     throw new Error('No se encontró el PNG del creative en disco');
   }
 
-  const caption = buildCaption({
+  const publicationUrl = post.request.publication?.url?.trim() || null;
+  const { text: caption, landingUrl } = buildCaption({
     caption: post.caption,
     plannerOutput: post.request.plannerOutput,
+    landingUrl: publicationUrl,
   });
 
+  if (!landingUrl) {
+    throw new Error(
+      'El creative no tiene URL del artículo. Publicá el artículo primero o regenerá el creative con publication URL.',
+    );
+  }
+
+  const title = (post.request.plannerOutput as { headline?: string } | null)?.headline;
+
   try {
-    const { assetUrn, uploadUrl, uploadHeaders } = await registerImageUpload(cfg, authorUrn);
-    await putImageBinary(uploadUrl, uploadHeaders, bytes, cfg.accessToken);
-    const created = await createUgcImagePost({
-      cfg,
-      authorUrn,
-      assetUrn,
-      caption,
-      title: (post.request.plannerOutput as { headline?: string } | null)?.headline,
-    });
+    let created: { id: string };
+    try {
+      const imageUrn = await uploadOrganizationImage({ cfg, ownerUrn: authorUrn, bytes });
+      created = await createOrgImagePostWithLanding({
+        cfg,
+        authorUrn,
+        imageUrn,
+        commentary: caption,
+        landingUrl,
+        title,
+      });
+    } catch (primaryErr) {
+      console.warn(
+        '[linkedin] Posts API con landing falló, uso ugcPosts fallback:',
+        primaryErr instanceof Error ? primaryErr.message : primaryErr,
+      );
+      created = await createUgcImagePostFallback({
+        cfg,
+        authorUrn,
+        bytes,
+        caption,
+        landingUrl,
+        title,
+      });
+    }
 
     const updated = await prisma.distributionPost.update({
       where: { id: post.id },
@@ -292,6 +426,7 @@ export async function publishDistributionPostToLinkedIn(
       postId: updated.id,
       externalPostId: created.id,
       url: postUrlFromExternalId(created.id),
+      landingUrl,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Error al publicar en LinkedIn';
