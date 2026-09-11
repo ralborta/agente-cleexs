@@ -118,8 +118,15 @@ export function CreativePanel({ workspace }: Props) {
         .then((res) => setLinkedin(res.linkedin))
         .catch(() => undefined);
     } else if (li === 'error') {
-      setError('No se pudo conectar LinkedIn. Reintentá o revisá la app OAuth.');
+      const reason = params.get('reason');
+      const decoded = reason ? decodeURIComponent(reason) : '';
+      setError(
+        decoded
+          ? `No se pudo conectar LinkedIn: ${decoded}. Si menciona openid, pedí acceso al producto "Sign In with LinkedIn using OpenID Connect" en la app de LinkedIn Developers.`
+          : 'No se pudo conectar LinkedIn. Pedí también "Sign In with LinkedIn using OpenID Connect" en Products y reintentá.',
+      );
       params.delete('linkedin');
+      params.delete('reason');
       const next = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, '');
       window.history.replaceState({}, '', next);
     }
