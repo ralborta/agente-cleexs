@@ -80,19 +80,19 @@ async function renderWithPlaywright(
         deviceScaleFactor: 1,
       });
       await page.setContent(html, { waitUntil: 'load' });
-      await page.evaluate(async () => {
+      await page.evaluate(`(() => {
         const imgs = Array.from(document.images);
-        await Promise.all(
+        return Promise.all(
           imgs.map((img) =>
             img.complete
               ? Promise.resolve()
-              : new Promise<void>((resolve) => {
+              : new Promise((resolve) => {
                   img.onload = () => resolve();
                   img.onerror = () => resolve();
                 }),
           ),
         );
-      });
+      })()`);
       await page.screenshot({ path: absolutePath, type: 'png' });
       return true;
     } finally {
