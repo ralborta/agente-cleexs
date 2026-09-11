@@ -10,6 +10,7 @@ import {
   listTemplateConfigs,
   processCreativeRequest,
 } from '../lib/agents/growth';
+import { getTemplateConfig } from '../lib/agents/growth/creative/templates/registry';
 import { resolveAssetAbsolutePath } from '../lib/agents/growth/creative/render';
 import {
   buildAuthorizationUrl,
@@ -119,6 +120,17 @@ const growthRoutes: FastifyPluginAsync = async (server) => {
       return reply.status(403).send({ error: 'Permiso insuficiente' });
     }
 
+    const body = z
+      .object({
+        templateKey: z.string().min(2).max(80).optional(),
+      })
+      .safeParse(request.body ?? {});
+    if (!body.success) return reply.status(400).send({ error: 'Datos inválidos' });
+
+    if (body.data.templateKey && !getTemplateConfig(body.data.templateKey)) {
+      return reply.status(400).send({ error: `Template desconocido: ${body.data.templateKey}` });
+    }
+
     const piece = await prisma.contentPiece.findFirst({
       where: { id: pieceId, workspaceId: workspace.id },
     });
@@ -128,6 +140,7 @@ const growthRoutes: FastifyPluginAsync = async (server) => {
       const result = await createAndProcessFromPiece({
         workspaceId: workspace.id,
         pieceId: piece.id,
+        templateKey: body.data.templateKey,
       });
       return { workspace: workspaceSlug, ...result };
     } catch (err) {
@@ -144,13 +157,25 @@ const growthRoutes: FastifyPluginAsync = async (server) => {
       return reply.status(403).send({ error: 'Permiso insuficiente' });
     }
 
+    const body = z
+      .object({
+        templateKey: z.string().min(2).max(80).optional(),
+      })
+      .safeParse(request.body ?? {});
+    if (!body.success) return reply.status(400).send({ error: 'Datos inválidos' });
+    if (body.data.templateKey && !getTemplateConfig(body.data.templateKey)) {
+      return reply.status(400).send({ error: `Template desconocido: ${body.data.templateKey}` });
+    }
+
     const existing = await prisma.creativeRequest.findFirst({
       where: { id, workspaceId: workspace.id },
     });
     if (!existing) return reply.status(404).send({ error: 'Request no encontrado' });
 
     try {
-      const result = await processCreativeRequest(id);
+      const result = await processCreativeRequest(id, {
+        forcedTemplateKey: body.data.templateKey,
+      });
       return { workspace: workspaceSlug, requestId: id, result };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al reprocesar';

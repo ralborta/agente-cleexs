@@ -920,14 +920,18 @@ export async function fetchCreativeRequests(workspace: string) {
   );
 }
 
-export async function createCreativeFromPiece(workspace: string, pieceId: string) {
+export async function createCreativeFromPiece(
+  workspace: string,
+  pieceId: string,
+  opts?: { templateKey?: string },
+) {
   return api<{
     workspace: string;
     requestId: string;
     result: { status: string; assetId?: string; templateKey?: string };
   }>(`/api/growth/${workspace}/creative/from-piece/${pieceId}`, {
     method: 'POST',
-    body: JSON.stringify({}),
+    body: JSON.stringify({ templateKey: opts?.templateKey }),
   });
 }
 
@@ -941,10 +945,17 @@ export async function approveCreativeRequest(workspace: string, requestId: strin
   );
 }
 
-export async function reprocessCreativeRequest(workspace: string, requestId: string) {
+export async function reprocessCreativeRequest(
+  workspace: string,
+  requestId: string,
+  opts?: { templateKey?: string },
+) {
   return api<{ workspace: string; requestId: string; result: { status: string } }>(
     `/api/growth/${workspace}/creative/requests/${requestId}/reprocess`,
-    { method: 'POST', body: JSON.stringify({}) },
+    {
+      method: 'POST',
+      body: JSON.stringify({ templateKey: opts?.templateKey }),
+    },
   );
 }
 

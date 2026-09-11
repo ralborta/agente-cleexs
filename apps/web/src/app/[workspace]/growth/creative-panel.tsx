@@ -63,6 +63,7 @@ export function CreativePanel({ workspace }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pieceId, setPieceId] = useState('');
+  const [templateKey, setTemplateKey] = useState('');
   const [linkedin, setLinkedin] = useState<LinkedInStatus | null>(null);
 
   const selected = requests.find((r) => r.id === selectedId) ?? requests[0] ?? null;
@@ -159,7 +160,9 @@ export function CreativePanel({ workspace }: Props) {
     setError(null);
     setMessage(null);
     try {
-      const res = await createCreativeFromPiece(workspace, pieceId);
+      const res = await createCreativeFromPiece(workspace, pieceId, {
+        templateKey: templateKey || undefined,
+      });
       setMessage(
         `Creative ${res.result.status}${res.result.templateKey ? ` · ${res.result.templateKey}` : ''}`,
       );
@@ -192,7 +195,9 @@ export function CreativePanel({ workspace }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const res = await reprocessCreativeRequest(workspace, selected.id);
+      const res = await reprocessCreativeRequest(workspace, selected.id, {
+        templateKey: templateKey || undefined,
+      });
       setMessage(`Reprocesado · ${res.result.status}`);
       await load();
     } catch (e) {
@@ -344,6 +349,20 @@ export function CreativePanel({ workspace }: Props) {
               </option>
             ))}
           </select>
+          <select
+            value={templateKey}
+            onChange={(e) => setTemplateKey(e.target.value)}
+            className="min-w-[220px] rounded-xl border border-hub-border bg-[#0b1220] px-3 py-2 text-sm text-white"
+            title="Template visual"
+          >
+            <option value="">Template: automático</option>
+            <option value="brand_empleados_desk_01">Empleados · escritorio (foto)</option>
+            <option value="brand_sol_truck_01">SOL · camión (foto)</option>
+            <option value="article_cover_01">Cover tipográfico</option>
+            <option value="insight_01">Insight tipográfico</option>
+            <option value="question_01">Pregunta tipográfica</option>
+            <option value="list_3_01">Lista tipográfica</option>
+          </select>
           <button
             type="button"
             disabled={busy || !pieceId}
@@ -354,6 +373,10 @@ export function CreativePanel({ workspace }: Props) {
             Generar creative
           </button>
         </div>
+        <p className="mt-2 text-xs text-hub-muted">
+          Si dejás “automático”, elige foto SOL o Empleados según el tema. También aplica al
+          regenerar.
+        </p>
       </section>
 
       {loading ? (

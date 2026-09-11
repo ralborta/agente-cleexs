@@ -191,13 +191,37 @@ Respondé SOLO JSON:
 /**
  * Planner: LLM JSON → validación → regenerate (sin truncar en silencio).
  * Fallback determinístico si no hay LLM.
+ * Si forcedTemplateKey viene seteado, fuerza ese template (selector manual).
  */
-export async function planCreative(input: CreativeContentInput): Promise<{
+export async function planCreative(
+  input: CreativeContentInput,
+  opts?: { forcedTemplateKey?: string },
+): Promise<{
   plan: CreativePlan;
   source: 'llm' | 'deterministic';
   attempts: number;
   lastIssues?: string[];
 }> {
+  const forced = opts?.forcedTemplateKey
+    ? getTemplateConfig(opts.forcedTemplateKey)
+    : undefined;
+
+  if (forced) {
+    const plan = deterministicPlan(input);
+    const clipped: CreativePlan = {
+      ...plan,
+      templateKey: forced.templateKey,
+      templateVersion: forced.version,
+      intention: forced.category,
+      headline: clip(input.title, forced.maxHeadlineLength),
+      subheadline: clip(input.mainInsight || input.summary, forced.maxSubheadlineLength),
+      cta: clip(input.cta || 'Leer artículo', forced.maxCtaLength),
+      visualType: forced.visualTypeDefault,
+      format: forced.defaultFormat,
+    };
+    return { plan: clipped, source: 'deterministic', attempts: 1 };
+  }
+
   const maxAttempts = 3;
   let lastIssues: string[] = [];
 

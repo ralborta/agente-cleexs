@@ -19,7 +19,10 @@ async function logGrowth(workspaceId: string, message: string, level: 'info' | '
   });
 }
 
-export async function processCreativeRequest(requestId: string) {
+export async function processCreativeRequest(
+  requestId: string,
+  opts?: { forcedTemplateKey?: string },
+) {
   await ensureCreativeTemplatesSynced();
 
   const request = await prisma.creativeRequest.findUnique({
@@ -62,19 +65,33 @@ export async function processCreativeRequest(requestId: string) {
     defaultCta: brandPack.distribution.defaultCta,
   });
 
-  const planned = await planCreative(input);
+  const existingInput =
+    request.input && typeof request.input === 'object'
+      ? (request.input as Record<string, unknown>)
+      : {};
+  const forcedTemplateKey =
+    opts?.forcedTemplateKey ||
+    (typeof existingInput.forcedTemplateKey === 'string'
+      ? existingInput.forcedTemplateKey
+      : undefined);
+
+  const planned = await planCreative(input, { forcedTemplateKey });
 
   await prisma.creativeRequest.update({
     where: { id: requestId },
     data: {
       status: 'rendering',
-      input: input as object,
+      input: {
+        ...input,
+        ...(forcedTemplateKey ? { forcedTemplateKey } : {}),
+      } as object,
       plannerOutput: {
         ...planned.plan,
         meta: {
           source: planned.source,
           attempts: planned.attempts,
           lastIssues: planned.lastIssues ?? [],
+          forcedTemplateKey: forcedTemplateKey || null,
         },
       } as object,
     },
@@ -211,6 +228,7 @@ export async function enqueueCreativeFromPublication(params: {
 export async function createAndProcessFromPiece(params: {
   workspaceId: string;
   pieceId: string;
+  templateKey?: string;
 }): Promise<{ requestId: string; result: Awaited<ReturnType<typeof processCreativeRequest>> }> {
   const publication = await prisma.publication.findUnique({ where: { pieceId: params.pieceId } });
   const request = await prisma.creativeRequest.create({
@@ -220,8 +238,11 @@ export async function createAndProcessFromPiece(params: {
       publicationId: publication?.id,
       channel: 'linkedin',
       status: 'queued',
+      input: params.templateKey ? ({ forcedTemplateKey: params.templateKey } as object) : undefined,
     },
   });
-  const result = await processCreativeRequest(request.id);
+  const result = await processCreativeRequest(request.id, {
+    forcedTemplateKey: params.templateKey,
+  });
   return { requestId: request.id, result };
 }

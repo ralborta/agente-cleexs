@@ -43,9 +43,13 @@ COPY --from=builder /app/packages/shared/package.json ./packages/shared/
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Browsers de Playwright viven fuera de node_modules; copiar cache del stage deps.
+COPY --from=deps /root/.cache/ms-playwright /root/.cache/ms-playwright
 
 ENV CREATIVE_ASSETS_DIR=/app/.creative-assets
-RUN mkdir -p /app/.creative-assets && chmod +x ./apps/api/scripts/start-production.sh
+ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
+RUN mkdir -p /app/.creative-assets && chmod +x ./apps/api/scripts/start-production.sh \
+  && npx --yes playwright install chromium || true
 
 WORKDIR /app/apps/api
 EXPOSE 4000
