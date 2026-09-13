@@ -1,7 +1,7 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import type { AnalyticsPeriod } from '@/lib/analytics-types';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const OPTIONS: Array<{ value: AnalyticsPeriod; label: string }> = [
   { value: 7, label: '7D' },
@@ -16,25 +16,14 @@ type Props = {
 
 export function MetricsPeriodTabs({ value, onChange }: Props) {
   return (
-    <div className="inline-flex rounded-xl border border-hub-border bg-[#0b1220] p-1">
-      {OPTIONS.map((option) => {
-        const active = option.value === value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            className={cn(
-              'rounded-lg px-3 py-1.5 text-xs font-semibold transition',
-              active
-                ? 'bg-cleexs-violet text-white shadow-sm shadow-cleexs-violet/30'
-                : 'text-hub-muted hover:text-white',
-            )}
-          >
+    <Tabs value={String(value)} onValueChange={(v) => onChange(Number(v) as AnalyticsPeriod)}>
+      <TabsList>
+        {OPTIONS.map((option) => (
+          <TabsTrigger key={option.value} value={String(option.value)}>
             {option.label}
-          </button>
-        );
-      })}
-    </div>
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }

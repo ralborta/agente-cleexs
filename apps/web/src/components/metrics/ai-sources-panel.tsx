@@ -3,6 +3,7 @@
 import type { AnalyticsDashboard } from '@/lib/analytics-types';
 import { formatMetric } from '@/lib/analytics-types';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 type Props = {
   sources: AnalyticsDashboard['aiSources'];
@@ -15,7 +16,9 @@ export function AiSourcesPanel({ sources, totalSessions }: Props) {
   return (
     <div className="space-y-4">
       {sources.length === 0 ? (
-        <p className="text-sm text-hub-muted">Sin tráfico clasificado por motor todavía.</p>
+        <p className="rounded-xl border border-dashed border-hub-border px-3 py-8 text-center text-sm text-hub-muted">
+          Sin tráfico clasificado por motor todavía.
+        </p>
       ) : (
         sources.map((source) => {
           const width = Math.max((source.sessions / max) * 100, source.sessions > 0 ? 8 : 0);
@@ -31,10 +34,13 @@ export function AiSourcesPanel({ sources, totalSessions }: Props) {
                 <div className="text-right">
                   <p className="text-sm font-semibold text-white">{formatMetric(source.sessions)}</p>
                   {source.change !== null ? (
-                    <p className={cn('text-xs font-medium', positive ? 'text-emerald-400' : 'text-rose-400')}>
+                    <Badge
+                      variant={positive ? 'success' : 'outline'}
+                      className={cn('mt-1', !positive && 'border-rose-400/30 text-rose-300')}
+                    >
                       {positive ? '▲' : '▼'} {source.change > 0 ? '+' : ''}
                       {source.change}%
-                    </p>
+                    </Badge>
                   ) : null}
                 </div>
               </div>

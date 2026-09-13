@@ -1,3 +1,5 @@
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { formatMetric } from '@/lib/analytics-types';
 
@@ -11,11 +13,11 @@ type Props = {
 };
 
 const accentStyles = {
-  violet: 'border-cleexs-violet/40 bg-gradient-to-br from-cleexs-violet/20 via-hub-card to-hub-card ring-1 ring-cleexs-violet/30',
-  blue: 'border-cleexs-blue/40 bg-gradient-to-br from-cleexs-blue/15 via-hub-card to-hub-card',
+  violet: 'border-cleexs-violet/35 bg-gradient-to-br from-cleexs-violet/15 via-hub-card to-hub-card',
+  blue: 'border-cleexs-blue/35 bg-gradient-to-br from-cleexs-blue/15 via-hub-card to-hub-card',
   teal: 'border-teal-500/30 bg-gradient-to-br from-teal-500/10 via-hub-card to-hub-card',
   orange: 'border-cleexs-orange/30 bg-gradient-to-br from-cleexs-orange/10 via-hub-card to-hub-card',
-  default: 'border-hub-border bg-hub-card',
+  default: '',
 };
 
 export function MetricsKpiCard({
@@ -33,18 +35,31 @@ export function MetricsKpiCard({
       : `${change > 0 ? '+' : ''}${change}${suffix.includes('pts') ? ' pts' : '%'}`;
 
   return (
-    <div className={cn('rounded-2xl border p-5 shadow-hub transition', accentStyles[accent])}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-hub-muted">{label}</p>
-      <p className="mt-3 text-3xl font-semibold tracking-tight text-white">{formatMetric(value)}</p>
-      {changeText ? (
-        <p className={cn('mt-2 text-xs font-medium', positive ? 'text-emerald-400' : 'text-rose-400')}>
-          <span aria-hidden="true">{positive ? '▲' : '▼'} </span>
-          {changeText}
-          {!suffix.includes('pts') ? ' vs período anterior' : ' vs período anterior'}
+    <Card
+      className={cn(
+        'animate-centro-in transition hover:-translate-y-0.5 hover:border-cleexs-blue/40',
+        accentStyles[accent],
+      )}
+    >
+      <CardContent className="p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-hub-muted">
+          {label}
         </p>
-      ) : hint ? (
-        <p className="mt-2 text-xs text-hub-muted">{hint}</p>
-      ) : null}
-    </div>
+        <p className="mt-3 text-3xl font-semibold tracking-tight text-white">
+          {formatMetric(value)}
+        </p>
+        {changeText ? (
+          <Badge
+            variant={positive ? 'success' : 'outline'}
+            className={cn('mt-3 font-medium', !positive && 'border-rose-400/30 text-rose-300')}
+          >
+            {positive ? '▲' : '▼'} {changeText}
+            {!suffix.includes('pts') ? ' vs ant.' : ' vs ant.'}
+          </Badge>
+        ) : hint ? (
+          <p className="mt-3 text-xs text-hub-muted">{hint}</p>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
