@@ -9,17 +9,19 @@ RUN npm ci --workspace=@agente/web --include-workspace-root
 
 FROM base AS builder
 ARG NEXT_PUBLIC_API_URL=http://localhost:4000
-ARG WEB_BUILD_ID=20260913-centro-agent-roster-v1
+ARG WEB_BUILD_ID=20260913-centro-agent-roster-v3
+ARG GIT_SHA=dev
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json ./
 COPY tsconfig.json ./
 COPY packages/shared ./packages/shared
+# Bust cache por commit (Easypanel pasa GIT_SHA) para no servir .next viejo
+RUN echo "cachebust web ${WEB_BUILD_ID} ${GIT_SHA}" && date -u
 COPY apps/web ./apps/web
-# Validar que el contexto trae el módulo Comunicacional (rompe el build si Docker cacheó código viejo)
+# Validar que el contexto trae el código esperado
 RUN set -eu; \
-  echo "web build ${WEB_BUILD_ID}"; \
-  date -u; \
+  echo "web build ${WEB_BUILD_ID} sha=${GIT_SHA}"; \
   GROWTH_DIR='apps/web/src/app/[workspace]/growth'; \
   ls -la "$GROWTH_DIR"; \
   test -f "$GROWTH_DIR/conversations-panel.tsx"; \
@@ -27,7 +29,7 @@ RUN set -eu; \
   grep -q 'Comunicacional' "$GROWTH_DIR/page.tsx"; \
   grep -q 'ConversationsPanel' "$GROWTH_DIR/page.tsx"; \
   test -f 'apps/web/src/components/centro/agent-roster.tsx'; \
-  grep -q 'Teo y compañía' 'apps/web/src/components/centro/agent-roster.tsx'; \
+  grep -q 'Equipo de agentes' 'apps/web/src/components/centro/agent-roster.tsx'; \
   grep -q 'AgentRoster' 'apps/web/src/app/[workspace]/page.tsx'; \
   rm -rf apps/web/.next
 RUN npm run build --workspace=@agente/shared
@@ -38,7 +40,7 @@ RUN set -eu; \
     (echo 'ERROR: Comunicacional no está en el build de Next'; ls -la 'apps/web/.next/static/chunks/app/[workspace]/growth' || true; exit 1); \
   grep -R -q 'conversations/status' apps/web/.next || \
     (echo 'ERROR: conversations/status no está en el build de Next'; exit 1); \
-  grep -R -q 'Teo y compañía' apps/web/.next || \
+  grep -R -q 'Equipo de agentes' apps/web/.next || \
     (echo 'ERROR: Agent roster no está en el build de Next'; exit 1)
 
 FROM base AS runner
