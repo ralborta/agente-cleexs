@@ -3,10 +3,12 @@
 import { useWorkspaceSlug } from '@/lib/workspace';
 import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useState } from 'react';
-import { Radio, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { StatusBadge } from '@/components/config/status-badge';
-import { buttonSecondaryClassName } from '@/components/config/settings-section';
 import { CentroShell } from '@/components/shell/centro-shell';
+import { PageHero } from '@/components/shell/page-hero';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { createMission, fetchMissions, runRefresherScan, type Mission } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
@@ -99,65 +101,65 @@ export default function MonitorPage() {
 
   return (
     <CentroShell workspaceName={workspaceName}>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cleexs-orange/30 bg-cleexs-orange/10 px-3 py-1 text-xs font-medium text-orange-200">
-            <Radio className="h-3.5 w-3.5" />
-            Operación
-          </div>
-          <h2 className="text-3xl font-semibold text-white">Monitor</h2>
-          <p className="mt-2 text-sm text-hub-muted">
-            Misiones de Teo, escaneo refrescador y transparencia operativa.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={load} className={buttonSecondaryClassName}>
-            <span className="inline-flex items-center gap-2">
+      <PageHero
+        kicker="Cleexs · Operación"
+        title="Monitor"
+        badge="UI v3"
+        description="Misiones de Teo, escaneo refrescador y transparencia operativa."
+        actions={
+          <>
+            <Button type="button" variant="outline" onClick={load}>
               <RefreshCw className="h-4 w-4" /> Actualizar
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={triggerRefresherScan}
-            disabled={scanning || running}
-            className={buttonSecondaryClassName}
-          >
-            {scanning ? 'Escaneando…' : 'Escaneo refrescador'}
-          </button>
-          <button
-            type="button"
-            onClick={triggerMission}
-            disabled={running || scanning}
-            className="rounded-xl bg-cleexs-orange px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
-          >
-            {running ? 'Encolando…' : 'Misión manual'}
-          </button>
-        </div>
-      </div>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={triggerRefresherScan}
+              disabled={scanning || running}
+            >
+              {scanning ? 'Escaneando…' : 'Escaneo refrescador'}
+            </Button>
+            <Button
+              type="button"
+              onClick={triggerMission}
+              disabled={running || scanning}
+              className="bg-cleexs-orange hover:bg-cleexs-orange/90"
+            >
+              {running ? 'Encolando…' : 'Misión manual'}
+            </Button>
+          </>
+        }
+      />
 
       {message ? (
-        <div className="mb-4 rounded-xl border border-cleexs-blue/30 bg-cleexs-blue/10 px-4 py-3 text-sm text-blue-200">
-          {message}
-        </div>
+        <Card className="mb-4 border-cleexs-blue/30 bg-cleexs-blue/10">
+          <CardContent className="p-4 text-sm text-blue-200">{message}</CardContent>
+        </Card>
       ) : null}
 
       <div className="mb-6 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-hub-border bg-hub-card p-4 shadow-hub">
-          <p className="text-xs uppercase tracking-wide text-hub-muted">Activas</p>
-          <p className="mt-2 text-3xl font-semibold text-white">{active.length}</p>
-        </div>
-        <div className="rounded-2xl border border-hub-border bg-hub-card p-4 shadow-hub">
-          <p className="text-xs uppercase tracking-wide text-hub-muted">Completadas (últimas 50)</p>
-          <p className="mt-2 text-3xl font-semibold text-white">
-            {missions.filter((m) => m.status === 'completed').length}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-hub-border bg-hub-card p-4 shadow-hub">
-          <p className="text-xs uppercase tracking-wide text-hub-muted">Fallidas</p>
-          <p className="mt-2 text-3xl font-semibold text-white">
-            {missions.filter((m) => m.status === 'failed').length}
-          </p>
-        </div>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs uppercase tracking-wide text-hub-muted">Activas</p>
+            <p className="mt-2 text-3xl font-semibold text-white">{active.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs uppercase tracking-wide text-hub-muted">Completadas (últimas 50)</p>
+            <p className="mt-2 text-3xl font-semibold text-white">
+              {missions.filter((m) => m.status === 'completed').length}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs uppercase tracking-wide text-hub-muted">Fallidas</p>
+            <p className="mt-2 text-3xl font-semibold text-white">
+              {missions.filter((m) => m.status === 'failed').length}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {loading ? (

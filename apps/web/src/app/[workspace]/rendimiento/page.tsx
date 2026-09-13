@@ -4,8 +4,9 @@ import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
 import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BarChart3, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { CentroShell } from '@/components/shell/centro-shell';
+import { PageHero } from '@/components/shell/page-hero';
 import { FeaturedMetricCard } from '@/components/metrics/featured-metric-card';
 import { MetricsPeriodTabs } from '@/components/metrics/metrics-period-tabs';
 import { KpiGrid } from '@/components/centro/kpi-grid';
@@ -94,23 +95,13 @@ export default function RendimientoPage() {
 
   return (
     <CentroShell workspaceName={workspaceName}>
-      <div className="relative mb-8 overflow-hidden rounded-2xl border border-hub-border bg-hub-card shadow-hub">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(37,99,235,0.26),_transparent_52%)]" />
-        <div className="relative px-6 py-8 md:px-8">
-          <p className="text-sm font-semibold tracking-[0.22em] text-cleexs-blue">CLEEXS · TEO</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">
-              Rendimiento
-            </h2>
-            <Badge variant="info" className="gap-1.5">
-              <BarChart3 className="h-3.5 w-3.5" />
-              Panel nuevo
-            </Badge>
-          </div>
-          <p className="mt-3 max-w-2xl text-base text-hub-muted">
-            Cada artículo con impresiones, clicks, visitas y CTAs. Filtrá por agente.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+      <PageHero
+        kicker="Cleexs · Por artículo"
+        title="Rendimiento"
+        badge="UI v3"
+        description="Cada artículo con impresiones, clicks, visitas y CTAs. Filtrá por agente."
+        actions={
+          <>
             <Tabs value={agent} onValueChange={setAgent}>
               <TabsList>
                 <TabsTrigger value="all">Todos</TabsTrigger>
@@ -128,9 +119,9 @@ export default function RendimientoPage() {
             <Button asChild variant="outline">
               <Link href={workspaceHref(workspace, 'resultados')}>Overview Resultados</Link>
             </Button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {loading ? (
         <div className="space-y-4">

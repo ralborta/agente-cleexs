@@ -8,6 +8,8 @@ import { Archive, CalendarDays, Loader2 } from 'lucide-react';
 import { EcosystemPanel } from '@/components/content/ecosystem-panel';
 import { IndexingStatusPanel } from '@/components/content/indexing-status-panel';
 import { CentroShell } from '@/components/shell/centro-shell';
+import { PageHero } from '@/components/shell/page-hero';
+import { Button } from '@/components/ui/button';
 import {
   archivePiece,
   fetchContentClusters,
@@ -82,22 +84,20 @@ export default function PublicacionesPage() {
 
   return (
     <CentroShell workspaceName={workspaceName}>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-semibold text-white">Publicaciones</h2>
-          <p className="mt-1 text-sm text-hub-muted">
-            Piezas aprobadas y publicadas por {TEO_AUTHOR_NAME} en el blog del workspace, organizadas en
-            ecosistemas.
-          </p>
-        </div>
-        <Link
-          href={workspaceHref(workspace, "calendario")}
-          className="inline-flex items-center gap-2 rounded-xl border border-hub-border bg-hub-card px-4 py-2 text-sm font-medium text-slate-200 hover:text-white"
-        >
-          <CalendarDays className="h-4 w-4" />
-          Calendario
-        </Link>
-      </div>
+      <PageHero
+        kicker="Cleexs · Blog publicado"
+        title="Publicaciones"
+        badge="UI v3"
+        description={`Piezas de ${TEO_AUTHOR_NAME} en el blog, organizadas en ecosistemas.`}
+        actions={
+          <Button asChild variant="outline">
+            <Link href={workspaceHref(workspace, 'calendario')}>
+              <CalendarDays className="h-4 w-4" />
+              Calendario
+            </Link>
+          </Button>
+        }
+      />
 
       {message ? (
         <p className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">

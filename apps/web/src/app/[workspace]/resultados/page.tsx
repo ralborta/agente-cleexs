@@ -4,14 +4,13 @@ import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
 import { getStoredUser } from '@/lib/auth-client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Sparkles, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { CentroShell } from '@/components/shell/centro-shell';
+import { PageHero } from '@/components/shell/page-hero';
 import { AiSourcesPanel } from '@/components/metrics/ai-sources-panel';
 import { DailyTrafficChart } from '@/components/metrics/daily-traffic-chart';
-import { FeaturedMetricCard } from '@/components/metrics/featured-metric-card';
 import { MetricsPeriodTabs } from '@/components/metrics/metrics-period-tabs';
 import { TopArticlesPanel } from '@/components/metrics/top-articles-panel';
-import { KpiGrid } from '@/components/centro/kpi-grid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,6 +28,7 @@ import {
 import type { AnalyticsDashboard, AnalyticsPeriod } from '@/lib/analytics-types';
 import { formatMetric } from '@/lib/analytics-types';
 import { TEO_AUTHOR_NAME } from '@/lib/branding';
+import { cn } from '@/lib/utils';
 
 function formatUpdatedAt(iso: string) {
   return new Date(iso).toLocaleString('es-AR', {
@@ -38,6 +38,36 @@ function formatUpdatedAt(iso: string) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function ScoreCell({
+  label,
+  value,
+  change,
+  className,
+}: {
+  label: string;
+  value: number;
+  change?: number | null;
+  className?: string;
+}) {
+  const positive = change !== null && change !== undefined && change >= 0;
+  return (
+    <div className={cn('px-5 py-6 md:px-6', className)}>
+      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-blue-100/80">{label}</p>
+      <p className="mt-3 text-5xl font-semibold tabular-nums text-white md:text-6xl">
+        {formatMetric(value)}
+      </p>
+      {change !== null && change !== undefined ? (
+        <p className={cn('mt-3 text-sm font-semibold', positive ? 'text-emerald-300' : 'text-rose-300')}>
+          {positive ? '▲' : '▼'} {change > 0 ? '+' : ''}
+          {change}% vs período anterior
+        </p>
+      ) : (
+        <p className="mt-3 text-sm text-blue-100/60">Sin comparación</p>
+      )}
+    </div>
+  );
 }
 
 export default function ResultadosPage() {
@@ -84,22 +114,13 @@ export default function ResultadosPage() {
 
   return (
     <CentroShell workspaceName={workspaceName}>
-      <div className="relative mb-8 overflow-hidden rounded-2xl border border-hub-border bg-hub-card shadow-hub">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(37,99,235,0.28),_transparent_50%)]" />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent_40%,rgba(249,115,22,0.08))]" />
-        <div className="relative px-6 py-8 md:px-8">
-          <p className="text-sm font-semibold tracking-[0.22em] text-cleexs-blue">CLEEXS · TEO</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">Resultados</h2>
-            <Badge variant="info" className="gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" />
-              Panel nuevo
-            </Badge>
-          </div>
-          <p className="mt-3 max-w-2xl text-base text-hub-muted">
-            Impacto del blog de {TEO_AUTHOR_NAME}: tráfico IA, Google y piezas publicadas.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+      <PageHero
+        kicker="Cleexs · Scoreboard Teo"
+        title="Resultados"
+        badge="UI v3"
+        description={`Impacto del blog de ${TEO_AUTHOR_NAME}: tráfico IA, Google y piezas publicadas.`}
+        actions={
+          <>
             <MetricsPeriodTabs value={period} onChange={setPeriod} />
             <Button
               type="button"
@@ -113,9 +134,9 @@ export default function ResultadosPage() {
             <Button asChild size="lg" variant="outline">
               <Link href={workspaceHref(workspace, 'rendimiento')}>Ver por artículo</Link>
             </Button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {message ? (
         <Card className="mb-4 border-cleexs-blue/30 bg-cleexs-blue/10">
@@ -124,15 +145,8 @@ export default function ResultadosPage() {
       ) : null}
 
       {loading ? (
-        <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-40 animate-pulse rounded-2xl border border-hub-border bg-hub-card" />
-            ))}
-          </div>
-          <div className="h-24 animate-pulse rounded-2xl border border-hub-border bg-hub-card" />
-        </div>
-      ) : !data ? (
+        <div className="h-48 animate-pulse rounded-2xl border border-hub-border bg-hub-card" />
+      ) : !data || !kpis ? (
         <Card>
           <CardContent className="p-8 text-center">
             <p className="text-white">No se pudieron cargar las métricas</p>
@@ -143,136 +157,120 @@ export default function ResultadosPage() {
         </Card>
       ) : (
         <div className="space-y-8">
-          <section>
-            <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-hub-muted">
-              Señales principales
-            </p>
-            <div className="grid gap-4 md:grid-cols-3">
-              <FeaturedMetricCard
-                label={kpis!.aiSessions.label}
-                value={kpis!.aiSessions.value}
-                change={kpis!.aiSessions.change}
-                tone="violet"
+          {/* SCOREBOARD — cambio visual imposible de confundir */}
+          <section className="overflow-hidden rounded-2xl border border-cleexs-blue/40 bg-gradient-to-br from-[#0b1f4a] via-[#0f172a] to-[#1a0f14] shadow-hub">
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-200">
+                Scoreboard · últimos {period} días
+              </p>
+              <Badge className="bg-white/10 text-white hover:bg-white/10">Teo en vivo</Badge>
+            </div>
+            <div className="grid md:grid-cols-3 md:divide-x md:divide-white/10">
+              <ScoreCell
+                label={kpis.aiSessions.label}
+                value={kpis.aiSessions.value}
+                change={kpis.aiSessions.change}
               />
-              <FeaturedMetricCard
-                label={kpis!.totalSessions.label}
-                value={kpis!.totalSessions.value}
-                change={kpis!.totalSessions.change}
-                tone="teal"
+              <ScoreCell
+                label={kpis.totalSessions.label}
+                value={kpis.totalSessions.value}
+                change={kpis.totalSessions.change}
               />
-              <FeaturedMetricCard
-                label={kpis!.aiShare.label}
-                value={kpis!.aiShare.value}
-                change={kpis!.aiShare.change}
-                tone="blue"
+              <ScoreCell
+                label={kpis.aiShare.label}
+                value={kpis.aiShare.value}
+                change={kpis.aiShare.change}
               />
+            </div>
+            <div className="grid grid-cols-3 gap-px border-t border-white/10 bg-white/10">
+              {[
+                { label: 'Clicks', value: kpis.clicks.value, change: kpis.clicks.change },
+                { label: 'Impresiones', value: kpis.impressions.value, change: kpis.impressions.change },
+                { label: 'Publicaciones', value: kpis.publications.value, change: kpis.publications.change },
+              ].map((item) => (
+                <div key={item.label} className="bg-[#0b1220]/90 px-4 py-4 text-center">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-hub-muted">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums text-white">
+                    {formatMetric(item.value)}
+                  </p>
+                </div>
+              ))}
             </div>
           </section>
 
-          <section>
-            <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-hub-muted">
-              Search + producción
-            </p>
-            <KpiGrid
-              items={[
-                {
-                  label: kpis!.clicks.label,
-                  value: formatMetric(kpis!.clicks.value),
-                  trend:
-                    kpis!.clicks.change != null
-                      ? `${kpis!.clicks.change > 0 ? '+' : ''}${kpis!.clicks.change}%`
-                      : undefined,
-                },
-                {
-                  label: kpis!.impressions.label,
-                  value: formatMetric(kpis!.impressions.value),
-                  trend:
-                    kpis!.impressions.change != null
-                      ? `${kpis!.impressions.change > 0 ? '+' : ''}${kpis!.impressions.change}%`
-                      : undefined,
-                },
-                {
-                  label: kpis!.publications.label,
-                  value: formatMetric(kpis!.publications.value),
-                  hint: 'Piezas Teo',
-                  href: workspaceHref(workspace, 'publicaciones'),
-                },
-              ]}
-            />
-          </section>
-
           {data.insight.newArticlesThisPeriod > 0 ? (
-            <Card className="border-cleexs-orange/30 bg-cleexs-orange/10">
+            <Card className="border-cleexs-orange/40 bg-cleexs-orange/15">
               <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
                 <div className="flex items-start gap-3">
-                  <div className="rounded-xl bg-cleexs-orange/20 p-2 text-orange-100">
-                    <TrendingUp className="h-4 w-4" />
+                  <div className="rounded-xl bg-cleexs-orange/30 p-2 text-orange-50">
+                    <TrendingUp className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white">{data.insight.message}</p>
-                    <p className="mt-1 text-xs text-hub-muted">
-                      Seguí el rendimiento por artículo abajo o en Rendimiento.
+                    <p className="text-base font-semibold text-white">{data.insight.message}</p>
+                    <p className="mt-1 text-sm text-orange-100/80">
+                      Revisá el ranking de artículos o andá a Rendimiento.
                     </p>
                   </div>
                 </div>
-                <Button asChild size="sm" variant="outline">
+                <Button asChild className="bg-cleexs-orange hover:bg-cleexs-orange/90">
                   <Link href={workspaceHref(workspace, 'publicaciones')}>Ver artículos</Link>
                 </Button>
               </CardContent>
             </Card>
           ) : null}
 
-          <Card className="animate-centro-in">
-            <CardHeader>
-              <CardTitle className="text-xl">Evolución diaria de visitas</CardTitle>
-              <CardDescription>
-                Blog `/articulos/` · motores IA vs Google · últimos {period} días
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DailyTrafficChart data={data.dailySeries} />
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-6 xl:grid-cols-2">
-            <Card className="animate-centro-in" style={{ animationDelay: '80ms' }}>
+          {/* Bento: chart wide + sources */}
+          <div className="grid gap-6 xl:grid-cols-[1.6fr_0.9fr]">
+            <Card className="border-cleexs-blue/25">
               <CardHeader>
-                <CardTitle>Origen del tráfico</CardTitle>
-                <CardDescription>Clasificación por referrer en GA4</CardDescription>
+                <CardTitle className="text-2xl">Evolución diaria</CardTitle>
+                <CardDescription>
+                  Blog `/articulos/` · IA vs Google · {period} días
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <AiSourcesPanel sources={data.aiSources} totalSessions={kpis!.totalSessions.value} />
+                <DailyTrafficChart data={data.dailySeries} />
               </CardContent>
             </Card>
-
-            <Card className="animate-centro-in" style={{ animationDelay: '120ms' }}>
+            <Card className="border-teal-500/20">
               <CardHeader>
-                <CardTitle>Top artículos</CardTitle>
-                <CardDescription>Clicks en Google + visitas al blog</CardDescription>
+                <CardTitle className="text-2xl">Origen del tráfico</CardTitle>
+                <CardDescription>Referrers GA4</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AiSourcesPanel sources={data.aiSources} totalSessions={kpis.totalSessions.value} />
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">Top artículos</CardTitle>
+                <CardDescription>Clicks + visitas</CardDescription>
               </CardHeader>
               <CardContent>
                 <TopArticlesPanel articles={data.topArticles} />
               </CardContent>
             </Card>
-          </div>
-
-          <Card className="animate-centro-in" style={{ animationDelay: '160ms' }}>
-            <CardHeader>
-              <CardTitle>Publicaciones recientes</CardTitle>
-              <CardDescription>Últimas piezas de {TEO_AUTHOR_NAME}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {data.recentPublications.length ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {data.recentPublications.map((pub) => {
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">Publicaciones recientes</CardTitle>
+                <CardDescription>Piezas de {TEO_AUTHOR_NAME}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {data.recentPublications.length ? (
+                  data.recentPublications.map((pub) => {
                     const publicUrl = resolvePublicationUrl(pub.url, pub.slug);
                     return (
                       <div
                         key={pub.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-hub-border/60 bg-[#0b1220]/50 px-4 py-4"
+                        className="flex items-center justify-between gap-3 rounded-xl border border-hub-border bg-[#07101f] px-4 py-4"
                       >
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-white">{pub.title}</p>
+                          <p className="truncate font-medium text-white">{pub.title}</p>
                           {pub.publishedAt ? (
                             <p className="mt-1 text-xs text-hub-muted">
                               {new Date(pub.publishedAt).toLocaleDateString('es-AR')}
@@ -280,26 +278,26 @@ export default function ResultadosPage() {
                           ) : null}
                         </div>
                         {publicUrl ? (
-                          <Button asChild size="sm" variant="outline">
+                          <Button asChild size="sm" className="bg-cleexs-blue hover:bg-cleexs-blue-dark">
                             <a href={publicUrl} target="_blank" rel="noopener">
-                              WP
+                              Abrir
                             </a>
                           </Button>
                         ) : null}
                       </div>
                     );
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-hub-muted">Aún no hay publicaciones.</p>
-              )}
-            </CardContent>
-          </Card>
+                  })
+                ) : (
+                  <p className="text-sm text-hub-muted">Aún no hay publicaciones.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-          <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-hub-border/60 pt-5 text-xs text-hub-muted">
+          <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-hub-border pt-5 text-xs text-hub-muted">
             <p>
-              Fuente: Google Search Console
-              {data.sources.ga4 ? ' + GA4' : ''} · Agente Cleexs
+              Fuente: Search Console
+              {data.sources.ga4 ? ' + GA4' : ''} · Scoreboard Teo UI v3
             </p>
             <p>Actualizado: {formatUpdatedAt(data.updatedAt)}</p>
           </footer>

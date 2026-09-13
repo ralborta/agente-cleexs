@@ -12,8 +12,11 @@ import {
   Search,
 } from 'lucide-react';
 import { CentroShell } from '@/components/shell/centro-shell';
+import { PageHero } from '@/components/shell/page-hero';
 import { YoutubeInterestChart } from '@/components/discovery/youtube-interest-chart';
 import { MetricsKpiCard } from '@/components/metrics/metrics-kpi-card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { getStoredUser } from '@/lib/auth-client';
 import {
   fetchDiscoveryStatus,
@@ -204,41 +207,33 @@ export default function DiscoveryPage() {
 
   return (
     <CentroShell workspaceName={workspaceName}>
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-200">
-            <Sparkles className="h-3.5 w-3.5" />
-            Agente Discovery · mercado
-          </div>
-          <h2 className="text-3xl font-semibold text-white">Dashboard Discovery</h2>
-          <p className="mt-2 max-w-2xl text-sm text-hub-muted">
-            Señales Google + YouTube (SERP y Trends) sobre tus topics. No publica contenido: alimenta
-            la cola de Oportunidades para Teo.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={load}
-            className="inline-flex items-center gap-2 rounded-xl border border-hub-border bg-hub-card px-3 py-2 text-sm text-slate-200 hover:text-white"
-          >
-            <RefreshCw className="h-4 w-4" /> Recargar
-          </button>
-          <Link
-            href={workspaceHref(workspace, 'oportunidades')}
-            className="inline-flex items-center gap-2 rounded-xl border border-hub-border bg-hub-card px-3 py-2 text-sm text-cleexs-blue hover:underline"
-          >
-            <Target className="h-4 w-4" /> Oportunidades
-          </Link>
-        </div>
-      </div>
+      <PageHero
+        kicker="Cleexs · Agente Discovery"
+        title="Discovery"
+        badge="UI v3"
+        description="Señales Google + YouTube sobre tus topics. No publica: alimenta Oportunidades para Teo."
+        actions={
+          <>
+            <Button type="button" variant="outline" onClick={load}>
+              <RefreshCw className="h-4 w-4" /> Recargar
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={workspaceHref(workspace, 'oportunidades')}>
+                <Target className="h-4 w-4" /> Oportunidades
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
-      <div className="mb-4 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm text-violet-100">
-        <strong className="text-white">Estado:</strong>{' '}
-        {configured
-          ? `DataForSEO conectado · modo ${mode}`
-          : 'Falta DATAFORSEO_LOGIN / PASSWORD en la API'}
-      </div>
+      <Card className="mb-4 border-cleexs-blue/30 bg-cleexs-blue/10">
+        <CardContent className="p-4 text-sm text-blue-100">
+          <strong className="text-white">Estado:</strong>{' '}
+          {configured
+            ? `DataForSEO conectado · modo ${mode}`
+            : 'Falta DATAFORSEO_LOGIN / PASSWORD en la API'}
+        </CardContent>
+      </Card>
 
       {message ? (
         <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
