@@ -6,14 +6,16 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BarChart3, ExternalLink } from 'lucide-react';
 import { CentroShell } from '@/components/shell/centro-shell';
-import { MetricsKpiCard } from '@/components/metrics/metrics-kpi-card';
+import { FeaturedMetricCard } from '@/components/metrics/featured-metric-card';
 import { MetricsPeriodTabs } from '@/components/metrics/metrics-period-tabs';
+import { KpiGrid } from '@/components/centro/kpi-grid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -32,7 +34,6 @@ import type {
   PublicationPerformanceReport,
 } from '@/lib/analytics-types';
 import { formatMetric } from '@/lib/analytics-types';
-import { cn } from '@/lib/utils';
 
 function formatDate(iso: string | null) {
   if (!iso) return '—';
@@ -43,13 +44,7 @@ function formatDate(iso: string | null) {
   });
 }
 
-function StatusPill({
-  label,
-  ok,
-}: {
-  label: string;
-  ok: boolean | null;
-}) {
+function StatusPill({ label, ok }: { label: string; ok: boolean | null }) {
   if (ok === null) {
     return (
       <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
@@ -58,10 +53,7 @@ function StatusPill({
     );
   }
   return (
-    <Badge
-      variant={ok ? 'success' : 'warning'}
-      className="text-[10px] uppercase tracking-wide"
-    >
+    <Badge variant={ok ? 'success' : 'warning'} className="text-[10px] uppercase tracking-wide">
       {label}: {ok ? 'ok' : 'error'}
     </Badge>
   );
@@ -81,11 +73,7 @@ export default function RendimientoPage() {
     setLoading(true);
     try {
       setData(
-        await fetchPublicationPerformance(
-          workspace,
-          period,
-          agent === 'all' ? null : agent,
-        ),
+        await fetchPublicationPerformance(workspace, period, agent === 'all' ? null : agent),
       );
     } catch {
       setData(null);
@@ -102,26 +90,27 @@ export default function RendimientoPage() {
   const agentTabs = data?.agents?.length
     ? data.agents
     : [{ slug: 'teo', name: 'Teo', publications: 0 }];
+  const topRows = data?.rows.slice(0, 6) ?? [];
 
   return (
     <CentroShell workspaceName={workspaceName}>
       <div className="relative mb-8 overflow-hidden rounded-2xl border border-hub-border bg-hub-card shadow-hub">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(37,99,235,0.2),_transparent_55%)]" />
-        <div className="relative flex flex-wrap items-end justify-between gap-4 px-6 py-7 md:px-8">
-          <div>
-            <Badge variant="info" className="gap-1.5">
-              <BarChart3 className="h-3.5 w-3.5" />
-              Por publicación · por agente
-            </Badge>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(37,99,235,0.26),_transparent_52%)]" />
+        <div className="relative px-6 py-8 md:px-8">
+          <p className="text-sm font-semibold tracking-[0.22em] text-cleexs-blue">CLEEXS · TEO</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">
               Rendimiento
             </h2>
-            <p className="mt-2 max-w-2xl text-sm text-hub-muted md:text-base">
-              Impresiones, clicks, visitas y CTAs de cada artículo. Filtrá por agente para medir el
-              aporte de Teo.
-            </p>
+            <Badge variant="info" className="gap-1.5">
+              <BarChart3 className="h-3.5 w-3.5" />
+              Panel nuevo
+            </Badge>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <p className="mt-3 max-w-2xl text-base text-hub-muted">
+            Cada artículo con impresiones, clicks, visitas y CTAs. Filtrá por agente.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <Tabs value={agent} onValueChange={setAgent}>
               <TabsList>
                 <TabsTrigger value="all">Todos</TabsTrigger>
@@ -136,18 +125,20 @@ export default function RendimientoPage() {
               </TabsList>
             </Tabs>
             <MetricsPeriodTabs value={period} onChange={setPeriod} />
+            <Button asChild variant="outline">
+              <Link href={workspaceHref(workspace, 'resultados')}>Overview Resultados</Link>
+            </Button>
           </div>
         </div>
       </div>
 
       {loading ? (
         <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-28 animate-pulse rounded-2xl border border-hub-border bg-hub-card" />
+          <div className="grid gap-4 md:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-40 animate-pulse rounded-2xl border border-hub-border bg-hub-card" />
             ))}
           </div>
-          <div className="h-80 animate-pulse rounded-2xl border border-hub-border bg-hub-card" />
         </div>
       ) : !data ? (
         <Card>
@@ -159,70 +150,144 @@ export default function RendimientoPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-hub-muted">
-            <Badge variant="outline">
-              {[
-                data.sources.gsc ? 'GSC' : null,
-                data.sources.ga4 ? 'GA4' : null,
-                data.sources.cta ? 'CTA' : null,
-              ]
-                .filter(Boolean)
-                .join(' · ') || 'sin datos externos'}
-            </Badge>
-            <span>Actualizado {new Date(data.updatedAt).toLocaleString('es-AR')}</span>
-          </div>
+        <div className="space-y-8">
+          <section>
+            <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-hub-muted">
+              Totales del filtro
+            </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              <FeaturedMetricCard
+                label="Impresiones"
+                value={kpis!.impressions}
+                hint={`GSC · ${period} días`}
+                tone="blue"
+              />
+              <FeaturedMetricCard
+                label="Clicks"
+                value={kpis!.clicks}
+                hint={`GSC · ${period} días`}
+                tone="teal"
+              />
+              <FeaturedMetricCard
+                label="Visitas"
+                value={kpis!.sessions}
+                hint={`GA4 · ${period} días`}
+                tone="orange"
+              />
+            </div>
+          </section>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <MetricsKpiCard
-              label="Publicaciones"
-              value={kpis!.publications}
-              hint="Artículos con URL publicada"
-              accent="blue"
-            />
-            <MetricsKpiCard
-              label="Impresiones"
-              value={kpis!.impressions}
-              hint={`GSC · últimos ${period} días`}
-            />
-            <MetricsKpiCard
-              label="Clicks"
-              value={kpis!.clicks}
-              hint={`GSC · últimos ${period} días`}
-              accent="teal"
-            />
-            <MetricsKpiCard
-              label="Visitas"
-              value={kpis!.sessions}
-              hint={`GA4 · últimos ${period} días`}
-              accent="violet"
-            />
-            <MetricsKpiCard
-              label="Eventos CTA"
-              value={kpis!.ctaEvents}
-              hint="Clicks + submits del bloque Cleexs"
-              accent="orange"
-            />
-            <MetricsKpiCard
-              label="Indexación OK"
-              value={kpis!.indexedOk}
-              hint="IndexNow o GSC submit ok"
-            />
-          </div>
+          <KpiGrid
+            items={[
+              { label: 'Publicaciones', value: formatMetric(kpis!.publications) },
+              { label: 'Eventos CTA', value: formatMetric(kpis!.ctaEvents) },
+              { label: 'Indexación OK', value: formatMetric(kpis!.indexedOk) },
+            ]}
+          />
+
+          <section>
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-hub-muted">
+                  Top piezas
+                </p>
+                <h3 className="mt-1 text-xl font-semibold text-white">Cards de rendimiento</h3>
+              </div>
+              <Badge variant="outline">
+                {[
+                  data.sources.gsc ? 'GSC' : null,
+                  data.sources.ga4 ? 'GA4' : null,
+                  data.sources.cta ? 'CTA' : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || 'sin fuentes'}
+              </Badge>
+            </div>
+
+            {!topRows.length ? (
+              <Card>
+                <CardContent className="py-10 text-center text-sm text-hub-muted">
+                  No hay publicaciones{agent !== 'all' ? ` de ${agent}` : ''} todavía.
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {topRows.map((row, index) => {
+                  const publicUrl = resolvePublicationUrl(row.url, row.slug);
+                  return (
+                    <Card
+                      key={row.publicationId}
+                      className="animate-centro-in transition hover:-translate-y-0.5 hover:border-cleexs-blue/45"
+                      style={{ animationDelay: `${index * 60}ms` }}
+                    >
+                      <CardHeader>
+                        <div className="flex items-start justify-between gap-2">
+                          <Badge variant="outline">#{index + 1}</Badge>
+                          <Badge variant="secondary">{row.agentName}</Badge>
+                        </div>
+                        <CardTitle className="mt-2 line-clamp-2 text-base">{row.title}</CardTitle>
+                        <CardDescription>{formatDate(row.publishedAt)}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-hub-muted">Clicks</p>
+                          <p className="text-xl font-semibold tabular-nums text-white">
+                            {formatMetric(row.clicks)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-hub-muted">Visitas</p>
+                          <p className="text-xl font-semibold tabular-nums text-white">
+                            {formatMetric(row.sessions)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-hub-muted">Impr.</p>
+                          <p className="text-lg font-semibold tabular-nums text-slate-200">
+                            {formatMetric(row.impressions)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-hub-muted">CTR</p>
+                          <p className="text-lg font-semibold tabular-nums text-slate-200">{row.ctr}%</p>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="justify-between gap-2">
+                        <div className="flex flex-wrap gap-1">
+                          <StatusPill
+                            label="GSC"
+                            ok={
+                              row.gscSubmitStatus == null ? null : row.gscSubmitStatus === 'ok'
+                            }
+                          />
+                          <StatusPill
+                            label="IN"
+                            ok={row.indexNowStatus == null ? null : row.indexNowStatus === 'ok'}
+                          />
+                        </div>
+                        {publicUrl ? (
+                          <Button asChild size="sm" variant="outline">
+                            <Link href={publicUrl} target="_blank">
+                              Ver <ExternalLink className="h-3 w-3" />
+                            </Link>
+                          </Button>
+                        ) : null}
+                      </CardFooter>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
           <Card className="animate-centro-in overflow-hidden">
             <CardHeader className="border-b border-hub-border">
-              <CardTitle>Detalle por publicación</CardTitle>
-              <CardDescription>
-                Ordenado por score (clicks ×3 + visitas + CTAs).
-              </CardDescription>
+              <CardTitle>Tabla completa</CardTitle>
+              <CardDescription>Todas las publicaciones del filtro actual.</CardDescription>
             </CardHeader>
-
             {!data.rows.length ? (
               <CardContent>
-                <p className="py-10 text-center text-sm text-hub-muted">
-                  No hay publicaciones{agent !== 'all' ? ` de ${agent}` : ''} todavía.
-                </p>
+                <p className="py-8 text-center text-sm text-hub-muted">Sin filas.</p>
               </CardContent>
             ) : (
               <CardContent className="p-0">
@@ -236,7 +301,6 @@ export default function RendimientoPage() {
                       <TableHead>CTR</TableHead>
                       <TableHead>Visitas</TableHead>
                       <TableHead>CTA</TableHead>
-                      <TableHead>Index</TableHead>
                       <TableHead className="px-5">Publicado</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -273,26 +337,6 @@ export default function RendimientoPage() {
                           <TableCell className="tabular-nums text-slate-200">
                             {formatMetric(row.ctaClicks + row.ctaSubmits)}
                           </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <StatusPill
-                                label="GSC"
-                                ok={
-                                  row.gscSubmitStatus == null
-                                    ? null
-                                    : row.gscSubmitStatus === 'ok'
-                                }
-                              />
-                              <StatusPill
-                                label="IN"
-                                ok={
-                                  row.indexNowStatus == null
-                                    ? null
-                                    : row.indexNowStatus === 'ok'
-                                }
-                              />
-                            </div>
-                          </TableCell>
                           <TableCell className="px-5 text-hub-muted">
                             {formatDate(row.publishedAt)}
                           </TableCell>
@@ -304,15 +348,6 @@ export default function RendimientoPage() {
               </CardContent>
             )}
           </Card>
-
-          <p className={cn('text-xs text-hub-muted')}>
-            Tip: las piezas nuevas pueden tardar días en acumular impresiones en Search Console.
-            Revisá también{' '}
-            <Button asChild variant="link" className="h-auto p-0 text-xs">
-              <Link href={workspaceHref(workspace, 'resultados')}>Resultados</Link>
-            </Button>{' '}
-            para el overview del blog.
-          </p>
         </div>
       )}
     </CentroShell>
