@@ -201,7 +201,7 @@ export function ContentEcosystemPanel({ data = EMPTY_RADAR }: { data?: ContentRa
   const hubColor = data.agentWorking ? '#2563EB' : data.agentActive ? '#22C55E' : '#94A3B8';
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="animate-centro-in overflow-hidden" style={{ animationDelay: '160ms' }}>
       <CardHeader className="flex-row flex-wrap items-start justify-between gap-4 border-b border-hub-border">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-hub-muted">

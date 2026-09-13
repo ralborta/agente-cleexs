@@ -31,42 +31,39 @@ const levelDot: Record<string, string> = {
 
 export function ActivityFeed({ items }: { items: ActivityItem[] }) {
   return (
-    <Card>
+    <Card className="animate-centro-in h-full" style={{ animationDelay: '200ms' }}>
       <CardHeader>
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-hub-muted">
           Actividad de agentes
         </p>
         <CardTitle>Teo en tiempo real</CardTitle>
-        <CardDescription>Feed operativo de la torre de control.</CardDescription>
+        <CardDescription>Qué está haciendo el equipo ahora.</CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-3">
+      <CardContent>
         {items.length === 0 ? (
-          <p className="rounded-xl border border-hub-border/80 bg-[#172033] px-3 py-4 text-sm text-hub-muted">
+          <p className="rounded-xl border border-dashed border-hub-border px-3 py-8 text-center text-sm text-hub-muted">
             Cuando Teo ejecute misiones, los eventos aparecen acá.
           </p>
         ) : (
-          items.map((item) => (
-            <div
-              key={item.id}
-              className="rounded-xl border border-hub-border/80 bg-[#172033] px-3 py-3"
-            >
-              <div className="flex items-start gap-3">
+          <ol className="relative space-y-0 border-l border-hub-border pl-4">
+            {items.slice(0, 12).map((item) => (
+              <li key={item.id} className="relative pb-4 last:pb-0">
                 <span
-                  className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${levelDot[item.level] || 'bg-cleexs-blue'}`}
+                  className={`absolute -left-[1.3rem] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-hub-card ${levelDot[item.level] || 'bg-cleexs-blue'}`}
                 />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-white">
-                      {item.role ? roleLabels[item.role] || item.role : item.agent}
-                    </span>
-                    <Badge variant="outline">{formatRelativeTime(item.createdAt)}</Badge>
-                  </div>
-                  <p className="mt-1 text-sm text-slate-300">{item.message}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-white">
+                    {item.role ? roleLabels[item.role] || item.role : item.agent}
+                  </span>
+                  <Badge variant="outline" className="font-normal">
+                    {formatRelativeTime(item.createdAt)}
+                  </Badge>
                 </div>
-              </div>
-            </div>
-          ))
+                <p className="mt-1 text-sm leading-snug text-slate-300">{item.message}</p>
+              </li>
+            ))}
+          </ol>
         )}
       </CardContent>
     </Card>

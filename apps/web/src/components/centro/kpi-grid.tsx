@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 type KpiItem = {
@@ -10,43 +11,45 @@ type KpiItem = {
   href?: string;
 };
 
-function KpiCard({ item }: { item: KpiItem }) {
-  const body = (
-    <CardContent className="p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-hub-muted">{item.label}</p>
-      <p className="mt-2 text-3xl font-semibold text-white">{item.value}</p>
-      {item.trend ? (
-        <p className="mt-1 text-xs font-medium text-emerald-400">{item.trend}</p>
+function KpiCell({ item, last }: { item: KpiItem; last?: boolean }) {
+  const inner = (
+    <div className="px-4 py-3">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-hub-muted">{item.label}</p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{item.value}</p>
+      {item.trend ? <p className="mt-0.5 text-xs text-emerald-400">{item.trend}</p> : null}
+      {item.hint && !item.trend ? (
+        <p className="mt-0.5 truncate text-xs text-hub-muted">{item.hint}</p>
       ) : null}
-      {item.hint ? <p className="mt-2 text-xs text-hub-muted">{item.hint}</p> : null}
-      {item.href ? <p className="mt-3 text-xs font-medium text-cleexs-blue">Abrir →</p> : null}
-    </CardContent>
+    </div>
   );
 
-  if (item.href) {
-    return (
-      <Link href={item.href} className="block">
-        <Card
-          className={cn(
-            'transition hover:border-cleexs-blue/40',
-            'h-full',
-          )}
+  return (
+    <>
+      {item.href ? (
+        <Link
+          href={item.href}
+          className="min-w-0 flex-1 transition hover:bg-white/[0.03]"
         >
-          {body}
-        </Card>
-      </Link>
-    );
-  }
-
-  return <Card>{body}</Card>;
+          {inner}
+        </Link>
+      ) : (
+        <div className="min-w-0 flex-1">{inner}</div>
+      )}
+      {!last ? <Separator orientation="vertical" className="hidden h-auto self-stretch sm:block" /> : null}
+    </>
+  );
 }
 
 export function KpiGrid({ items }: { items: KpiItem[] }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-      {items.map((item) => (
-        <KpiCard key={item.label} item={item} />
-      ))}
-    </div>
+    <Card className={cn('animate-centro-in overflow-hidden')} style={{ animationDelay: '120ms' }}>
+      <CardContent className="flex flex-col p-0 sm:flex-row sm:divide-x-0">
+        <div className="flex w-full flex-col sm:flex-row">
+          {items.map((item, i) => (
+            <KpiCell key={item.label} item={item} last={i === items.length - 1} />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
