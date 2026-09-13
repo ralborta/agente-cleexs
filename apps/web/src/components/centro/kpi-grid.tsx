@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 type KpiItem = {
   label: string;
@@ -10,7 +12,7 @@ type KpiItem = {
 
 function KpiCard({ item }: { item: KpiItem }) {
   const body = (
-    <>
+    <CardContent className="p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-hub-muted">{item.label}</p>
       <p className="mt-2 text-3xl font-semibold text-white">{item.value}</p>
       {item.trend ? (
@@ -18,21 +20,25 @@ function KpiCard({ item }: { item: KpiItem }) {
       ) : null}
       {item.hint ? <p className="mt-2 text-xs text-hub-muted">{item.hint}</p> : null}
       {item.href ? <p className="mt-3 text-xs font-medium text-cleexs-blue">Abrir →</p> : null}
-    </>
+    </CardContent>
   );
-
-  const className =
-    'rounded-2xl border border-hub-border bg-hub-card p-4 shadow-hub transition hover:border-cleexs-blue/40';
 
   if (item.href) {
     return (
-      <Link href={item.href} className={`${className} block`}>
-        {body}
+      <Link href={item.href} className="block">
+        <Card
+          className={cn(
+            'transition hover:border-cleexs-blue/40',
+            'h-full',
+          )}
+        >
+          {body}
+        </Card>
       </Link>
     );
   }
 
-  return <div className={className}>{body}</div>;
+  return <Card>{body}</Card>;
 }
 
 export function KpiGrid({ items }: { items: KpiItem[] }) {

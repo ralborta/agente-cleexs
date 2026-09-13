@@ -4,6 +4,9 @@ import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
 import Link from 'next/link';
 import { useState } from 'react';
 import { retryRefreshPiece } from '@/lib/api-client';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import type { RadarPieceData } from './content-ecosystem-panel';
 
 type Props = {
@@ -44,40 +47,43 @@ export function RefreshAlertBanner({ pieces, onRetried }: Props) {
   return (
     <div className="mb-6 space-y-3">
       {refreshPieces.map((piece) => (
-        <div
-          key={piece.id}
-          className="rounded-xl border border-slate-500/30 bg-slate-500/10 px-4 py-3 text-sm text-slate-100"
-        >
-          <p className="font-semibold text-white">{piece.title}</p>
-          {piece.refreshReason ? (
-            <p className="mt-1 text-slate-300">{piece.refreshReason}</p>
-          ) : null}
-          {piece.lastRefreshMission?.status === 'failed' ? (
-            <p className="mt-1 text-amber-200">
-              El último intento de refresco falló. Teo no generó borrador para aprobación.
-            </p>
-          ) : piece.lastRefreshMission?.status === 'pending' ||
-            piece.lastRefreshMission?.status === 'in_progress' ? (
-            <p className="mt-1 text-blue-200">Refresco en curso — seguí el progreso en el Monitor.</p>
-          ) : null}
-          <div className="mt-2 flex flex-wrap gap-3">
-            <Link href={workspaceHref(workspace, "monitor")} className="font-semibold text-white underline">
-              Ver Monitor
-            </Link>
-            {piece.lastRefreshMission?.status === 'failed' ||
-            piece.lastRefreshMission?.status === 'cancelled' ||
-            !piece.lastRefreshMission ? (
-              <button
-                type="button"
-                disabled={retryingId === piece.id}
-                onClick={() => handleRetry(piece.id)}
-                className="font-semibold text-emerald-300 underline disabled:opacity-50"
-              >
-                {retryingId === piece.id ? 'Encolando…' : 'Reintentar refresco'}
-              </button>
+        <Card key={piece.id} className="border-slate-500/30 bg-slate-500/10">
+          <CardContent className="p-4 text-sm text-slate-100">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-semibold text-white">{piece.title}</p>
+              <Badge variant="outline">A refrescar</Badge>
+            </div>
+            {piece.refreshReason ? (
+              <p className="mt-1 text-slate-300">{piece.refreshReason}</p>
             ) : null}
-          </div>
-        </div>
+            {piece.lastRefreshMission?.status === 'failed' ? (
+              <p className="mt-1 text-amber-200">
+                El último intento de refresco falló. Teo no generó borrador para aprobación.
+              </p>
+            ) : piece.lastRefreshMission?.status === 'pending' ||
+              piece.lastRefreshMission?.status === 'in_progress' ? (
+              <p className="mt-1 text-blue-200">Refresco en curso — seguí el progreso en el Monitor.</p>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href={workspaceHref(workspace, 'monitor')}>Ver Monitor</Link>
+              </Button>
+              {piece.lastRefreshMission?.status === 'failed' ||
+              piece.lastRefreshMission?.status === 'cancelled' ||
+              !piece.lastRefreshMission ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={retryingId === piece.id}
+                  onClick={() => handleRetry(piece.id)}
+                >
+                  {retryingId === piece.id ? 'Encolando…' : 'Reintentar refresco'}
+                </Button>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
       ))}
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
     </div>

@@ -4,11 +4,38 @@
 
 @layer base {
   :root {
+    /* Marca Cleexs / hub (RGB space for tailwind hub-* colors) */
     --cleexs-blue: 37 99 235;
     --cleexs-orange: 249 115 22;
     --hub-bg: 15 23 42;
     --hub-card: 30 41 59;
     --hub-border: 51 65 85;
+
+    /* shadcn tokens = hub dark (default: Torre de Control) */
+    --background: 15 23 42;
+    --foreground: 248 250 252;
+    --card: 30 41 59;
+    --card-foreground: 248 250 252;
+    --popover: 30 41 59;
+    --popover-foreground: 248 250 252;
+    --primary: 37 99 235;
+    --primary-foreground: 248 250 252;
+    --secondary: 51 65 85;
+    --secondary-foreground: 248 250 252;
+    --muted: 30 41 59;
+    --muted-foreground: 148 163 184;
+    --accent: 37 99 235;
+    --accent-foreground: 248 250 252;
+    --destructive: 239 68 68;
+    --destructive-foreground: 248 250 252;
+    --border: 51 65 85;
+    --input: 51 65 85;
+    --ring: 37 99 235;
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
   }
 
   body {

@@ -16,6 +16,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWorkspaceSlug, workspaceHref } from '@/lib/workspace';
 
 export type RadarPieceData = {
@@ -56,25 +58,25 @@ const STATUS = {
     label: 'Publicado',
     color: '#22C55E',
     glow: 'rgba(34, 197, 94, 0.35)',
-    badge: 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30',
+    badge: 'success' as const,
   },
   approval: {
     label: 'Aprobación',
     color: '#F97316',
     glow: 'rgba(249, 115, 22, 0.35)',
-    badge: 'bg-orange-500/15 text-orange-300 ring-orange-500/30',
+    badge: 'warning' as const,
   },
   working: {
     label: 'En producción',
     color: '#2563EB',
     glow: 'rgba(37, 99, 235, 0.35)',
-    badge: 'bg-blue-500/15 text-blue-300 ring-blue-500/30',
+    badge: 'info' as const,
   },
   refresh: {
     label: 'A refrescar',
     color: '#94A3B8',
     glow: 'rgba(148, 163, 184, 0.25)',
-    badge: 'bg-slate-500/15 text-slate-300 ring-slate-500/30',
+    badge: 'outline' as const,
   },
 } as const;
 
@@ -152,9 +154,7 @@ function RadarNode({ piece }: { piece: LayoutPiece }) {
         >
           <Icon className="h-4 w-4" strokeWidth={2} />
         </div>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cfg.badge}`}>
-          {missionFailed ? 'Falló refresco' : cfg.label}
-        </span>
+        <Badge variant={cfg.badge}>{missionFailed ? 'Falló refresco' : cfg.label}</Badge>
       </div>
       <p className="line-clamp-2 text-sm font-semibold leading-tight text-white">{piece.title}</p>
       {piece.status === 'refresh' && piece.refreshReason ? (
@@ -201,16 +201,16 @@ export function ContentEcosystemPanel({ data = EMPTY_RADAR }: { data?: ContentRa
   const hubColor = data.agentWorking ? '#2563EB' : data.agentActive ? '#22C55E' : '#94A3B8';
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-hub-border bg-hub-card shadow-hub">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-hub-border px-5 py-4">
+    <Card className="overflow-hidden">
+      <CardHeader className="flex-row flex-wrap items-start justify-between gap-4 border-b border-hub-border">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-hub-muted">
             Mapa operativo de Teo
           </p>
-          <h3 className="mt-1 text-xl font-semibold text-white">Radar de Contenido IA</h3>
-          <p className="mt-1 max-w-md text-sm text-hub-muted">
+          <CardTitle className="mt-1 text-xl">Radar de Contenido IA</CardTitle>
+          <CardDescription className="mt-1 max-w-md">
             Teo organiza, prioriza y actualiza piezas para mejorar la visibilidad AEO.
-          </p>
+          </CardDescription>
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-hub-muted">
           {(Object.entries(STATUS) as [PieceStatus, (typeof STATUS)[PieceStatus]][]).map(([key, cfg]) => (
@@ -220,54 +220,56 @@ export function ContentEcosystemPanel({ data = EMPTY_RADAR }: { data?: ContentRa
             </span>
           ))}
         </div>
-      </div>
+      </CardHeader>
 
-      <div className="relative mx-5 mt-4 aspect-[16/10] min-h-[320px] overflow-hidden rounded-xl border border-hub-border bg-[#0a101c]">
-        <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-          {[18, 32, 46].map((r) => (
-            <circle key={r} cx={cx} cy={cy} r={r} fill="none" stroke="rgba(51, 65, 85, 0.45)" strokeWidth="0.25" />
-          ))}
-          {pieces.map((piece) => (
-            <line
-              key={`line-${piece.id}`}
-              x1={cx}
-              y1={cy}
-              x2={piece.x}
-              y2={piece.y + 4}
-              stroke={STATUS[piece.status].color}
-              strokeWidth="0.35"
-              strokeOpacity="0.55"
-            />
-          ))}
-        </svg>
+      <CardContent className="pt-4">
+        <div className="relative aspect-[16/10] min-h-[320px] overflow-hidden rounded-xl border border-hub-border bg-[#0a101c]">
+          <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+            {[18, 32, 46].map((r) => (
+              <circle key={r} cx={cx} cy={cy} r={r} fill="none" stroke="rgba(51, 65, 85, 0.45)" strokeWidth="0.25" />
+            ))}
+            {pieces.map((piece) => (
+              <line
+                key={`line-${piece.id}`}
+                x1={cx}
+                y1={cy}
+                x2={piece.x}
+                y2={piece.y + 4}
+                stroke={STATUS[piece.status].color}
+                strokeWidth="0.35"
+                strokeOpacity="0.55"
+              />
+            ))}
+          </svg>
 
-        <div
-          className="absolute left-1/2 top-[52%] z-20 flex h-[108px] w-[108px] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-2 bg-[#0f172a]/95 text-center backdrop-blur-sm"
-          style={{
-            borderColor: `${hubColor}99`,
-            boxShadow: `0 0 40px ${hubColor}55, inset 0 0 20px ${hubColor}14`,
-          }}
-        >
-          <span className="text-lg font-bold text-white">{data.agentName}</span>
-          <span className="text-[11px] font-medium" style={{ color: hubColor }}>
-            {hubLabel}
-          </span>
-          <Activity className="mt-1 h-4 w-4" style={{ color: hubColor }} strokeWidth={2.5} />
-        </div>
-
-        {pieces.length === 0 ? (
-          <div className="absolute inset-0 z-10 flex items-center justify-center px-8 text-center">
-            <p className="max-w-xs text-sm text-hub-muted">
-              Sin piezas todavía. Lanzá una misión desde{' '}
-              <span className="text-white">Resultados</span> para que Teo genere contenido.
-            </p>
+          <div
+            className="absolute left-1/2 top-[52%] z-20 flex h-[108px] w-[108px] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-2 bg-[#0f172a]/95 text-center backdrop-blur-sm"
+            style={{
+              borderColor: `${hubColor}99`,
+              boxShadow: `0 0 40px ${hubColor}55, inset 0 0 20px ${hubColor}14`,
+            }}
+          >
+            <span className="text-lg font-bold text-white">{data.agentName}</span>
+            <span className="text-[11px] font-medium" style={{ color: hubColor }}>
+              {hubLabel}
+            </span>
+            <Activity className="mt-1 h-4 w-4" style={{ color: hubColor }} strokeWidth={2.5} />
           </div>
-        ) : (
-          pieces.map((piece) => <RadarNode key={piece.id} piece={piece} />)
-        )}
-      </div>
 
-      <div className="mx-5 mb-5 mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-hub-border bg-[#111827]/80 px-4 py-3">
+          {pieces.length === 0 ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center px-8 text-center">
+              <p className="max-w-xs text-sm text-hub-muted">
+                Sin piezas todavía. Lanzá una misión desde{' '}
+                <span className="text-white">Resultados</span> para que Teo genere contenido.
+              </p>
+            </div>
+          ) : (
+            pieces.map((piece) => <RadarNode key={piece.id} piece={piece} />)
+          )}
+        </div>
+      </CardContent>
+
+      <CardFooter className="flex-wrap justify-between gap-4 bg-[#111827]/80">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -278,7 +280,7 @@ export function ContentEcosystemPanel({ data = EMPTY_RADAR }: { data?: ContentRa
             </div>
           );
         })}
-      </div>
-    </section>
+      </CardFooter>
+    </Card>
   );
 }

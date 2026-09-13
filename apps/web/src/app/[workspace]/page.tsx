@@ -9,6 +9,9 @@ import { ContentEcosystemPanel } from '@/components/centro/content-ecosystem-pan
 import { RefreshAlertBanner } from '@/components/centro/refresh-alert-banner';
 import { KpiGrid } from '@/components/centro/kpi-grid';
 import { CentroShell } from '@/components/shell/centro-shell';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { fetchCentroDashboard } from '@/lib/api-client';
 import { PLATFORM_NAME, PLATFORM_SHORT, PLATFORM_TAGLINE } from '@/lib/branding';
 
@@ -82,20 +85,23 @@ export default function CleexsCentroPage() {
           <h2 className="mt-1 text-3xl font-semibold text-white">{PLATFORM_SHORT}</h2>
           <p className="mt-2 max-w-2xl text-sm text-hub-muted">{PLATFORM_TAGLINE}</p>
         </div>
-        <div className="rounded-full border border-cleexs-blue/30 bg-cleexs-blue/10 px-4 py-2 text-sm font-medium text-blue-200">
+        <Badge variant="info" className="px-4 py-2 text-sm">
           {onlineCount || 1} agente{(onlineCount || 1) === 1 ? '' : 's'} en línea
-        </div>
+        </Badge>
       </div>
 
       {!loading && typeof pendingApprovals === 'number' && pendingApprovals > 0 ? (
-        <div className="mb-6 rounded-xl border border-cleexs-orange/30 bg-cleexs-orange/10 px-4 py-3 text-sm text-orange-100">
-          Tenés {pendingApprovals} pieza{pendingApprovals === 1 ? '' : 's'} pendiente
-          {pendingApprovals === 1 ? '' : 's'} de revisión.{' '}
-          <Link href={workspaceHref(workspace, "aprobaciones")} className="font-semibold text-white underline">
-            Ir a Aprobaciones
-          </Link>{' '}
-          para preview, editar y publicar.
-        </div>
+        <Card className="mb-6 border-cleexs-orange/30 bg-cleexs-orange/10">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-orange-100">
+            <p>
+              Tenés {pendingApprovals} pieza{pendingApprovals === 1 ? '' : 's'} pendiente
+              {pendingApprovals === 1 ? '' : 's'} de revisión.
+            </p>
+            <Button asChild size="sm" variant="outline">
+              <Link href={workspaceHref(workspace, 'aprobaciones')}>Ir a Aprobaciones</Link>
+            </Button>
+          </CardContent>
+        </Card>
       ) : null}
 
       {!loading ? (
