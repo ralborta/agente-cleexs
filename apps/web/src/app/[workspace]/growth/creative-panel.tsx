@@ -254,12 +254,14 @@ export function CreativePanel({ workspace }: Props) {
   }
 
   const plan = selected?.plannerOutput;
+  const canPublishLinkedIn =
+    Boolean(linkedin?.canPublishAsPage) || Boolean(linkedin?.canPublishAsMember);
   const canPublish =
     Boolean(selected) &&
     selected!.status === 'approved' &&
     Boolean(distPost) &&
     !alreadyPublished &&
-    Boolean(linkedin?.canPublishAsPage);
+    canPublishLinkedIn;
 
   return (
     <div>
@@ -281,7 +283,7 @@ export function CreativePanel({ workspace }: Props) {
       </div>
       <p className="mb-6 max-w-2xl text-sm text-hub-muted">
         Genera piezas visuales con templates de marca a partir de artículos publicados. Aprobá el
-        preview y publicá en LinkedIn (Company Page Empliados).
+        preview y publicá en LinkedIn (Company Page si está disponible; si no, perfil personal).
       </p>
 
       <section className="mb-6 rounded-2xl border border-hub-border bg-hub-card p-4">
@@ -290,18 +292,20 @@ export function CreativePanel({ workspace }: Props) {
             <p className="text-[11px] uppercase tracking-wide text-hub-muted">Publisher LinkedIn</p>
             <p className="text-sm font-semibold text-white">
               {linkedin?.connected
-                ? linkedin.canPublishAsPage
+                ? linkedin.publishTarget === 'page'
                   ? `Conectado · ${linkedin.organizationName || 'Company Page'}`
-                  : 'Conectado · falta Company Page'
+                  : linkedin.publishTarget === 'member'
+                    ? 'Conectado · perfil personal'
+                    : 'Conectado · sin permiso de publicación'
                 : 'No conectado'}
             </p>
             {linkedin?.organizationName || linkedin?.organizationUrnMasked ? (
               <p className="mt-1 text-xs text-hub-muted">
                 {linkedin.organizationName || linkedin.organizationUrnMasked}
               </p>
-            ) : linkedin?.personUrnMasked ? (
+            ) : linkedin?.publishTarget === 'member' ? (
               <p className="mt-1 text-xs text-amber-200">
-                Token personal sin Page. Pedí Community Management y reconectá.
+                Publica en tu perfil personal hasta que LinkedIn apruebe Community Management.
               </p>
             ) : null}
             {linkedin?.lastError ? (
@@ -511,13 +515,15 @@ export function CreativePanel({ workspace }: Props) {
                     onClick={handlePublishLinkedIn}
                     className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                     title={
-                      !linkedin?.canPublishAsPage
-                        ? 'Conectá LinkedIn como admin de la Company Page Empliados'
+                      !canPublishLinkedIn
+                        ? 'Conectá LinkedIn para publicar'
                         : selected.status !== 'approved'
                           ? 'Aprobá el creative primero'
                           : alreadyPublished
                             ? 'Ya publicado'
-                            : 'Publicar en Company Page Empliados'
+                            : linkedin?.publishTarget === 'page'
+                              ? 'Publicar en Company Page Empliados'
+                              : 'Publicar en tu perfil personal de LinkedIn'
                     }
                   >
                     {busy ? (

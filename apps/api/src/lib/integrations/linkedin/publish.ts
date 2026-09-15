@@ -34,7 +34,7 @@ function mapLinkedInHttpError(status: number, bodyText: string): Error {
   }
   if (status === 403) {
     return new Error(
-      'LinkedIn rechazó la publicación (403). Para Company Page Empliados necesitás Community Management API (w_organization_social) y rol admin en la Page.',
+      'LinkedIn rechazó la publicación (403). Revisá scopes (w_member_social o w_organization_social) y que el token esté vigente.',
     );
   }
   const snippet = bodyText.slice(0, 280);
@@ -46,7 +46,7 @@ async function assertTokenUsable(cfg: LinkedInIntegrationConfig) {
     const expires = new Date(cfg.expiresAt).getTime();
     if (Number.isFinite(expires) && expires < Date.now() - 30_000) {
       throw new Error(
-        'El token de LinkedIn expiró. Reconectá LinkedIn (Company Page Empliados) desde Growth.',
+        'El token de LinkedIn expiró. Reconectá LinkedIn desde Growth → Creativos.',
       );
     }
   }
@@ -340,21 +340,28 @@ export async function publishDistributionPostToLinkedIn(
   const cfg = await getLinkedInIntegrationConfig(workspaceId);
   if (!cfg) {
     throw new Error(
-      'LinkedIn no está conectado. Conectá como admin de la Company Page Empliados desde Growth → Creativos.',
+      'LinkedIn no está conectado. Conectá LinkedIn desde Growth → Creativos.',
     );
   }
 
   await assertTokenUsable(cfg);
 
-  const authorUrn = cfg.organizationUrn?.trim();
-  if (!authorUrn) {
+  // Prefer Company Page; fallback al perfil personal (como el viernes) si aún no hay Community Management.
+  const orgUrn = cfg.organizationUrn?.trim() || '';
+  const canPage =
+    Boolean(orgUrn) && Boolean(cfg.scopes?.includes('w_organization_social'));
+  const canMember = Boolean(
+    cfg.personUrn?.trim() && cfg.scopes?.includes('w_member_social'),
+  );
+
+  let authorUrn: string;
+  if (canPage) {
+    authorUrn = orgUrn;
+  } else if (canMember) {
+    authorUrn = cfg.personUrn.trim();
+  } else {
     throw new Error(
-      'Falta la Company Page Empliados en la conexión. Pedí Community Management API en LinkedIn Developers, reconectá como SUPER ADMIN de Empliados y volvé a publicar.',
-    );
-  }
-  if (!cfg.scopes?.includes('w_organization_social')) {
-    throw new Error(
-      'El token no tiene w_organization_social. Pedí Community Management API, desconectá y volvé a conectar LinkedIn.',
+      'LinkedIn conectado sin permisos de publicación. Reconectá con Share on LinkedIn (perfil) o Community Management (Company Page).',
     );
   }
 

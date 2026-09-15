@@ -103,19 +103,11 @@ const linkedinRoutes: FastifyPluginAsync = async (server) => {
         userId: state.uid,
         organization,
       });
+      // Sin Page: se puede publicar al perfil personal; no marcar como error de OAuth.
       if (orgError && !organization) {
-        config.lastError = orgError;
+        config.lastError = null;
       }
       await upsertLinkedInIntegration(workspace.id, config);
-
-      if (!organization) {
-        const reason = encodeURIComponent(
-          (config.lastError || 'Falta Company Page Empliados').slice(0, 280),
-        );
-        return reply.redirect(
-          `${frontend}/${workspace.slug}/growth?tab=creativos&linkedin=error&reason=${reason}`,
-        );
-      }
 
       return reply.redirect(
         `${frontend}/${workspace.slug}/growth?tab=creativos&linkedin=connected`,

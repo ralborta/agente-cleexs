@@ -10,9 +10,9 @@ import type {
 } from './types';
 
 /**
- * Publicamos solo como Company Page.
- * Requiere productos: Sign In (OpenID) + Share on LinkedIn + Community Management API
- * (scopes w_organization_social / r_organization_social).
+ * Preferimos Company Page (Community Management).
+ * Fallback: perfil personal con Share on LinkedIn (w_member_social).
+ * Productos: Sign In (OpenID) + Share on LinkedIn (+ Community Management cuando esté aprobado).
  */
 const LINKEDIN_SCOPES = [
   'openid',
@@ -289,26 +289,45 @@ export async function getLinkedInIntegration(workspaceId: string): Promise<Linke
       status: appConfigured ? 'disconnected' : 'not_configured',
       appConfigured,
       canPublishAsPage: false,
+      canPublishAsMember: false,
+      publishTarget: 'none',
     };
   }
 
   const cfg = parseStoredConfig(row.config);
   const connected = row.status === 'connected' && Boolean(cfg?.accessToken);
-  const canPublishAsPage = Boolean(connected && cfg?.organizationUrn);
+  const scopes = cfg?.scopes ?? [];
+  const canPublishAsPage = Boolean(
+    connected && cfg?.organizationUrn && scopes.includes('w_organization_social'),
+  );
+  const canPublishAsMember = Boolean(
+    connected && cfg?.personUrn && scopes.includes('w_member_social'),
+  );
+  const publishTarget: LinkedInStatusPublic['publishTarget'] = canPublishAsPage
+    ? 'page'
+    : canPublishAsMember
+      ? 'member'
+      : 'none';
 
   return {
     connected,
     status: connected ? 'connected' : row.status === 'error' ? 'error' : 'disconnected',
     appConfigured,
     canPublishAsPage,
+    canPublishAsMember,
+    publishTarget,
     personId: cfg?.personId ?? null,
     personUrnMasked: cfg?.personUrn ? maskUrn(cfg.personUrn) : null,
     organizationUrnMasked: cfg?.organizationUrn ? maskUrn(cfg.organizationUrn) : null,
-    scopes: cfg?.scopes ?? [],
+    scopes,
     connectedAt: cfg?.connectedAt ?? null,
     expiresAt: cfg?.expiresAt ?? null,
     organizationName: cfg?.organizationName ?? null,
-    lastError: cfg?.lastError ?? null,
+    // Si ya se puede publicar (page o member), no mostrar warning de "falta Page" como error.
+    lastError:
+      publishTarget !== 'none' && cfg?.lastError?.toLowerCase().includes('company page')
+        ? null
+        : (cfg?.lastError ?? null),
     updatedAt: row.updatedAt.toISOString(),
   };
 }
@@ -357,9 +376,8 @@ export function buildLinkedInConfigFromOAuth(params: {
     connectedByUserId: params.userId,
     organizationUrn: params.organization?.organizationUrn ?? null,
     organizationName: params.organization?.name ?? null,
-    lastError: params.organization
-      ? null
-      : 'Sin Company Page administrada. Pedí Community Management API, reconectá como admin de Empliados.',
+    // Sin Page: se publica al perfil personal; no es error bloqueante.
+    lastError: null,
   };
 }
 
