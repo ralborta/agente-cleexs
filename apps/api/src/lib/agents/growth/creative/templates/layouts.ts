@@ -182,19 +182,19 @@ function brandPhotoShell(
         maskCta: { top: '70%', left: '3%', width: '46%', height: '90px' },
       }
     : {
-        textTop: '14%',
+        textTop: '19%',
         textLeft: '5%',
         textWidth: '46%',
-        headlineSize: 48,
+        headlineSize: 46,
         subSize: 22,
-        ctaTop: '74%',
-        ctaLeft: '5%',
+        ctaTop: '69.5%',
+        ctaLeft: '5.2%',
         showEyebrow: false,
         eyebrow: '',
-        // Tapa "TU CATEGORÍA AQUÍ" bajo el logo del JPG.
-        maskCat: { top: '9.5%', left: '4%', width: '48%', height: '42px' },
-        // Tapa "Tu CTA aquí →" del JPG.
-        maskCta: { top: '72%', left: '3%', width: '50%', height: '100px' },
+        // Solo tapa "TU CATEGORÍA AQUÍ" (debajo del logo, no el logo).
+        maskCat: { top: '15.2%', left: '4%', width: '48%', height: '38px' },
+        // Tapa el botón baked-in "Tu CTA aquí →".
+        maskCta: { top: '67.8%', left: '4%', width: '42%', height: '78px' },
       };
 
   const masks = [
