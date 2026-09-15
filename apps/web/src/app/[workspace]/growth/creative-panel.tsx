@@ -481,10 +481,10 @@ export function CreativePanel({ workspace }: Props) {
                     </span>
                   </p>
                   <p>
-                    Headline: <span className="text-white">{plan?.headline || '—'}</span>
+                    Título: <span className="text-white">{plan?.headline || '—'}</span>
                   </p>
                   <p>
-                    CTA: <span className="text-white">{plan?.cta || '—'}</span>
+                    Botón: <span className="text-white">{plan?.cta || '—'}</span>
                   </p>
                   <p>
                     DistributionPost:{' '}

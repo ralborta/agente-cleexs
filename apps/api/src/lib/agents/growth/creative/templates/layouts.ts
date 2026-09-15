@@ -3,11 +3,23 @@ import { FORMAT_SIZES } from '../types';
 import { loadBackgroundDataUri } from './backgrounds';
 
 function esc(text: string): string {
-  return text
+  const fixed = repairText(text);
+  return fixed
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function repairText(text: string): string {
+  if (!text || !/[ÃÂ]/.test(text)) return text;
+  try {
+    const fixed = Buffer.from(text, 'latin1').toString('utf8');
+    if (fixed && !fixed.includes('\uFFFD')) return fixed;
+  } catch {
+    // ignore
+  }
+  return text;
 }
 
 function brandFooter(brand: ResolvedDistributionBrand): string {
@@ -132,6 +144,14 @@ function shell(
 </html>`;
 }
 
+/** Evita subheadings genéricos / residuales del planner en covers de marca. */
+function meaningfulSubheadline(text: string | undefined | null): string | null {
+  const t = (text || '').replace(/\s+/g, ' ').trim();
+  if (t.length < 18) return null;
+  if (/^(en esta guía|leer más|leer artículo|tu categoría|tu cta)/i.test(t)) return null;
+  return t;
+}
+
 function brandPhotoShell(
   brand: ResolvedDistributionBrand,
   template: CreativeTemplateConfig,
@@ -143,8 +163,10 @@ function brandPhotoShell(
   const purple = isSol ? '#6B21A8' : '#7C3AED';
   const headlineColor = isSol ? '#1e1b4b' : '#2e1065';
   const ctaText = plan.cta?.trim() || brand.defaultCta || 'Leer más';
+  const sub = meaningfulSubheadline(plan.subheadline);
 
-  // Zonas calibradas al hueco blanco de cada fondo.
+  // El JPG ya trae logo + placeholders ("TU CATEGORÍA AQUÍ", "Tu CTA aquí").
+  // Hay que taparlos con máscaras blancas y pintar solo título / CTA reales.
   const zones = isSol
     ? {
         textTop: '22%',
@@ -152,20 +174,37 @@ function brandPhotoShell(
         textWidth: '42%',
         headlineSize: 46,
         subSize: 22,
-        ctaTop: '48%',
+        ctaTop: '72%',
         ctaLeft: '4.5%',
+        showEyebrow: true,
+        eyebrow: 'SOL · AGENTES IA',
+        maskCat: null as null | { top: string; left: string; width: string; height: string },
+        maskCta: { top: '70%', left: '3%', width: '46%', height: '90px' },
       }
     : {
-        textTop: '16%',
-        textLeft: '5.5%',
+        textTop: '14%',
+        textLeft: '5%',
         textWidth: '46%',
-        headlineSize: 52,
-        subSize: 24,
-        ctaTop: '52%',
-        ctaLeft: '5.5%',
+        headlineSize: 48,
+        subSize: 22,
+        ctaTop: '74%',
+        ctaLeft: '5%',
+        showEyebrow: false,
+        eyebrow: '',
+        // Tapa "TU CATEGORÍA AQUÍ" bajo el logo del JPG.
+        maskCat: { top: '9.5%', left: '4%', width: '48%', height: '42px' },
+        // Tapa "Tu CTA aquí →" del JPG.
+        maskCta: { top: '72%', left: '3%', width: '50%', height: '100px' },
       };
 
-  const eyebrow = isSol ? 'SOL · AGENTES IA' : 'EMPLIADOS.NET';
+  const masks = [
+    zones.maskCat
+      ? `<div class="mask" style="top:${zones.maskCat.top};left:${zones.maskCat.left};width:${zones.maskCat.width};height:${zones.maskCat.height}" aria-hidden="true"></div>`
+      : '',
+    zones.maskCta
+      ? `<div class="mask" style="top:${zones.maskCta.top};left:${zones.maskCta.left};width:${zones.maskCta.width};height:${zones.maskCta.height}" aria-hidden="true"></div>`
+      : '',
+  ].join('');
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -194,6 +233,11 @@ function brandPhotoShell(
     object-fit: cover;
     object-position: center;
   }
+  .mask {
+    position: absolute;
+    background: #ffffff;
+    z-index: 1;
+  }
   .text-zone {
     position: absolute;
     top: ${zones.textTop};
@@ -205,22 +249,13 @@ function brandPhotoShell(
     display: inline-block;
     padding: 6px 14px;
     border-radius: 999px;
-    background: ${isSol ? '#ede9fe' : 'transparent'};
-    color: ${isSol ? purple : '#334155'};
-    font-size: ${isSol ? 16 : 18}px;
+    background: #ede9fe;
+    color: ${purple};
+    font-size: 16px;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     margin-bottom: 18px;
-  }
-  .cover-cat {
-    position: absolute;
-    top: 12.5%;
-    left: 5.5%;
-    width: 42%;
-    height: 36px;
-    background: #ffffff;
-    z-index: 1;
   }
   .headline {
     color: ${headlineColor};
@@ -259,11 +294,11 @@ function brandPhotoShell(
 <body>
   <div class="frame" data-template="${esc(template.templateKey)}">
     <img class="bg" src="${bgUri}" alt="" />
-    ${isSol ? '' : '<div class="cover-cat" aria-hidden="true"></div>'}
+    ${masks}
     <div class="text-zone">
-      <div class="eyebrow">${esc(eyebrow)}</div>
+      ${zones.showEyebrow ? `<div class="eyebrow">${esc(zones.eyebrow)}</div>` : ''}
       <div class="headline">${esc(plan.headline)}</div>
-      ${plan.subheadline ? `<div class="sub">${esc(plan.subheadline)}</div>` : ''}
+      ${sub ? `<div class="sub">${esc(sub)}</div>` : ''}
     </div>
     <div class="cta">${esc(ctaText)} →</div>
   </div>
@@ -293,7 +328,7 @@ export function buildCreativeHtml(
       plan,
       `
       <div>
-        <div class="eyebrow">${esc(brand.name)} · ${esc(template.category)}</div>
+        <div class="eyebrow">${esc(brand.name)}</div>
         <div class="stat">${esc(plan.statValue || '—')}</div>
         <div class="sub">${esc(plan.statLabel || plan.subheadline || '')}</div>
         ${plan.headline ? `<div class="headline" style="margin-top:28px;font-size:42px">${esc(plan.headline)}</div>` : ''}
@@ -324,7 +359,7 @@ export function buildCreativeHtml(
       plan,
       `
       <div>
-        <div class="eyebrow">${esc(template.category.replace('_', ' '))}</div>
+        <div class="eyebrow">${esc(brand.name)}</div>
         ${plan.headline ? `<div class="headline">${esc(plan.headline)}</div>` : ''}
         <div class="split">
           <div class="panel"><h3>A</h3><p>${esc(plan.leftLabel || '')}</p></div>
@@ -345,7 +380,7 @@ export function buildCreativeHtml(
       plan,
       `
       <div>
-        <div class="eyebrow">${esc(template.category.replace('_', ' '))}</div>
+        <div class="eyebrow">${esc(brand.name)}</div>
         <div class="headline">${esc(plan.headline)}</div>
         <div class="list">${items}</div>
         ${cta}
@@ -374,7 +409,7 @@ export function buildCreativeHtml(
     plan,
     `
     <div>
-      <div class="eyebrow">${esc(brand.name)} · ${esc(template.category.replace(/_/g, ' '))}</div>
+      <div class="eyebrow">${esc(brand.name)}</div>
       <div class="headline">${esc(plan.headline)}</div>
       ${plan.subheadline ? `<div class="sub">${esc(plan.subheadline)}</div>` : ''}
       ${cta}

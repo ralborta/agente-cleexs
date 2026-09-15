@@ -7,45 +7,27 @@ import {
 import { validateCreativePlan } from './validate';
 
 function clip(text: string, max: number): string {
-  const t = text.replace(/\s+/g, ' ').trim();
+  const t = repairMojibake(text).replace(/\s+/g, ' ').trim();
   if (t.length <= max) return t;
   return `${t.slice(0, Math.max(0, max - 1)).trim()}…`;
 }
 
-function pickTemplateForContent(input: CreativeContentInput): CreativeTemplateConfig {
-  const title = input.title.toLowerCase();
-  const blob = `${title} ${input.summary} ${input.mainInsight}`.toLowerCase();
-
-  if (/\d+\s/.test(title) || /tareas|pasos|checklist|lista/.test(title)) {
-    return (
-      getTemplateConfig(input.keyPoints.length >= 5 ? 'list_5_01' : 'list_3_01') ||
-      CREATIVE_TEMPLATE_CATALOG[0]!
-    );
+/** Repara UTF-8 leído como latin1 (ej. "artÃ­culo" → "artículo"). */
+function repairMojibake(text: string): string {
+  if (!text || !/[ÃÂ]/.test(text)) return text;
+  try {
+    const fixed = Buffer.from(text, 'latin1').toString('utf8');
+    if (fixed && !fixed.includes('\uFFFD')) return fixed;
+  } catch {
+    // ignore
   }
-  if (/vs|versus|compar/.test(title)) {
-    return getTemplateConfig('comparison_01') || CREATIVE_TEMPLATE_CATALOG[0]!;
-  }
-  if (/mito|hecho|myth/.test(title)) {
-    return getTemplateConfig('myth_fact_01') || CREATIVE_TEMPLATE_CATALOG[0]!;
-  }
-  if (/%|\d+%|dato|estad/.test(title)) {
-    return getTemplateConfig('statistic_01') || CREATIVE_TEMPLATE_CATALOG[0]!;
-  }
-
-  // Templates de marca con foto (auto): SOL vs Empleados.
-  if (/sol\b|logístic|logistic|ruta|camion|camión|pod|tms|erp|cadena de suministro|supply/.test(blob)) {
-    return getTemplateConfig('brand_sol_truck_01') || getTemplateConfig(DEFAULT_FALLBACK_TEMPLATE_KEY)!;
-  }
-
-  if (/\?|cómo|como |por qué|porque/.test(title)) {
-    return getTemplateConfig('question_01') || CREATIVE_TEMPLATE_CATALOG[0]!;
-  }
-
-  return getTemplateConfig(DEFAULT_FALLBACK_TEMPLATE_KEY) || CREATIVE_TEMPLATE_CATALOG[0]!;
+  return text;
 }
 
-export function deterministicPlan(input: CreativeContentInput): CreativePlan {
-  const template = pickTemplateForContent(input);
+function buildPlanForTemplate(
+  input: CreativeContentInput,
+  template: CreativeTemplateConfig,
+): CreativePlan {
   const points = input.keyPoints.length
     ? input.keyPoints
     : input.summary
@@ -87,7 +69,53 @@ export function deterministicPlan(input: CreativeContentInput): CreativePlan {
     plan.statLabel = clip(input.mainInsight || 'dato clave', template.maxSubheadlineLength);
   }
 
+  // Covers con foto: no arrastrar bullets/labels de otros layouts.
+  if (template.layout === 'brand_photo_left' || template.category === 'article_cover') {
+    plan.bodyLines = [];
+    delete plan.leftLabel;
+    delete plan.rightLabel;
+    delete plan.quote;
+    delete plan.statValue;
+    delete plan.statLabel;
+  }
+
   return plan;
+}
+
+function pickTemplateForContent(input: CreativeContentInput): CreativeTemplateConfig {
+  const title = input.title.toLowerCase();
+  const blob = `${title} ${input.summary} ${input.mainInsight}`.toLowerCase();
+
+  if (/\d+\s/.test(title) || /tareas|pasos|checklist|lista/.test(title)) {
+    return (
+      getTemplateConfig(input.keyPoints.length >= 5 ? 'list_5_01' : 'list_3_01') ||
+      CREATIVE_TEMPLATE_CATALOG[0]!
+    );
+  }
+  if (/vs|versus|compar/.test(title)) {
+    return getTemplateConfig('comparison_01') || CREATIVE_TEMPLATE_CATALOG[0]!;
+  }
+  if (/mito|hecho|myth/.test(title)) {
+    return getTemplateConfig('myth_fact_01') || CREATIVE_TEMPLATE_CATALOG[0]!;
+  }
+  if (/%|\d+%|dato|estad/.test(title)) {
+    return getTemplateConfig('statistic_01') || CREATIVE_TEMPLATE_CATALOG[0]!;
+  }
+
+  // Templates de marca con foto (auto): SOL vs Empleados.
+  if (/sol\b|logístic|logistic|ruta|camion|camión|pod|tms|erp|cadena de suministro|supply/.test(blob)) {
+    return getTemplateConfig('brand_sol_truck_01') || getTemplateConfig(DEFAULT_FALLBACK_TEMPLATE_KEY)!;
+  }
+
+  if (/\?|cómo|como |por qué|porque/.test(title)) {
+    return getTemplateConfig('question_01') || CREATIVE_TEMPLATE_CATALOG[0]!;
+  }
+
+  return getTemplateConfig(DEFAULT_FALLBACK_TEMPLATE_KEY) || CREATIVE_TEMPLATE_CATALOG[0]!;
+}
+
+export function deterministicPlan(input: CreativeContentInput): CreativePlan {
+  return buildPlanForTemplate(input, pickTemplateForContent(input));
 }
 
 async function callOpenAiPlan(
@@ -207,19 +235,8 @@ export async function planCreative(
     : undefined;
 
   if (forced) {
-    const plan = deterministicPlan(input);
-    const clipped: CreativePlan = {
-      ...plan,
-      templateKey: forced.templateKey,
-      templateVersion: forced.version,
-      intention: forced.category,
-      headline: clip(input.title, forced.maxHeadlineLength),
-      subheadline: clip(input.mainInsight || input.summary, forced.maxSubheadlineLength),
-      cta: clip(input.cta || 'Leer artículo', forced.maxCtaLength),
-      visualType: forced.visualTypeDefault,
-      format: forced.defaultFormat,
-    };
-    return { plan: clipped, source: 'deterministic', attempts: 1 };
+    const plan = buildPlanForTemplate(input, forced);
+    return { plan, source: 'deterministic', attempts: 1 };
   }
 
   const maxAttempts = 3;
