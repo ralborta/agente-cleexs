@@ -56,7 +56,7 @@ export type MktOpportunity = {
 
 export type MktOverview = {
   workspace: string; workspaceName: string; product: string; tagline: string;
-  sendingEnabled: boolean; sendingNote: string; agents: MktAgent[];
+  sendingEnabled: boolean; sendingNote: string; agents: MktAgent[]; cleexs?: CleexsData;
   summary: {
     campaigns: number; campaignsApprovedOrActive: number; offersActive: number; offersExpired: number;
     emailsDraft: number; emailsApproved: number; opportunitiesOpen: number;
@@ -68,7 +68,7 @@ export type MktOverview = {
 export const fetchMktOverview = (ws: string) => api<MktOverview>(`/api/mkt/${ws}/overview`);
 
 export type MktVisibilidad = {
-  workspace: string;
+  workspace: string; cleexs?: CleexsData;
   google: { impressions: number; clicks: number; searches: number };
   opportunities: MktOpportunity[];
   questions: Array<{ id: string; question: string; cluster: string; stage: string; priority: number; businessFit: number; status: string }>;
@@ -89,7 +89,7 @@ export type MktDifusion = {
 export const fetchMktDifusion = (ws: string) => api<MktDifusion>(`/api/mkt/${ws}/difusion`);
 
 export type MktResultados = {
-  workspace: string;
+  workspace: string; cleexs?: CleexsData;
   counts: { campaigns: number; campaignsByStatus: Record<string, number>; offers: number; offersExpired: number; emailsByStatus: Record<string, number>; pieces: number; piecesByStatus: Record<string, number>; publications: number; diffusionOpportunities: number };
   recommendations: Array<{ level: 'alta' | 'media' | 'baja'; text: string; route: string }>;
 };
@@ -139,3 +139,23 @@ export const deleteMktCatalogItem = (ws: string, id: string) =>
 
 export const proposeMktCampaign = (ws: string, data: { catalogItemId: string; goal: string; audience?: string; notes?: string }) =>
   api<{ ok: boolean; campaign: MktCampaign }>(`/api/mkt/${ws}/campaigns/propose`, { method: 'POST', body: JSON.stringify(data) });
+
+export type CleexsSnapshotData = {
+  source: 'cleexs';
+  generatedAt: string;
+  brand: {
+    id: string; tenantId: string; name: string; domain: string | null; industry: string | null;
+    category: string | null; objective: string | null; description: string | null; aliases: string[];
+    competitors: Array<{ id: string; name: string; domain: string | null; validated: boolean }>;
+  };
+  cleexsScore: number | null;
+  latest: {
+    runId: string; createdAt: string; cleexsScore: number | null; promptsAnalyzed: number;
+    brandInTop3: number; brandInTop3Pct: number; brandPosition1: number;
+    competitorMentions: Array<{ name: string; appearances: number; averagePosition: number }>;
+    scoreByIntention: Array<{ intention: string; score: number }>;
+    weakPrompts: Array<{ prompt: string; intention: string | null; score: number; top: string[] }>;
+  } | null;
+  history: Array<{ runId: string; status: string; createdAt: string; cleexsScore: number | null; resultsCount: number }>;
+};
+export type CleexsData = { configured: true; snapshot: CleexsSnapshotData } | { configured: false; reason: string };

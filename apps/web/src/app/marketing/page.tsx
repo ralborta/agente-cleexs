@@ -34,6 +34,24 @@ export default function MarketingHomePage() {
         <p className="inline-flex items-center gap-2 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin" /> Cargando tu marketing…</p>
       ) : data ? (
         <>
+          {data.cleexs?.configured ? (
+            <div className="mb-4 flex flex-wrap items-center gap-x-8 gap-y-2 rounded-2xl border border-blue-200 bg-blue-50/60 px-5 py-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-500">Cleexs Score · {data.cleexs.snapshot.brand.name}</p>
+                <p className="text-4xl font-extrabold leading-none text-blue-700">{data.cleexs.snapshot.cleexsScore != null ? Math.round(data.cleexs.snapshot.cleexsScore) : '—'}<span className="text-base font-semibold text-blue-400"> / 100</span></p>
+              </div>
+              <p className="max-w-xl text-sm text-slate-600">
+                Dato real de Cleexs{data.cleexs.snapshot.latest ? `: aparece en el top 3 en el ${data.cleexs.snapshot.latest.brandInTop3Pct}% de ${data.cleexs.snapshot.latest.promptsAnalyzed} consultas analizadas` : ''}.
+                {data.cleexs.snapshot.brand.competitors.length ? ` Competidores medidos: ${data.cleexs.snapshot.brand.competitors.map((c) => c.name).join(', ')}.` : ''}
+              </p>
+              <a href="/marketing/visibilidad" className="ml-auto text-sm font-semibold text-blue-700 hover:underline">Ver en Rankear →</a>
+            </div>
+          ) : data.cleexs ? (
+            <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3.5 text-sm text-amber-800">
+              <strong>Datos de Cleexs sin conectar.</strong> {data.cleexs.reason}
+            </div>
+          ) : null}
+
           <div className="mb-8 grid grid-cols-2 gap-3 xl:grid-cols-4">
             <Stat label="Oportunidades abiertas" value={data.summary.opportunitiesOpen} hint="Detectadas por Rankear" />
             <Stat label="Campañas" value={data.summary.campaigns} hint={`${data.summary.campaignsApprovedOrActive} aprobadas o activas`} />

@@ -1,7 +1,9 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { CAMPAIGN_GOALS, MKT_AGENTS, buildCampaignProposal, buildEmailDraft, campaignFromOpportunity, offerDerivedStatus } from '../lib/marketing/agents';
+import { fetchCleexsSnapshot } from '../lib/marketing/cleexs-data';
 
 type ReplyLike = { status: (code: number) => { send: (body: unknown) => unknown } };
 
@@ -188,19 +190,40 @@ const mktRoutes: FastifyPluginAsync = async (server) => {
       obtained: { opportunities: related, questions: relatedQuestions, piecesCount, publicationsCount },
     });
 
+    const cleexs = await fetchCleexsSnapshot(workspace.id);
+    let objective = proposal.objective;
+    let brief: Record<string, unknown> = { ...(proposal.brief as Record<string, unknown>) };
+    if (cleexs.configured) {
+      const weak = cleexs.snapshot.latest?.weakPrompts.slice(0, 3) ?? [];
+      objective += ` Datos reales de Cleexs: Cleexs Score ${cleexs.snapshot.cleexsScore != null ? Math.round(cleexs.snapshot.cleexsScore) : 'sin corrida'} para ${cleexs.snapshot.brand.name} (${cleexs.snapshot.brand.domain ?? 'sin dominio'}), ${cleexs.snapshot.brand.competitors.length} competidores medidos${weak.length ? `; consultas donde la marca no aparece: ${weak.map((w) => `"${w.prompt.slice(0, 80)}"`).join(', ')}` : ''}.`;
+      brief = {
+        ...brief,
+        cleexs: {
+          brand: cleexs.snapshot.brand.name,
+          domain: cleexs.snapshot.brand.domain,
+          cleexsScore: cleexs.snapshot.cleexsScore,
+          competitors: cleexs.snapshot.brand.competitors.map((c) => c.name),
+          weakPrompts: weak,
+          scoreByIntention: cleexs.snapshot.latest?.scoreByIntention ?? [],
+        },
+      };
+    } else {
+      brief = { ...brief, cleexs: { configured: false, reason: cleexs.reason } };
+    }
+
     const campaign = await prisma.marketingCampaign.create({
       data: {
         workspaceId: workspace.id,
         title: proposal.title,
-        objective: proposal.objective,
+        objective,
         audience: proposal.audience,
         sourceType: 'catalog',
         sourceLabel: product.name,
         sourceRefId: product.id,
-        brief: proposal.brief,
+        brief: JSON.parse(JSON.stringify(brief)) as Prisma.InputJsonValue,
       },
     });
-    return { ok: true, campaign, proposal };
+    return { ok: true, campaign, proposal: { ...proposal, objective } };
   });
 
   server.get('/:workspace/overview', async (request, reply) => {
@@ -210,6 +233,7 @@ const mktRoutes: FastifyPluginAsync = async (server) => {
     const denied = guard(request.authUser, workspace.id, reply);
     if (denied) return denied;
 
+    const cleexs = await fetchCleexsSnapshot(workspace.id);
     const [campaigns, offers, emails, opportunities, pieces, publications, growthOpps] = await Promise.all([
       prisma.marketingCampaign.findMany({ where: { workspaceId: workspace.id }, orderBy: { createdAt: 'desc' }, take: 20, include: { _count: { select: { offers: true, emails: true } } } }),
       prisma.marketingOffer.findMany({ where: { workspaceId: workspace.id }, orderBy: { createdAt: 'desc' }, take: 20 }),
@@ -240,6 +264,7 @@ const mktRoutes: FastifyPluginAsync = async (server) => {
       sendingEnabled: false,
       sendingNote: 'El envío real de email se habilita cuando el cliente conecta su dominio (SPF/DKIM) y su lista con consentimiento. Por ahora, el agente deja borradores aprobables.',
       agents: MKT_AGENTS,
+      cleexs,
       summary,
       campaigns,
       offers: offers.map(serializeOffer),
@@ -254,6 +279,7 @@ const mktRoutes: FastifyPluginAsync = async (server) => {
     if (!workspace) return;
     const denied = guard(request.authUser, workspace.id, reply);
     if (denied) return denied;
+    const cleexs = await fetchCleexsSnapshot(workspace.id);
     const [opportunities, questions, all] = await Promise.all([
       prisma.keywordOpportunity.findMany({ where: { workspaceId: workspace.id }, orderBy: [{ opportunityScore: 'desc' }, { priority: 'desc' }], take: 60 }),
       prisma.keywordQuestion.findMany({ where: { workspaceId: workspace.id }, orderBy: { priority: 'desc' }, take: 30 }),
@@ -264,7 +290,7 @@ const mktRoutes: FastifyPluginAsync = async (server) => {
       clicks: all.reduce((a, o) => a + (o.gscClicks ?? 0), 0),
       searches: all.reduce((a, o) => a + (o.monthlySearches ?? 0), 0),
     };
-    return { workspace: slug, google, opportunities, questions };
+    return { workspace: slug, cleexs, google, opportunities, questions };
   });
 
   server.get('/:workspace/contenidos', async (request, reply) => {
@@ -326,6 +352,7 @@ const mktRoutes: FastifyPluginAsync = async (server) => {
       prisma.keywordOpportunity.count({ where: { workspaceId: workspace.id, status: { in: ['idea', 'queued'] } } }),
       prisma.growthOpportunity.count({ where: { workspaceId: workspace.id } }),
     ]);
+    const cleexs = await fetchCleexsSnapshot(workspace.id);
     const now = new Date();
     const expired = offers.filter((o) => offerDerivedStatus(o, now) === 'expired').length;
     const recommendations: Array<{ level: 'alta' | 'media' | 'baja'; text: string; route: string }> = [];
@@ -334,9 +361,17 @@ const mktRoutes: FastifyPluginAsync = async (server) => {
     if (emails.filter((e) => e.status === 'approved').length > 0) recommendations.push({ level: 'media', text: 'Hay emails aprobados esperando: se enviarán cuando el cliente conecte su dominio.', route: '/marketing/email' });
     if (pieces.filter((p) => p.status === 'published').length === 0 && pieces.length > 0) recommendations.push({ level: 'alta', text: 'Hay contenido creado pero nada publicado: revisá aprobaciones y publicá la primera pieza.', route: '/marketing/contenidos' });
     if (growthOpps > 0) recommendations.push({ level: 'baja', text: `${growthOpps} oportunidades de difusión detectadas: prepará propuestas de contacto desde Difusión.`, route: '/marketing/difusion' });
-    if (recommendations.length === 0) recommendations.push({ level: 'baja', text: 'Sin alertas: el sistema está al día. Revisá Visibilidad para detectar nuevas oportunidades.', route: '/marketing/visibilidad' });
+    if (cleexs.configured && cleexs.snapshot.latest && cleexs.snapshot.latest.weakPrompts.length > 0) {
+      const weak = cleexs.snapshot.latest.weakPrompts[0];
+      recommendations.unshift({ level: 'alta', text: `Cleexs Score ${cleexs.snapshot.cleexsScore != null ? Math.round(cleexs.snapshot.cleexsScore) : '—'}: tu marca no aparece en "${weak.prompt.slice(0, 90)}" (ganan: ${weak.top.join(', ') || 'otros'}). Rankear recomienda una campaña sobre esa consulta.`, route: '/marketing/visibilidad' });
+    }
+    if (!cleexs.configured) {
+      recommendations.push({ level: 'alta', text: `Datos de Cleexs sin conectar: ${cleexs.reason}`, route: '/marketing/visibilidad' });
+    }
+    if (recommendations.length === 0) recommendations.push({ level: 'baja', text: 'Sin alertas: el sistema está al día. Revisá Rankear para detectar nuevas oportunidades.', route: '/marketing/visibilidad' });
     return {
       workspace: slug,
+      cleexs,
       counts: {
         campaigns: campaigns.length,
         campaignsByStatus: campaigns.reduce<Record<string, number>>((a, c) => ({ ...a, [c.status]: (a[c.status] ?? 0) + 1 }), {}),
