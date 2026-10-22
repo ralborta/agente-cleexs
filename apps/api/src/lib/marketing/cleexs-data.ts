@@ -73,9 +73,6 @@ async function fetchSnapshotEndpoint(domain: string): Promise<CleexsDataResult |
       headers: { 'x-cleexs-service-key': key },
       signal: AbortSignal.timeout(20_000),
     });
-    if (res.status === 404) {
-      return { configured: false, reason: `Cleexs no tiene una marca registrada para ${domain}. Se crea con el diagnóstico de marca de Cleexs.` };
-    }
     if (!res.ok) return null;
     const snapshot = (await res.json()) as CleexsSnapshot;
     return { configured: true, snapshot };
@@ -274,6 +271,9 @@ export async function fetchCleexsSnapshot(workspaceId: string): Promise<CleexsDa
   }
   if (!domain && !brandId) {
     return { configured: false, reason: 'Este workspace no tiene dominio ni marca de Cleexs asociada.' };
+  }
+  if (domain) {
+    return { configured: false, reason: `Cleexs no tiene una marca registrada para ${domain}. Se crea con el diagnóstico de marca de Cleexs.` };
   }
   return { configured: false, reason: 'No se pudo contactar a la API de Cleexs para traer los datos.' };
 }
