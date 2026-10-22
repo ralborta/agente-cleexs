@@ -148,7 +148,11 @@ const mktRoutes: FastifyPluginAsync = async (server) => {
         where: { workspaceId: workspace.id },
         orderBy: { updatedAt: 'desc' },
         take: 60,
-        include: { publication: { select: { url: true, publishedAt: true } }, cluster: { select: { name: true } } },
+        select: {
+          id: true, title: true, type: true, status: true, slug: true, keyword: true, updatedAt: true,
+          publication: { select: { url: true, publishedAt: true } },
+          cluster: { select: { name: true } },
+        },
       }),
       prisma.publication.count({ where: { workspaceId: workspace.id } }),
     ]);
