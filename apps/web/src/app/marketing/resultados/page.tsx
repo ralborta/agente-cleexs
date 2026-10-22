@@ -41,7 +41,7 @@ export default function ResultadosPage() {
 
   return (
     <>
-      <PageHeader kicker="Agente · Análisis de Resultados" title="Resultados y mejoras">
+      <PageHeader kicker="Agente de Análisis de Resultados" title="Analítica">
         Mide el desempeño de tus campañas, ofertas, contenidos y difusión, y te recomienda qué repetir, ajustar o
         detener. Sin datos inventados: todo sale de tu actividad real.
       </PageHeader>
@@ -82,7 +82,7 @@ export default function ResultadosPage() {
             </div>
             <p className="mt-5 rounded-xl bg-slate-50 px-3 py-2.5 text-[13px] text-slate-500">
               La evolución de visibilidad en IA y Google se sigue en{' '}
-              <Link href="/marketing/visibilidad" className="font-semibold text-blue-600 hover:underline">Visibilidad</Link>:
+              <Link href="/marketing/visibilidad" className="font-semibold text-blue-600 hover:underline">Rankear</Link>:
               cuando una campaña actúa sobre una consulta, ahí se ve si la marca empieza a aparecer.
             </p>
           </Card>

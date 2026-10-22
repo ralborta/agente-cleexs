@@ -52,6 +52,7 @@ model Workspace {
   marketingCampaigns     MarketingCampaign[]
   marketingOffers        MarketingOffer[]
   marketingEmailDrafts   MarketingEmailDraft[]
+  mktCatalogItems        MktCatalogItem[]
 
   @@map("workspaces")
 }
@@ -1174,4 +1175,28 @@ model MarketingEmailDraft {
   @@index([workspaceId, status, createdAt])
   @@index([campaignId])
   @@map("marketing_email_drafts")
+}
+
+enum MktCatalogKind {
+  servicio
+  producto
+}
+
+/// Servicios y productos de la empresa: la base sobre la que Estrategia propone campañas.
+model MktCatalogItem {
+  id          String         @id @default(uuid())
+  workspaceId String         @map("workspace_id")
+  kind        MktCatalogKind @default(servicio)
+  name        String
+  description String         @db.Text
+  priceText   String?        @map("price_text")
+  audience    String?        @db.Text
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId, active, createdAt])
+  @@map("mkt_catalog_items")
 }

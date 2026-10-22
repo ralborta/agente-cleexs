@@ -24,7 +24,7 @@ export default function DifusionPage() {
 
   return (
     <>
-      <PageHeader kicker="Agente · Difusión y Alianzas" title="Oportunidades de difusión">
+      <PageHeader kicker="Agente de Difusión y Alianzas" title="Menciones">
         Identifica medios, blogs, directorios y conversaciones donde tu marca debería aparecer, y prepara las
         propuestas de contacto. Publicar en un medio externo siempre requiere tu aprobación.
       </PageHeader>

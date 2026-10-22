@@ -29,9 +29,9 @@ export default function ContenidosPage() {
 
   return (
     <>
-      <PageHeader kicker="Agente · Noticias y Contenidos" title="Noticias y contenidos">
+      <PageHeader kicker="Agente de Noticias y Contenidos" title="Contenidos">
         Genera y publica noticias, artículos y contenidos para tu web y redes. Estas son las piezas reales de tu marca:
-        una noticia comunica y construye confianza; la acción comercial va por <Link href="/marketing/ofertas" className="font-semibold text-blue-600 hover:underline">Ofertas</Link>.
+        una noticia comunica y construye confianza; la acción comercial va por <Link href="/marketing/ofertas" className="font-semibold text-blue-600 hover:underline">Promociones</Link>.
       </PageHeader>
 
       {error ? <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}

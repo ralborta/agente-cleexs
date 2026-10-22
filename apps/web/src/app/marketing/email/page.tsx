@@ -30,7 +30,7 @@ export default function EmailPage() {
 
   return (
     <>
-      <PageHeader kicker="Agente · Email Marketing" title="Campañas de email">
+      <PageHeader kicker="Agente de Email Marketing" title="Email Marketing">
         Crea campañas personalizadas de novedades, ofertas, seguimiento y reactivación. El agente redacta la secuencia y
         la deja en borrador: aprobar no envía nada hasta que conectes tu dominio.
       </PageHeader>

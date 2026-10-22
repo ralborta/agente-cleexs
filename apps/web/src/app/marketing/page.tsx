@@ -35,7 +35,7 @@ export default function MarketingHomePage() {
       ) : data ? (
         <>
           <div className="mb-8 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Stat label="Oportunidades abiertas" value={data.summary.opportunitiesOpen} hint="Detectadas por Visibilidad" />
+            <Stat label="Oportunidades abiertas" value={data.summary.opportunitiesOpen} hint="Detectadas por Rankear" />
             <Stat label="Campañas" value={data.summary.campaigns} hint={`${data.summary.campaignsApprovedOrActive} aprobadas o activas`} />
             <Stat label="Contenidos publicados" value={data.summary.publications} hint={`${data.summary.pieces} piezas creadas`} />
             <Stat label="Emails en borrador" value={data.summary.emailsDraft} hint={`${data.summary.emailsApproved} aprobados · sin envío`} />
@@ -85,7 +85,7 @@ export default function MarketingHomePage() {
             <Card>
               <h3 className="mb-3 font-bold text-slate-900">Cómo trabaja el sistema</h3>
               <ol className="space-y-3 text-sm leading-relaxed text-slate-600">
-                <li><strong className="text-slate-900">1. Visibilidad detecta</strong> dónde tu marca aparece poco en IA y Google.</li>
+                <li><strong className="text-slate-900">1. Rankear detecta</strong> dónde tu marca aparece poco en IA y Google.</li>
                 <li><strong className="text-slate-900">2. El Planificador propone</strong> una campaña sobre esa oportunidad, con objetivo y público.</li>
                 <li><strong className="text-slate-900">3. Contenidos, Ofertas y Email ejecutan</strong> la pieza, la promoción y la secuencia — siempre en borrador.</li>
                 <li><strong className="text-slate-900">4. Vos aprobás</strong> antes de que algo se publique o se envíe.</li>

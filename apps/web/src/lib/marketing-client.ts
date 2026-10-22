@@ -121,3 +121,21 @@ export const updateMktEmail = (ws: string, id: string, data: Partial<{ status: s
 
 export const deleteMktEmail = (ws: string, id: string) =>
   api<{ ok: boolean }>(`/api/mkt/${ws}/emails/${id}`, { method: 'DELETE' });
+
+export type MktCatalogItem = {
+  id: string; kind: 'servicio' | 'producto'; name: string; description: string;
+  priceText: string | null; audience: string | null; active: boolean; createdAt: string;
+};
+export type MktGoal = { key: string; label: string };
+
+export const fetchMktCatalog = (ws: string) =>
+  api<{ workspace: string; goals: MktGoal[]; items: MktCatalogItem[] }>(`/api/mkt/${ws}/catalog`);
+
+export const createMktCatalogItem = (ws: string, data: { kind: string; name: string; description: string; priceText?: string; audience?: string }) =>
+  api<{ ok: boolean; item: MktCatalogItem }>(`/api/mkt/${ws}/catalog`, { method: 'POST', body: JSON.stringify(data) });
+
+export const deleteMktCatalogItem = (ws: string, id: string) =>
+  api<{ ok: boolean }>(`/api/mkt/${ws}/catalog/${id}`, { method: 'DELETE' });
+
+export const proposeMktCampaign = (ws: string, data: { catalogItemId: string; goal: string; audience?: string; notes?: string }) =>
+  api<{ ok: boolean; campaign: MktCampaign }>(`/api/mkt/${ws}/campaigns/propose`, { method: 'POST', body: JSON.stringify(data) });

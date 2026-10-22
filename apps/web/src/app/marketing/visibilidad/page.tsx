@@ -37,7 +37,7 @@ export default function VisibilidadPage() {
 
   return (
     <>
-      <PageHeader kicker="Agente · Posicionamiento y Visibilidad" title="Visibilidad en IA y Google">
+      <PageHeader kicker="Agente de Posicionamiento y Visibilidad" title="Rankear">
         Monitorea dónde aparece tu marca, compara con competidores y detecta las consultas donde deberías estar.
         Este es el radar que alimenta al Planificador: cada oportunidad puede convertirse en campaña.
       </PageHeader>

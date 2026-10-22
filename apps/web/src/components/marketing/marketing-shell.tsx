@@ -22,12 +22,12 @@ import { cn } from '@/lib/utils';
 const NAV = [
   { href: '/marketing', label: 'Inicio', icon: Home, exact: true },
   { href: '/marketing/estrategia', label: 'Planificador de campañas', icon: CalendarRange },
-  { href: '/marketing/email', label: 'Campañas de email', icon: Mail },
-  { href: '/marketing/contenidos', label: 'Noticias y contenidos', icon: Newspaper },
-  { href: '/marketing/ofertas', label: 'Ofertas y promociones', icon: BadgePercent },
-  { href: '/marketing/visibilidad', label: 'Visibilidad en IA y Google', icon: Eye },
-  { href: '/marketing/difusion', label: 'Oportunidades de difusión', icon: Users },
-  { href: '/marketing/resultados', label: 'Resultados y mejoras', icon: BarChart3 },
+  { href: '/marketing/email', label: 'Email Marketing', icon: Mail },
+  { href: '/marketing/contenidos', label: 'Contenidos', icon: Newspaper },
+  { href: '/marketing/ofertas', label: 'Promociones', icon: BadgePercent },
+  { href: '/marketing/visibilidad', label: 'Rankear', icon: Eye },
+  { href: '/marketing/difusion', label: 'Menciones', icon: Users },
+  { href: '/marketing/resultados', label: 'Analítica', icon: BarChart3 },
 ];
 
 export function MarketingShell({ children }: { children: ReactNode }) {

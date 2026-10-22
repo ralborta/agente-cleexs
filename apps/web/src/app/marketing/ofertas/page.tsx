@@ -44,7 +44,7 @@ export default function OfertasPage() {
 
   return (
     <>
-      <PageHeader kicker="Agente · Ofertas y Promociones" title="Ofertas y promociones">
+      <PageHeader kicker="Agente de Ofertas y Promociones" title="Promociones">
         Crea promociones a partir de productos, precios y condiciones que vos aprobás. Cada oferta se adapta al canal y
         controla su vigencia: vencida la fecha, deja de ofrecerse sola.
       </PageHeader>

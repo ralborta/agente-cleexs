@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
-import { MKT_AGENTS, buildEmailDraft, campaignFromOpportunity, offerDerivedStatus } from '../lib/marketing/agents';
+import { CAMPAIGN_GOALS, MKT_AGENTS, buildCampaignProposal, buildEmailDraft, campaignFromOpportunity, offerDerivedStatus } from '../lib/marketing/agents';
 
 type ReplyLike = { status: (code: number) => { send: (body: unknown) => unknown } };
 
@@ -72,7 +72,137 @@ function serializeOffer<T extends { status: string; endsAt: Date | null }>(o: T)
   return { ...o, derivedStatus: offerDerivedStatus(o) };
 }
 
+const catalogCreate = z.object({
+  kind: z.enum(['servicio', 'producto']).default('servicio'),
+  name: z.string().min(2).max(200),
+  description: z.string().min(5).max(4000),
+  priceText: z.string().max(200).nullable().optional(),
+  audience: z.string().max(1000).nullable().optional(),
+});
+const catalogPatch = catalogCreate.partial().extend({ active: z.boolean().optional() });
+const proposeCreate = z.object({
+  catalogItemId: z.string().uuid(),
+  goal: z.string().min(2).max(60),
+  audience: z.string().max(1000).nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+});
+
 const mktRoutes: FastifyPluginAsync = async (server) => {
+  // ——— Catálogo de servicios/productos (base del Planificador) ———
+  server.get('/:workspace/catalog', async (request, reply) => {
+    const { workspace: slug } = request.params as { workspace: string };
+    const workspace = await wsOr404(slug, reply);
+    if (!workspace) return;
+    const denied = guard(request.authUser, workspace.id, reply);
+    if (denied) return denied;
+    const items = await prisma.mktCatalogItem.findMany({ where: { workspaceId: workspace.id }, orderBy: { createdAt: 'desc' } });
+    return { workspace: slug, goals: CAMPAIGN_GOALS, items };
+  });
+
+  server.post('/:workspace/catalog', async (request, reply) => {
+    const { workspace: slug } = request.params as { workspace: string };
+    const workspace = await wsOr404(slug, reply);
+    if (!workspace) return;
+    const denied = guard(request.authUser, workspace.id, reply, true);
+    if (denied) return denied;
+    const parsed = catalogCreate.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: 'Datos inválidos', details: parsed.error.flatten() });
+    const item = await prisma.mktCatalogItem.create({ data: { workspaceId: workspace.id, ...parsed.data, priceText: parsed.data.priceText ?? null, audience: parsed.data.audience ?? null } });
+    return { ok: true, item };
+  });
+
+  server.patch('/:workspace/catalog/:id', async (request, reply) => {
+    const { workspace: slug, id } = request.params as { workspace: string; id: string };
+    const workspace = await wsOr404(slug, reply);
+    if (!workspace) return;
+    const denied = guard(request.authUser, workspace.id, reply, true);
+    if (denied) return denied;
+    const parsed = catalogPatch.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: 'Datos inválidos', details: parsed.error.flatten() });
+    const existing = await prisma.mktCatalogItem.findFirst({ where: { id, workspaceId: workspace.id } });
+    if (!existing) return reply.status(404).send({ error: 'Ítem no encontrado' });
+    const item = await prisma.mktCatalogItem.update({ where: { id }, data: parsed.data });
+    return { ok: true, item };
+  });
+
+  server.delete('/:workspace/catalog/:id', async (request, reply) => {
+    const { workspace: slug, id } = request.params as { workspace: string; id: string };
+    const workspace = await wsOr404(slug, reply);
+    if (!workspace) return;
+    const denied = guard(request.authUser, workspace.id, reply, true);
+    if (denied) return denied;
+    const existing = await prisma.mktCatalogItem.findFirst({ where: { id, workspaceId: workspace.id } });
+    if (!existing) return reply.status(404).send({ error: 'Ítem no encontrado' });
+    await prisma.mktCatalogItem.delete({ where: { id } });
+    return { ok: true };
+  });
+
+  /**
+   * El Planificador propone una campaña:
+   * base = servicio/producto · pide = objetivo/público/notas · obtiene = Rankear + preguntas + contenido.
+   */
+  server.post('/:workspace/campaigns/propose', async (request, reply) => {
+    const { workspace: slug } = request.params as { workspace: string };
+    const workspace = await wsOr404(slug, reply);
+    if (!workspace) return;
+    const denied = guard(request.authUser, workspace.id, reply, true);
+    if (denied) return denied;
+    const parsed = proposeCreate.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: 'Datos inválidos', details: parsed.error.flatten() });
+    const d = parsed.data;
+    const product = await prisma.mktCatalogItem.findFirst({ where: { id: d.catalogItemId, workspaceId: workspace.id } });
+    if (!product) return reply.status(404).send({ error: 'Servicio/producto no encontrado' });
+
+    const goal = CAMPAIGN_GOALS.find((g) => g.key === d.goal) ?? { key: d.goal, label: d.goal };
+    const terms = `${product.name} ${product.description}`.toLowerCase();
+    const [opportunities, questions, piecesCount, publicationsCount] = await Promise.all([
+      prisma.keywordOpportunity.findMany({
+        where: { workspaceId: workspace.id, status: { in: ['idea', 'queued', 'in_progress'] } },
+        orderBy: [{ opportunityScore: 'desc' }, { priority: 'desc' }],
+        take: 30,
+      }),
+      prisma.keywordQuestion.findMany({ where: { workspaceId: workspace.id }, orderBy: { priority: 'desc' }, take: 30 }),
+      prisma.contentPiece.count({ where: { workspaceId: workspace.id } }),
+      prisma.publication.count({ where: { workspaceId: workspace.id } }),
+    ]);
+    const related = opportunities
+      .map((o) => {
+        const hay = `${o.keyword} ${o.cluster}`.toLowerCase();
+        const hits = terms.split(/\s+/).filter((w) => w.length > 4 && hay.includes(w)).length;
+        return { o, hits };
+      })
+      .sort((a, b) => b.hits - a.hits || (b.o.opportunityScore ?? b.o.priority) - (a.o.opportunityScore ?? a.o.priority))
+      .slice(0, 5)
+      .map(({ o }) => ({ keyword: o.keyword, cluster: o.cluster, stage: o.stage, monthlySearches: o.monthlySearches, opportunityScore: o.opportunityScore ?? o.priority }));
+    const relatedQuestions = questions
+      .filter((q) => related.some((r) => r.cluster === q.cluster))
+      .slice(0, 5)
+      .map((q) => ({ question: q.question, cluster: q.cluster }));
+
+    const proposal = buildCampaignProposal({
+      product: { name: product.name, kind: product.kind, description: product.description, priceText: product.priceText, audience: product.audience },
+      goalLabel: goal.label,
+      goalKey: goal.key,
+      askedAudience: d.audience ?? null,
+      askedNotes: d.notes ?? null,
+      obtained: { opportunities: related, questions: relatedQuestions, piecesCount, publicationsCount },
+    });
+
+    const campaign = await prisma.marketingCampaign.create({
+      data: {
+        workspaceId: workspace.id,
+        title: proposal.title,
+        objective: proposal.objective,
+        audience: proposal.audience,
+        sourceType: 'catalog',
+        sourceLabel: product.name,
+        sourceRefId: product.id,
+        brief: proposal.brief,
+      },
+    });
+    return { ok: true, campaign, proposal };
+  });
+
   server.get('/:workspace/overview', async (request, reply) => {
     const { workspace: slug } = request.params as { workspace: string };
     const workspace = await wsOr404(slug, reply);
