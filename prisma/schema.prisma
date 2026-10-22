@@ -49,6 +49,9 @@ model Workspace {
   growthInterventions    GrowthIntervention[]
   growthInterventionMetrics GrowthInterventionMetric[]
   growthTopicInsights    GrowthTopicInsight[]
+  marketingCampaigns     MarketingCampaign[]
+  marketingOffers        MarketingOffer[]
+  marketingEmailDrafts   MarketingEmailDraft[]
 
   @@map("workspaces")
 }
@@ -1071,4 +1074,106 @@ model GrowthTopicInsight {
   @@index([workspaceId, status, createdAt])
   @@index([topicKey])
   @@map("growth_topic_insights")
+}
+
+// ============================================
+// CLEEXS MARKETING (campañas, ofertas, email)
+// ============================================
+
+enum MarketingCampaignStatus {
+  proposed
+  approved
+  active
+  finished
+  archived
+}
+
+enum MarketingOfferStatus {
+  draft
+  approved
+  active
+  archived
+}
+
+enum MarketingEmailStatus {
+  draft
+  approved
+  discarded
+}
+
+model MarketingCampaign {
+  id          String                  @id @default(uuid())
+  workspaceId String                  @map("workspace_id")
+  title       String
+  objective   String                  @db.Text
+  audience    String?                 @db.Text
+  /// opportunity | manual | keyword | growth | discovery
+  sourceType  String                  @default("manual") @map("source_type")
+  sourceLabel String?                 @map("source_label")
+  sourceRefId String?                 @map("source_ref_id")
+  status      MarketingCampaignStatus @default(proposed)
+  agentSlug   String                  @default("marketing") @map("agent_slug")
+  brief       Json?
+  startsAt    DateTime?               @map("starts_at")
+  endsAt      DateTime?               @map("ends_at")
+  createdAt   DateTime                @default(now()) @map("created_at")
+  updatedAt   DateTime                @updatedAt @map("updated_at")
+
+  workspace Workspace           @relation(fields: [workspaceId], references: [id])
+  offers    MarketingOffer[]
+  emails    MarketingEmailDraft[]
+
+  @@index([workspaceId, status, createdAt])
+  @@map("marketing_campaigns")
+}
+
+model MarketingOffer {
+  id           String               @id @default(uuid())
+  workspaceId  String               @map("workspace_id")
+  campaignId   String?              @map("campaign_id")
+  title        String
+  description  String               @db.Text
+  priceText    String?              @map("price_text")
+  discountText String?              @map("discount_text")
+  terms        String?              @db.Text
+  channels     Json?
+  status       MarketingOfferStatus @default(draft)
+  startsAt     DateTime?            @map("starts_at")
+  endsAt       DateTime?            @map("ends_at")
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+
+  workspace Workspace           @relation(fields: [workspaceId], references: [id])
+  campaign  MarketingCampaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  emails    MarketingEmailDraft[]
+
+  @@index([workspaceId, status, createdAt])
+  @@index([campaignId])
+  @@map("marketing_offers")
+}
+
+model MarketingEmailDraft {
+  id          String               @id @default(uuid())
+  workspaceId String               @map("workspace_id")
+  campaignId  String?              @map("campaign_id")
+  offerId     String?              @map("offer_id")
+  segment     String
+  subject     String
+  preheader   String?
+  body        String               @db.Text
+  ctaText     String?              @map("cta_text")
+  ctaUrl      String?              @map("cta_url")
+  status      MarketingEmailStatus @default(draft)
+  /// template | llm | manual — el envío real requiere dominio del cliente conectado
+  source      String               @default("template")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  workspace Workspace          @relation(fields: [workspaceId], references: [id])
+  campaign  MarketingCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  offer     MarketingOffer?    @relation(fields: [offerId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, status, createdAt])
+  @@index([campaignId])
+  @@map("marketing_email_drafts")
 }

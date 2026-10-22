@@ -37,6 +37,27 @@ async function main() {
     },
   });
 
+  // Cleexs Marketing (v1: planificación, ofertas y email en borrador)
+  for (const agent of [
+    {
+      slug: 'marketing',
+      name: 'Planificador de campañas',
+      description: 'Cleexs Marketing: propone campañas a partir de las oportunidades detectadas.',
+    },
+    {
+      slug: 'marketing-email',
+      name: 'Campañas de email',
+      description: 'Cleexs Marketing: redacta secuencias de email en borrador (sin envío hasta conectar el dominio del cliente).',
+    },
+    {
+      slug: 'marketing-offers',
+      name: 'Ofertas y promociones',
+      description: 'Cleexs Marketing: prepara promociones con precio, condiciones y vigencia aprobados.',
+    },
+  ]) {
+    await prisma.agent.upsert({ where: { slug: agent.slug }, update: {}, create: agent });
+  }
+
   const workspace = await prisma.workspace.upsert({
     where: { slug: 'cleexs' },
     update: {},
