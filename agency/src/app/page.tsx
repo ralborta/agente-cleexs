@@ -269,6 +269,8 @@ const panel: React.CSSProperties = {
   borderRadius: 12,
   padding: 16,
   boxShadow: '0 1px 2px rgba(15,23,42,.04)',
+  minWidth: 0,
+  maxWidth: '100%',
 };
 const btnPrimary: React.CSSProperties = {
   background: '#2563EB',
@@ -832,7 +834,7 @@ export default function AgencyPage() {
                 </label>
               </div>
               <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Detalle por prompt ({filteredResults.length})</h3>
-              <div style={{ overflowX: 'auto' }}>
+              <div style={{ overflowX: 'auto', maxWidth: '100%', minWidth: 0 }}>
                 <table>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #E2E8F0', fontSize: 12, color: '#64748B' }}>
