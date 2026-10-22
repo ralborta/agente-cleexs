@@ -1,15 +1,16 @@
 :root {
-  --bg: #070a11;
-  --panel: rgba(17, 24, 39, 0.65);
-  --border: rgba(255, 255, 255, 0.08);
-  --text: #dfe2f1;
-  --muted: #9ca3af;
-  --dim: #6b7280;
-  --cyan: #00f2fe;
-  --violet: #8b5cf6;
-  --emerald: #10b981;
-  --amber: #fbbf24;
-  --rose: #fb7185;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #475569;
+  --dim: #94a3b8;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-soft: #eff6ff;
+  --green: #059669;
+  --amber: #d97706;
+  --rose: #dc2626;
 }
 
 * {
@@ -22,12 +23,14 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
   color: inherit;
 }
@@ -38,19 +41,28 @@ button {
   background: transparent;
 }
 
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 input,
-select {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+select,
+textarea {
+  background: #fff;
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
   outline: none;
   width: 100%;
+  font-size: 0.875rem;
 }
 
 input:focus,
-select:focus {
-  border-color: rgba(0, 242, 254, 0.5);
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 table {
@@ -61,6 +73,6 @@ table {
 th,
 td {
   text-align: left;
-  padding: 0.6rem 0.75rem;
+  padding: 0.55rem 0.65rem;
   vertical-align: top;
 }

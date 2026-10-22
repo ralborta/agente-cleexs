@@ -47,6 +47,10 @@ type Project = {
   name: string;
   brand: string;
   market: string;
+  country: string;
+  line: string;
+  objective: string;
+  frequency: 'Semanal' | 'Quincenal' | 'Mensual' | 'Diaria';
   competitors: string[];
   competitorPool: string[];
   sourcePool: string[];
@@ -202,6 +206,10 @@ function seedProjects(): Project[] {
     name: 'Argentina · Nómina PyME',
     brand: 'Empliados',
     market: 'Argentina / LatAm',
+    country: 'Argentina',
+    line: 'Software de nómina / RR.HH.',
+    objective: 'Ser la primera opción mencionada para liquidar sueldos PyME',
+    frequency: 'Semanal',
     competitors: ['Bejerman', 'Nubox'],
     competitorPool: ['Bejerman', 'Nubox', 'Rex+', 'Zetech', 'Workana Payroll', 'Factorial'],
     sourcePool: ['bejerman.com.ar', 'nubox.com', 'rexmas.com', 'iprofesional.com', 'cronista.com'],
@@ -231,6 +239,10 @@ function seedProjects(): Project[] {
     name: 'México · Pagos PyME',
     brand: 'PagoSimple',
     market: 'México',
+    country: 'México',
+    line: 'Pagos para PyMEs',
+    objective: 'Aparecer como alternativa simple y económica para cobrar con tarjeta',
+    frequency: 'Semanal',
     competitors: ['Clip'],
     competitorPool: ['Clip', 'Mercado Pago', 'Stripe', 'Conekta'],
     sourcePool: ['clip.mx', 'mercadopago.com.mx', 'stripe.com', 'eleconomista.com.mx'],
@@ -245,30 +257,34 @@ function seedProjects(): Project[] {
   return [empliados, pago];
 }
 
-const LS_KEY = 'cleexs-agency-v1';
+const LS_KEY = 'cleexs-agency-v2';
 
 /* ------------------------------------------------------------------ */
-/* Estilos inline (tema oscuro tipo Stitch)                            */
+/* Estilos inline (tema claro Cleexs)                                  */
 /* ------------------------------------------------------------------ */
 
 const panel: React.CSSProperties = {
-  background: 'rgba(17,24,39,.65)',
-  border: '1px solid rgba(255,255,255,.08)',
-  borderRadius: 14,
+  background: '#FFFFFF',
+  border: '1px solid #E2E8F0',
+  borderRadius: 12,
   padding: 16,
+  boxShadow: '0 1px 2px rgba(15,23,42,.04)',
 };
 const btnPrimary: React.CSSProperties = {
-  background: '#00f2fe',
-  color: '#070a11',
+  background: '#2563EB',
+  color: '#FFFFFF',
   fontWeight: 600,
   borderRadius: 8,
   padding: '8px 14px',
+  fontSize: 14,
 };
 const btnGhost: React.CSSProperties = {
-  background: 'rgba(255,255,255,.03)',
-  border: '1px solid rgba(255,255,255,.12)',
+  background: '#FFFFFF',
+  border: '1px solid #E2E8F0',
+  color: '#334155',
   borderRadius: 8,
   padding: '7px 12px',
+  fontSize: 14,
 };
 function pill(color: string): React.CSSProperties {
   return {
@@ -283,11 +299,11 @@ function pill(color: string): React.CSSProperties {
   };
 }
 const labelMono: React.CSSProperties = {
-  fontFamily: '"JetBrains Mono", ui-monospace, monospace',
   fontSize: 11,
-  color: '#9ca3af',
+  fontWeight: 600,
+  color: '#64748B',
   textTransform: 'uppercase',
-  letterSpacing: '.04em',
+  letterSpacing: '.05em',
 };
 
 /* ------------------------------------------------------------------ */
@@ -307,6 +323,11 @@ export default function AgencyPage() {
   const [newCompetitor, setNewCompetitor] = useState('');
   const [compareA, setCompareA] = useState<number | null>(null);
   const [compareB, setCompareB] = useState<number | null>(null);
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [npClient, setNpClient] = useState('');
+  const [npName, setNpName] = useState('');
+  const [npBrand, setNpBrand] = useState('');
+  const [npCountry, setNpCountry] = useState('');
 
   useEffect(() => {
     try {
@@ -397,6 +418,99 @@ export default function AgencyPage() {
     setFlash('Prompt agregado al set (queda en borrador hasta congelar versión).');
   }
 
+  function exportCsv() {
+    if (!latest) return;
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const rows: string[][] = [
+      ['prompt', 'categoria', 'modelo', 'mencionada', 'posicion', 'sentimiento', 'competidores', 'fuentes'],
+      ...latest.results.map((r) => {
+        const pr = promptById.get(r.promptId);
+        return [
+          pr?.text ?? r.promptId,
+          pr?.category ?? '',
+          r.model,
+          r.mentioned ? 'si' : 'no',
+          r.position ? String(r.position) : '',
+          r.sentiment ?? '',
+          r.competitors.join(' · '),
+          r.sources.join(' · '),
+        ];
+      }),
+    ];
+    const blob = new Blob([rows.map((row) => row.map(esc).join(',')).join('\n')], {
+      type: 'text/csv;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cleexs-${project.id}-corrida-${latest.id}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setFlash('CSV exportado con el detalle de la última corrida.');
+  }
+
+  function createProject() {
+    const client = npClient.trim();
+    const name = npName.trim();
+    const brand = npBrand.trim();
+    const country = npCountry.trim();
+    if (!client || !name || !brand || !country) {
+      setFlash('Completá cliente, proyecto, marca y país para crear el proyecto.');
+      return;
+    }
+    const id = `${brand.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString(36)}`;
+    const nuevo: Project = {
+      id,
+      client,
+      name,
+      brand,
+      market: country,
+      country,
+      line: 'A definir',
+      objective: 'A definir con la agencia',
+      frequency: 'Semanal',
+      competitors: [],
+      competitorPool: [],
+      sourcePool: [],
+      ownDomains: [],
+      prompts: [
+        p(`${id}-1`, `mejores opciones de ${brand.toLowerCase()} en ${country.toLowerCase()}`, 'Visibilidad', ['base']),
+        p(`${id}-2`, `qué es ${brand.toLowerCase()} y para quién sirve`, 'Reconocimiento', ['marca']),
+        p(`${id}-3`, `opiniones sobre ${brand.toLowerCase()}`, 'Sentimiento', ['percepción']),
+      ],
+      suggestions: [],
+      version: `${brand.toUpperCase().replace(/[^A-Z0-9]+/g, '')}_v1`,
+      history: [],
+    };
+    nuevo.history = [simulateRun(nuevo, 1, 2)];
+    setProjects((list) => [...list, nuevo]);
+    setProjectId(id);
+    setShowNewProject(false);
+    setNpClient('');
+    setNpName('');
+    setNpBrand('');
+    setNpCountry('');
+    setFlash(`Proyecto ${name} creado para ${client}. Ajustá prompts, competidores y objetivo.`);
+  }
+
+  const modelStats = useMemo(() => {
+    if (!latest) return [];
+    return MODELS.map((m) => {
+      const rows = latest.results.filter((r) => r.model === m);
+      const mentioned = rows.filter((r) => r.mentioned).length;
+      return { model: m, pct: rows.length ? Math.round((mentioned / rows.length) * 1000) / 10 : 0 };
+    });
+  }, [latest]);
+
+  const sentimentStats = useMemo(() => {
+    if (!latest) return [];
+    const rows = latest.results.filter((r) => r.mentioned && r.sentiment);
+    return (['Favorable', 'Neutral', 'Comparativo'] as const).map((s) => ({
+      label: s,
+      pct: rows.length ? Math.round((rows.filter((r) => r.sentiment === s).length / rows.length) * 1000) / 10 : 0,
+    }));
+  }, [latest]);
+
   const deltaScore = latest && previous ? Math.round((latest.score - previous.score) * 10) / 10 : null;
 
   const clients = useMemo(() => Array.from(new Set(projects.map((x) => x.client))), [projects]);
@@ -416,23 +530,31 @@ export default function AgencyPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em' }}>Cleexs · Agencias</div>
-            <div style={{ ...labelMono }}>Visibilidad en respuestas de IA</div>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: '#0F172A' }}>
+              Cleexs <span style={{ color: '#2563EB' }}>· Agencias</span>
+            </div>
+            <div style={{ fontSize: 12, color: '#64748B' }}>Visibilidad de marcas en respuestas de IA</div>
           </div>
-          <span style={pill('#00f2fe')}>Workspace Agencia Demo</span>
-          <span style={pill('#8b5cf6')}>{project.version}</span>
+          <span style={pill('#64748B')}>Prototipo demo</span>
+          <span style={pill('#2563EB')}>{project.version}</span>
         </div>
-        <button type="button" style={btnPrimary} disabled={running} onClick={executeRun}>
-          {running ? 'Ejecutando…' : '▶ Ejecutar consultas'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button type="button" style={btnGhost} onClick={exportCsv} disabled={!latest}>
+            Exportar CSV
+          </button>
+          <button type="button" style={btnPrimary} disabled={running} onClick={executeRun}>
+            {running ? 'Ejecutando…' : 'Ejecutar consultas'}
+          </button>
+        </div>
       </header>
 
       {flash ? (
         <div
           role="status"
           style={{
-            background: 'rgba(0,242,254,.12)',
-            border: '1px solid rgba(0,242,254,.35)',
+            background: '#EFF6FF',
+            border: '1px solid #BFDBFE',
+            color: '#1E3A8A',
             borderRadius: 12,
             padding: '10px 14px',
             marginBottom: 14,
@@ -474,13 +596,61 @@ export default function AgencyPage() {
           </select>
         </label>
         <div style={{ flex: '2 1 260px' }}>
-          <span style={labelMono}>Contexto</span>
-          <p style={{ margin: '6px 0 0', fontSize: 13, color: '#9ca3af' }}>
-            Marca auditada: <b style={{ color: '#dfe2f1' }}>{project.brand}</b> · Mercado: {project.market} ·{' '}
-            {project.prompts.length} prompts · {MODELS.join(' · ')}
+          <span style={labelMono}>Proyecto</span>
+          <p style={{ margin: '6px 0 0', fontSize: 13, color: '#475569', lineHeight: 1.5 }}>
+            Marca: <b style={{ color: '#0F172A' }}>{project.brand}</b> · País: {project.country ?? project.market}
+            <br />
+            Línea: {project.line ?? 'A definir'} · Objetivo: {project.objective ?? 'A definir'}
+            <br />
+            {project.prompts.length} prompts · Modelos: {MODELS.join(' · ')}
           </p>
         </div>
+        <label style={{ flex: '1 1 160px' }}>
+          <span style={labelMono}>Frecuencia</span>
+          <select
+            value={project.frequency ?? 'Semanal'}
+            onChange={(e) =>
+              updateProject((x) => {
+                x.frequency = e.target.value as Project['frequency'];
+                return x;
+              })
+            }
+          >
+            {(['Semanal', 'Quincenal', 'Mensual', 'Diaria'] as const).map((f) => (
+              <option key={f}>{f}</option>
+            ))}
+          </select>
+        </label>
+        <div style={{ alignSelf: 'flex-end' }}>
+          <button type="button" style={btnGhost} onClick={() => setShowNewProject((v) => !v)}>
+            + Nuevo proyecto
+          </button>
+        </div>
       </div>
+
+      {showNewProject && (
+        <div style={{ ...panel, display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14, alignItems: 'flex-end' }}>
+          <label style={{ flex: '1 1 160px' }}>
+            <span style={labelMono}>Cliente</span>
+            <input value={npClient} onChange={(e) => setNpClient(e.target.value)} placeholder="Ej: Agencia / Cliente" />
+          </label>
+          <label style={{ flex: '1 1 180px' }}>
+            <span style={labelMono}>Proyecto</span>
+            <input value={npName} onChange={(e) => setNpName(e.target.value)} placeholder="Ej: Argentina · PyMEs" />
+          </label>
+          <label style={{ flex: '1 1 160px' }}>
+            <span style={labelMono}>Marca</span>
+            <input value={npBrand} onChange={(e) => setNpBrand(e.target.value)} placeholder="Marca auditada" />
+          </label>
+          <label style={{ flex: '1 1 140px' }}>
+            <span style={labelMono}>País</span>
+            <input value={npCountry} onChange={(e) => setNpCountry(e.target.value)} placeholder="País" />
+          </label>
+          <button type="button" style={btnPrimary} onClick={createProject}>
+            Crear proyecto
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <nav style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -522,21 +692,21 @@ export default function AgencyPage() {
               <div style={labelMono}>Visibilidad (Score explicable)</div>
               <div style={{ fontSize: 34, fontWeight: 700, marginTop: 6 }}>
                 {latest.score}
-                <span style={{ fontSize: 15, color: '#9ca3af' }}> / 100</span>
+                <span style={{ fontSize: 15, color: '#64748B' }}> / 100</span>
               </div>
               {deltaScore !== null && (
-                <span style={pill(deltaScore >= 0 ? '#10b981' : '#fb7185')}>
+                <span style={pill(deltaScore >= 0 ? '#059669' : '#DC2626')}>
                   {deltaScore >= 0 ? '+' : ''}
                   {deltaScore} vs corrida anterior
                 </span>
               )}
-              <p style={{ fontSize: 12, color: '#6b7280', marginTop: 8 }}>
+              <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 8 }}>
                 Fórmula v1: 50% aparición + 30% Top 3 + 20% fuentes propias.
               </p>
               <svg viewBox="0 0 120 30" style={{ width: '100%', height: 30, marginTop: 6 }} aria-hidden>
                 <polyline
                   fill="none"
-                  stroke="#00f2fe"
+                  stroke="#2563EB"
                   strokeWidth="1.8"
                   points={project.history
                     .map((h, i) => {
@@ -551,21 +721,65 @@ export default function AgencyPage() {
             <div style={panel}>
               <div style={labelMono}>Aparición de marca</div>
               <div style={{ fontSize: 34, fontWeight: 700, marginTop: 6 }}>{latest.visibilityPct}%</div>
-              <p style={{ fontSize: 12, color: '#6b7280' }}>
+              <p style={{ fontSize: 12, color: '#94A3B8' }}>
                 Sobre {latest.results.length} respuestas ({latest.promptsCount} prompts × {latest.models.length}{' '}
                 modelos).
               </p>
             </div>
             <div style={panel}>
               <div style={labelMono}>Top 3</div>
-              <div style={{ fontSize: 34, fontWeight: 700, marginTop: 6, color: '#00f2fe' }}>{latest.top3Pct}%</div>
-              <p style={{ fontSize: 12, color: '#6b7280' }}>Mencionada entre las primeras 3 opciones.</p>
+              <div style={{ fontSize: 34, fontWeight: 700, marginTop: 6, color: '#2563EB' }}>{latest.top3Pct}%</div>
+              <p style={{ fontSize: 12, color: '#94A3B8' }}>Mencionada entre las primeras 3 opciones.</p>
             </div>
             <div style={panel}>
               <div style={labelMono}>Presencia en fuentes</div>
               <div style={{ fontSize: 34, fontWeight: 700, marginTop: 6 }}>{latest.ownSourcesPct}%</div>
-              <p style={{ fontSize: 12, color: '#6b7280' }}>
+              <p style={{ fontSize: 12, color: '#94A3B8' }}>
                 Respuestas con mención que citan dominios propios ({project.ownDomains.join(', ')}).
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+            <div style={panel}>
+              <h3 style={{ margin: '0 0 10px', fontSize: 15 }}>Visibilidad por modelo</h3>
+              {modelStats.map((m) => (
+                <div key={m.model} style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                    <span>{m.model}</span>
+                    <span style={{ color: '#2563EB', fontWeight: 600 }}>{m.pct}%</span>
+                  </div>
+                  <div style={{ background: '#F1F5F9', borderRadius: 999, height: 6, overflow: 'hidden' }}>
+                    <div style={{ width: `${Math.min(100, m.pct)}%`, height: '100%', background: '#2563EB', borderRadius: 999 }} />
+                  </div>
+                </div>
+              ))}
+              <p style={{ fontSize: 12, color: '#94A3B8', margin: '8px 0 0' }}>
+                % de respuestas de cada modelo que mencionan a {project.brand}.
+              </p>
+            </div>
+            <div style={panel}>
+              <h3 style={{ margin: '0 0 10px', fontSize: 15 }}>Sentimiento cuando hay mención</h3>
+              {sentimentStats.map((s) => (
+                <div key={s.label} style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                    <span>{s.label}</span>
+                    <span style={{ color: '#2563EB', fontWeight: 600 }}>{s.pct}%</span>
+                  </div>
+                  <div style={{ background: '#F1F5F9', borderRadius: 999, height: 6, overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${Math.min(100, s.pct)}%`,
+                        height: '100%',
+                        background: s.label === 'Favorable' ? '#059669' : s.label === 'Neutral' ? '#64748B' : '#D97706',
+                        borderRadius: 999,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+              <p style={{ fontSize: 12, color: '#94A3B8', margin: '8px 0 0' }}>
+                Cómo describe la IA a la marca en las respuestas donde aparece.
               </p>
             </div>
           </div>
@@ -580,14 +794,14 @@ export default function AgencyPage() {
                       {c.name}
                       {c.name === project.brand ? ' · marca auditada' : ''}
                     </span>
-                    <span style={{ fontFamily: 'monospace', color: '#00f2fe' }}>{c.pct}%</span>
+                    <span style={{ fontFamily: 'monospace', color: '#2563EB' }}>{c.pct}%</span>
                   </div>
-                  <div style={{ background: 'rgba(255,255,255,.06)', borderRadius: 999, height: 6, overflow: 'hidden' }}>
+                  <div style={{ background: '#F1F5F9', borderRadius: 999, height: 6, overflow: 'hidden' }}>
                     <div
                       style={{
                         width: `${Math.min(100, c.pct)}%`,
                         height: '100%',
-                        background: c.name === project.brand ? '#00f2fe' : '#8b5cf6',
+                        background: c.name === project.brand ? '#2563EB' : '#64748B',
                         borderRadius: 999,
                       }}
                     />
@@ -621,30 +835,34 @@ export default function AgencyPage() {
               <div style={{ overflowX: 'auto' }}>
                 <table>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,.08)', fontSize: 12, color: '#9ca3af' }}>
+                    <tr style={{ borderBottom: '1px solid #E2E8F0', fontSize: 12, color: '#64748B' }}>
                       <th>Prompt</th>
                       <th>Modelo</th>
                       <th>Mención</th>
                       <th>Sentimiento</th>
+                      <th>Competidores</th>
+                      <th>Fuentes</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredResults.slice(0, 14).map((r, i) => (
-                      <tr key={`${r.promptId}-${r.model}-${i}`} style={{ borderBottom: '1px solid rgba(255,255,255,.05)', fontSize: 13 }}>
+                      <tr key={`${r.promptId}-${r.model}-${i}`} style={{ borderBottom: '1px solid #EEF2F7', fontSize: 13 }}>
                         <td style={{ maxWidth: 320 }}>{promptById.get(r.promptId)?.text ?? r.promptId}</td>
                         <td>
-                          <span style={pill('#8b5cf6')}>{r.model}</span>
+                          <span style={pill('#64748B')}>{r.model}</span>
                         </td>
                         <td>
                           {r.mentioned ? (
-                            <span style={pill(r.position !== null && r.position <= 3 ? '#10b981' : '#00f2fe')}>
+                            <span style={pill(r.position !== null && r.position <= 3 ? '#059669' : '#2563EB')}>
                               {r.position ? `Top ${r.position}` : 'Mencionada'}
                             </span>
                           ) : (
-                            <span style={pill('#fb7185')}>No citada</span>
+                            <span style={pill('#DC2626')}>No citada</span>
                           )}
                         </td>
-                        <td style={{ color: '#9ca3af' }}>{r.sentiment ?? '—'}</td>
+                        <td style={{ color: '#64748B' }}>{r.sentiment ?? '—'}</td>
+                        <td style={{ color: '#64748B', maxWidth: 180 }}>{r.competitors.length ? r.competitors.join(', ') : '—'}</td>
+                        <td style={{ color: '#64748B', maxWidth: 180 }}>{r.sources.length ? r.sources.join(', ') : '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -659,7 +877,7 @@ export default function AgencyPage() {
         <section style={{ ...panel }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             <h3 style={{ margin: 0, fontSize: 16 }}>
-              Set de prompts · <span style={{ fontFamily: 'monospace', color: '#00f2fe' }}>{project.version}</span>
+              Set de prompts · <span style={{ fontFamily: 'monospace', color: '#2563EB' }}>{project.version}</span>
             </h3>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button type="button" style={btnGhost} onClick={freezeVersion}>
@@ -670,7 +888,7 @@ export default function AgencyPage() {
               </button>
             </div>
           </div>
-          <p style={{ fontSize: 13, color: '#9ca3af' }}>
+          <p style={{ fontSize: 13, color: '#64748B' }}>
             La agencia define qué monitorear. Las sugerencias de Cleexs son opcionales: se revisan antes de entrar al
             set. Al congelar versión, las corridas siguientes quedan identificadas y el historial es comparable.
           </p>
@@ -707,14 +925,25 @@ export default function AgencyPage() {
                       justifyContent: 'space-between',
                       gap: 10,
                       padding: '8px 0',
-                      borderBottom: '1px solid rgba(255,255,255,.05)',
+                      borderBottom: '1px solid #EEF2F7',
                       fontSize: 14,
                     }}
                   >
-                    <span>{pr.text}</span>
+                    <span>
+                      {pr.text}
+                      {pr.tags.length > 0 && (
+                        <span style={{ marginLeft: 8 }}>
+                          {pr.tags.map((t) => (
+                            <span key={t} style={{ ...pill('#64748B'), marginRight: 4 }}>
+                              {t}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                    </span>
                     <button
                       type="button"
-                      style={{ color: '#fb7185', fontSize: 12, whiteSpace: 'nowrap' }}
+                      style={{ color: '#DC2626', fontSize: 12, whiteSpace: 'nowrap' }}
                       onClick={() =>
                         updateProject((x) => {
                           x.prompts = x.prompts.filter((y) => y.id !== pr.id);
@@ -741,17 +970,17 @@ export default function AgencyPage() {
                     justifyContent: 'space-between',
                     gap: 10,
                     padding: '8px 0',
-                    borderBottom: '1px solid rgba(255,255,255,.05)',
+                    borderBottom: '1px solid #EEF2F7',
                     fontSize: 14,
-                    color: '#cbd5e1',
+                    color: '#334155',
                   }}
                 >
                   <span>
-                    {s.text} <span style={pill('#fbbf24')}>{s.category}</span>
+                    {s.text} <span style={pill('#D97706')}>{s.category}</span>
                   </span>
                   <button
                     type="button"
-                    style={{ color: '#00f2fe', fontSize: 12, whiteSpace: 'nowrap' }}
+                    style={{ color: '#2563EB', fontSize: 12, whiteSpace: 'nowrap' }}
                     onClick={() =>
                       updateProject((x) => {
                         x.prompts = [s, ...x.prompts];
@@ -772,7 +1001,7 @@ export default function AgencyPage() {
       {tab === 'competidores' && latest && (
         <section style={{ ...panel }}>
           <h3 style={{ margin: '0 0 6px', fontSize: 16 }}>Análisis de competidores</h3>
-          <p style={{ fontSize: 13, color: '#9ca3af', marginTop: 0 }}>
+          <p style={{ fontSize: 13, color: '#64748B', marginTop: 0 }}>
             Selección manual en esta versión. Los detectados en respuestas se sugieren para que la agencia decida
             cuáles seguir.
           </p>
@@ -817,7 +1046,7 @@ export default function AgencyPage() {
             {project.competitors.map((c) => {
               const share = latest.competitorShare.find((x) => x.name === c);
               return (
-                <span key={c} style={pill('#8b5cf6')}>
+                <span key={c} style={pill('#64748B')}>
                   {c}
                   {share ? ` · ${share.pct}%` : ''}
                 </span>
@@ -833,7 +1062,7 @@ export default function AgencyPage() {
                 <button
                   key={c.name}
                   type="button"
-                  style={pill('#fbbf24')}
+                  style={pill('#D97706')}
                   onClick={() =>
                     updateProject((x) => {
                       x.competitors = [...x.competitors, c.name];
@@ -845,7 +1074,7 @@ export default function AgencyPage() {
                 </button>
               ))}
             {latest.competitorShare.filter((c) => c.name !== project.brand && !project.competitors.includes(c.name))
-              .length === 0 && <span style={{ fontSize: 13, color: '#6b7280' }}>Sin nuevos detectados.</span>}
+              .length === 0 && <span style={{ fontSize: 13, color: '#94A3B8' }}>Sin nuevos detectados.</span>}
           </div>
         </section>
       )}
@@ -853,7 +1082,7 @@ export default function AgencyPage() {
       {tab === 'fuentes' && latest && (
         <section style={{ ...panel }}>
           <h3 style={{ margin: '0 0 6px', fontSize: 16 }}>Análisis de fuentes</h3>
-          <p style={{ fontSize: 13, color: '#9ca3af', marginTop: 0 }}>
+          <p style={{ fontSize: 13, color: '#64748B', marginTop: 0 }}>
             Dominios citados en las respuestas. No son competidores: son las fuentes que la IA usa para responder.
             Perplexity suele citar más que el resto de los modelos.
           </p>
@@ -861,16 +1090,16 @@ export default function AgencyPage() {
             <div key={s.domain} style={{ marginBottom: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                 <span>
-                  {s.domain} {s.own ? <span style={pill('#10b981')}>Propia</span> : <span style={pill('#9ca3af')}>Externa</span>}
+                  {s.domain} {s.own ? <span style={pill('#059669')}>Propia</span> : <span style={pill('#64748B')}>Externa</span>}
                 </span>
-                <span style={{ fontFamily: 'monospace', color: '#00f2fe' }}>{s.pct}%</span>
+                <span style={{ fontFamily: 'monospace', color: '#2563EB' }}>{s.pct}%</span>
               </div>
-              <div style={{ background: 'rgba(255,255,255,.06)', borderRadius: 999, height: 6, overflow: 'hidden' }}>
+              <div style={{ background: '#F1F5F9', borderRadius: 999, height: 6, overflow: 'hidden' }}>
                 <div
                   style={{
                     width: `${Math.min(100, s.pct)}%`,
                     height: '100%',
-                    background: s.own ? '#10b981' : '#8b5cf6',
+                    background: s.own ? '#059669' : '#64748B',
                     borderRadius: 999,
                   }}
                 />
@@ -886,7 +1115,7 @@ export default function AgencyPage() {
           <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,.08)', fontSize: 12, color: '#9ca3af' }}>
+                <tr style={{ borderBottom: '1px solid #E2E8F0', fontSize: 12, color: '#64748B' }}>
                   <th>Corrida</th>
                   <th>Fecha</th>
                   <th>Versión de prompts</th>
@@ -899,11 +1128,11 @@ export default function AgencyPage() {
               </thead>
               <tbody>
                 {[...project.history].reverse().map((h) => (
-                  <tr key={h.id} style={{ borderBottom: '1px solid rgba(255,255,255,.05)', fontSize: 13 }}>
-                    <td style={{ fontFamily: 'monospace', color: '#00f2fe' }}>{runLabel(h.id)}</td>
+                  <tr key={h.id} style={{ borderBottom: '1px solid #EEF2F7', fontSize: 13 }}>
+                    <td style={{ fontFamily: 'monospace', color: '#2563EB' }}>{runLabel(h.id)}</td>
                     <td>{h.at}</td>
                     <td>
-                      <span style={pill('#8b5cf6')}>{h.version}</span>
+                      <span style={pill('#64748B')}>{h.version}</span>
                     </td>
                     <td>{h.promptsCount}</td>
                     <td>{h.score}</td>
@@ -912,7 +1141,7 @@ export default function AgencyPage() {
                     <td>
                       <button
                         type="button"
-                        style={{ color: compareA === h.id || compareB === h.id ? '#00f2fe' : '#9ca3af', fontSize: 12 }}
+                        style={{ color: compareA === h.id || compareB === h.id ? '#2563EB' : '#64748B', fontSize: 12 }}
                         onClick={() => {
                           if (compareA === null) setCompareA(h.id);
                           else if (compareB === null && h.id !== compareA) setCompareB(h.id);
@@ -942,13 +1171,13 @@ export default function AgencyPage() {
                   return `${v >= 0 ? '+' : ''}${v}`;
                 };
                 return (
-                  <p style={{ color: '#cbd5e1' }}>
+                  <p style={{ color: '#334155' }}>
                     {runLabel(b.id)} vs {runLabel(a.id)} — Score: <b>{d(b.score, a.score)}</b> · Aparición:{' '}
                     <b>{d(b.visibilityPct, a.visibilityPct)} pp</b> · Top 3: <b>{d(b.top3Pct, a.top3Pct)} pp</b>
                     {a.version !== b.version && (
                       <>
                         {' '}
-                        · <span style={pill('#fbbf24')}>Ojo: cambió la versión de prompts ({a.version} → {b.version})</span>
+                        · <span style={pill('#D97706')}>Ojo: cambió la versión de prompts ({a.version} → {b.version})</span>
                       </>
                     )}
                   </p>
@@ -956,14 +1185,14 @@ export default function AgencyPage() {
               })()}
             </div>
           )}
-          <p style={{ fontSize: 12, color: '#6b7280' }}>
+          <p style={{ fontSize: 12, color: '#94A3B8' }}>
             Cada corrida conserva prompts y versión utilizados. Si cambia la configuración, la comparación lo señala
             para no atribuir la variación solo al mercado.
           </p>
         </section>
       )}
 
-      <footer style={{ marginTop: 22, fontSize: 12, color: '#6b7280' }}>
+      <footer style={{ marginTop: 22, fontSize: 12, color: '#94A3B8' }}>
         <p>
           Cleexs Agencias · MVP sobre <code>agente-cleexs</code> (EasyPanel). Las corridas de esta demo son simuladas
           y se guardan localmente; el siguiente paso es ejecutarlas contra los modelos reales y persistirlas en base
