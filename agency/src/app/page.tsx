@@ -784,8 +784,8 @@ export default function AgencyPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-            <div style={panel}>
+          <div style={{ display: 'grid', gap: 14, gridTemplateColumns: '1fr' }}>
+            <div style={{ ...panel, width: '100%' }}>
               <h3 style={{ margin: '0 0 10px', fontSize: 16 }}>Comparación de competidores</h3>
               {latest.competitorShare.map((c) => (
                 <div key={c.name} style={{ marginBottom: 10 }}>
@@ -845,9 +845,9 @@ export default function AgencyPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredResults.slice(0, 14).map((r, i) => (
+                    {filteredResults.map((r, i) => (
                       <tr key={`${r.promptId}-${r.model}-${i}`} style={{ borderBottom: '1px solid #EEF2F7', fontSize: 13 }}>
-                        <td style={{ maxWidth: 320 }}>{promptById.get(r.promptId)?.text ?? r.promptId}</td>
+                        <td style={{ minWidth: 260 }}>{promptById.get(r.promptId)?.text ?? r.promptId}</td>
                         <td>
                           <span style={pill('#64748B')}>{r.model}</span>
                         </td>
