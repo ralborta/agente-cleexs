@@ -37,6 +37,7 @@ function buildNav(workspace: string) {
     { href: workspaceHref(workspace, 'actividad'), label: 'Actividad', icon: Activity },
   ];
   const agentsNav = [
+    { href: '/marketing', label: 'Cleexs Marketing', icon: Megaphone },
     { href: workspaceHref(workspace, 'discovery'), label: 'Discovery', icon: Sparkles },
     { href: workspaceHref(workspace, 'growth'), label: 'Growth', icon: Megaphone },
     { href: workspaceHref(workspace, 'config/teo'), label: 'Teo · temas', icon: Settings },

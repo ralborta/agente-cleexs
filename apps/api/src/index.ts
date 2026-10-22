@@ -19,6 +19,7 @@ import integrationRoutes from './routes/integrations';
 import linkedinRoutes from './routes/linkedin';
 import webhookRoutes from './routes/webhooks';
 import whatsappRoutes from './routes/whatsapp';
+import mktRoutes from './routes/mkt';
 import authRoutes from './routes/auth';
 import eventsRoutes from './routes/events';
 import authGuardPlugin from './plugins/auth-guard';
@@ -67,6 +68,7 @@ async function bootstrap() {
   await server.register(webhookRoutes, { prefix: '/api/webhooks' });
   await server.register(whatsappRoutes, { prefix: '/api/whatsapp' });
   await server.register(eventsRoutes, { prefix: '/api/events' });
+  await server.register(mktRoutes, { prefix: '/api/mkt' });
 
   const port = Number(process.env.API_PORT || 4000);
   const host = '0.0.0.0';
