@@ -6,8 +6,8 @@ import Shell from '@/components/Shell';
 export const metadata: Metadata = {
   title: 'Cleexs Agencias · Visibilidad IA · Empliados',
   description:
-    'Cleexs para agencias: monitoreá la presencia de tus clientes en respuestas de IA. Demo pública con el proyecto Empliados.',
-  robots: { index: true, follow: true },
+    'Cleexs para agencias: monitoreá la presencia de tus clientes en respuestas de IA. Acceso restringido (especialista).',
+  robots: { index: false, follow: false },
 };
 
 // Aplica el tema guardado antes de pintar (evita flash). Dark por defecto.
