@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Visibility Dashboard</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed-variant": "#004e5c",
+            "on-tertiary-fixed": "#002113",
+            "outline": "#869397",
+            "error": "#ffb4ab",
+            "tertiary-container": "#1bbd85",
+            "error-container": "#93000a",
+            "on-primary-container": "#00424f",
+            "on-background": "#dde2f5",
+            "inverse-primary": "#00687a",
+            "surface-container": "#1a1f2d",
+            "secondary-container": "#571bc1",
+            "on-secondary-fixed-variant": "#5516be",
+            "on-surface": "#dde2f5",
+            "on-secondary-fixed": "#23005c",
+            "inverse-on-surface": "#2a303f",
+            "surface": "#0d1320",
+            "secondary-fixed": "#e9ddff",
+            "on-error-container": "#ffdad6",
+            "surface-container-highest": "#2f3543",
+            "on-primary": "#003640",
+            "on-error": "#690005",
+            "surface-container-lowest": "#080e1b",
+            "on-surface-variant": "#bcc9cd",
+            "on-secondary": "#3c0091",
+            "tertiary-fixed-dim": "#4edea3",
+            "secondary": "#d0bcff",
+            "tertiary-fixed": "#6ffbbe",
+            "background": "#0d1320",
+            "on-primary-fixed": "#001f26",
+            "surface-container-high": "#242a38",
+            "primary-fixed": "#acedff",
+            "surface-variant": "#2f3543",
+            "surface-tint": "#4cd7f6",
+            "on-tertiary-container": "#00452e",
+            "tertiary": "#4edea3",
+            "primary": "#4cd7f6",
+            "on-secondary-container": "#c4abff",
+            "surface-bright": "#333948",
+            "outline-variant": "#3d494c",
+            "on-tertiary": "#003824",
+            "primary-container": "#06b6d4",
+            "on-tertiary-fixed-variant": "#005236",
+            "surface-dim": "#0d1320",
+            "inverse-surface": "#dde2f5",
+            "surface-container-low": "#161b29",
+            "primary-fixed-dim": "#4cd7f6",
+            "secondary-fixed-dim": "#d0bcff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "gutter": "1rem",
+            "margin": "1rem",
+            "space-md": "1rem",
+            "margin-desktop": "2rem",
+            "gutter-desktop": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin-tablet": "1.5rem"
+          },
+          "fontFamily": {
+            "label-sm": ["JetBrains Mono"],
+            "headline-xl-mobile": ["Inter"],
+            "headline-lg": ["Inter"],
+            "headline-xl": ["Inter"],
+            "body-sm": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "metric-display": ["Inter"],
+            "label-md": ["JetBrains Mono"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "label-sm": ["11px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+            "headline-xl": ["36px", { "lineHeight": "44px", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "metric-display": ["32px", { "lineHeight": "38px", "fontWeight": "700" }],
+            "label-md": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    @layer base {
+      html {
+        overscroll-behavior: none;
+        background-color: #0d1320;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #080e1b;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #242a38;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #3d494c;
+      }
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased">
+<!-- BEGIN: LeftSidebar -->
+<aside class="fixed top-0 bottom-0 left-0 w-64 bg-surface-container-low border-r border-surface-container flex flex-col justify-between z-40" data-purpose="sidebar-navigation">
+<div class="p-space-md flex flex-col gap-space-md overflow-y-auto">
+<!-- App Brand Header -->
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary font-headline-sm font-bold shadow-lg">
+            R
+          </div>
+<span class="text-on-surface font-headline-sm font-semibold tracking-tight">AI Visibility</span>
+</div>
+<button aria-label="Colapsar menú" class="text-outline hover:text-on-surface p-space-xs transition-colors rounded-lg" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+</div>
+<!-- Project Identifier -->
+<div class="flex flex-col gap-space-xs bg-surface-container p-space-sm rounded-lg">
+<div class="font-body-sm text-on-surface-variant flex items-center gap-1.5">
+<span>Proyecto:</span>
+<span class="text-on-surface font-medium">Contalia</span>
+<span class="text-outline">· contalia.com</span>
+</div>
+<div>
+<span class="inline-block px-2 py-0.5 font-label-sm text-[10px] text-amber-400 border border-amber-500/20 rounded-full bg-amber-500/10 font-medium">
+            Demo con datos ficticios
+          </span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-space-md mt-space-xs" data-active-classes="bg-surface-container text-primary font-medium shadow-sm border border-primary/20" data-purpose="sidebar-links">
+<!-- Group: Monitoreo -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Monitoreo</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="ai-visibility-dashboard-desktop" href="#">
+              Dashboard
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="competidores" href="#">
+              Competidores
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="fuentes" href="#">
+              Fuentes
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="sentimiento" href="#">
+              Sentimiento
+            </a>
+</div>
+</div>
+<!-- Group: Setup -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Setup</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="nuevo-proyecto" href="#">
+              Nuevo proyecto
+            </a>
+</div>
+</div>
+<!-- Group: Registro -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Registro</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="prompts" href="#">
+              Prompts
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="ofertas" href="#">
+              Ofertas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="buyer-personas" href="#">
+              Buyer personas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="tipos-de-prompt" href="#">
+              Tipos de prompt
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="marcas" href="#">
+              Marcas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="proyecto" href="#">
+              Proyecto
+            </a>
+</div>
+</div>
+</nav>
+</div>
+<!-- Theme / Mode Controls Footer -->
+<div class="p-space-sm border-t border-surface-container bg-surface-container-low shrink-0">
+<div class="bg-surface-container p-1 rounded-xl flex items-center gap-1 font-body-sm">
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-outline hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">light_mode</span>
+<span>Claro</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface font-medium shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">dark_mode</span>
+<span>Oscuro</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- END: LeftSidebar -->
+<!-- BEGIN: TopBar Header (Filter Ribbon) -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface-container-low/95 backdrop-blur-md border-b border-surface-container z-30 flex items-center px-space-xl justify-between">
+<div class="flex items-center gap-space-sm overflow-x-auto py-1 scrollbar-none">
+<!-- Filter: IA -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">IA:</span>
+<span class="font-body-sm text-on-surface font-medium">Todas</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Buyer Persona -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Buyer Persona:</span>
+<span class="font-body-sm text-on-surface font-medium">Todos</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Oferta -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Oferta:</span>
+<span class="font-body-sm text-on-surface font-medium">Todas</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Tipo de prompt -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Tipo de prompt:</span>
+<span class="font-body-sm text-on-surface font-medium">Todos</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: País -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">País:</span>
+<span class="font-body-sm text-on-surface font-medium">Global</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Período -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Período:</span>
+<span class="font-body-sm text-on-surface font-medium">Últimos 30 días</span>
+<span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span>
+</div>
+</div>
+<!-- Quick Status / Reset Action -->
+<div class="flex items-center gap-space-sm pl-space-md shrink-0">
+<button class="flex items-center gap-1 text-outline hover:text-on-surface font-body-sm px-2 py-1 rounded transition-colors" title="Restablecer filtros" type="button">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+<span class="hidden xl:inline">Limpiar</span>
+</button>
+<button class="bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 shadow-sm shadow-primary/20" type="button">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+<span>Actualizar</span>
+</button>
+</div>
+</header>
+<!-- END: TopBar Header -->
+<!-- BEGIN: MainContent -->
+<main class="pl-64 pt-16 min-h-screen bg-surface-container-lowest"><div class="flex flex-col w-full">
+<!-- Active state sync for shell navigation -->
+<script>
+    (function syncSidebarActiveState() {
+      const activeLinks = document.querySelectorAll('aside nav a[data-path="marcas"]');
+      activeLinks.forEach(link => {
+        link.className = "block px-3 py-1.5 rounded-lg font-body-md bg-surface-container text-primary font-medium shadow-sm border border-primary/20";
+      });
+      const dashLinks = document.querySelectorAll('aside nav a[data-path="ai-visibility-dashboard-desktop"]');
+      dashLinks.forEach(link => {
+        link.className = "block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors";
+      });
+    })();
+  </script>
+<!-- Content Canvas Area -->
+<div class="p-space-xl flex flex-col gap-space-xl max-w-[1720px] mx-auto w-full">
+<!-- Header Section with Actions -->
+<section class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-lg">
+<div class="flex flex-col gap-1 max-w-3xl">
+<div class="flex items-center gap-2">
+<span class="font-label-sm uppercase tracking-wider text-primary">Registro • Ontología • Entidades Semánticas</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+<span class="font-label-sm text-outline">Q3 2025 Sync Active</span>
+</div>
+<h1 class="font-headline-xl text-on-surface tracking-tight">Gestión de Marcas y Entidades</h1>
+<p class="font-body-md text-on-surface-variant leading-relaxed">
+          Administración de la huella ontológica de la marca propia (<span class="text-primary font-medium">Contalia</span>), variantes léxicas y competidores directos monitorizados en el grafo de conocimiento vectorial de los principales LLMs (GPT-4o, Claude 3.5, Gemini 1.5 Pro y Perplexity).
+        </p>
+</div>
+<!-- Action Toolbar -->
+<div class="flex flex-wrap items-center gap-space-sm shrink-0">
+<button class="group px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-headline-sm text-xs transition-colors flex items-center gap-2 shadow-sm" onclick="triggerGraphSync(this)" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary group-hover:rotate-180 transition-transform duration-500">account_tree</span>
+<span>Sincronizar Wikidata</span>
+</button>
+<button class="group px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-headline-sm text-xs transition-colors flex items-center gap-2 shadow-sm" onclick="triggerAudit(this)" type="button">
+<span class="material-symbols-outlined text-[18px] text-tertiary">policy</span>
+<span>Auditar Grafo LLM</span>
+</button>
+<button class="px-4 py-2 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-xs font-semibold transition-colors flex items-center gap-2 shadow-md shadow-primary/20" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>Añadir Marca o Competidor</span>
+</button>
+</div>
+</section>
+<!-- Top KPI Grid: Technical Telemetry Cards -->
+<section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<!-- KPI 1 -->
+<div class="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between relative overflow-hidden shadow-sm">
+<div class="absolute -right-4 -bottom-4 w-28 h-28 bg-gradient-to-br from-transparent to-primary/10 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-outline uppercase tracking-wider">Entidades Monitorizadas</span>
+<span class="p-1.5 rounded-lg bg-surface-container text-primary">
+<span class="material-symbols-outlined text-[18px]">domain</span>
+</span>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="font-metric-display text-on-surface">8</span>
+<span class="font-label-md text-on-surface-variant">marcas activas</span>
+</div>
+<div class="mt-3 pt-3 flex items-center justify-between font-body-sm text-outline bg-surface-container-lowest/50 px-2.5 py-1.5 rounded-lg">
+<span class="flex items-center gap-1.5 text-tertiary font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> 1 Propia
+          </span>
+<span class="text-on-surface-variant font-label-sm">7 Competidores</span>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between relative overflow-hidden shadow-sm">
+<div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent opacity-80"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-outline uppercase tracking-wider">Brand Authority Score</span>
+<span class="p-1.5 rounded-lg bg-surface-container text-tertiary">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</span>
+</div>
+<div class="mt-4 flex items-baseline gap-3">
+<span class="font-metric-display text-on-surface">86<span class="font-headline-lg text-outline">/100</span></span>
+<span class="px-2 py-0.5 rounded-full bg-tertiary/15 text-tertiary font-label-sm flex items-center gap-0.5 font-semibold">
+<span class="material-symbols-outlined text-[13px]">arrow_upward</span> +14 pts
+          </span>
+</div>
+<div class="mt-3 pt-3 flex items-center justify-between font-body-sm bg-surface-container-lowest/50 px-2.5 py-1.5 rounded-lg">
+<span class="text-on-surface-variant text-xs">Post-mitigación TicketBAI</span>
+<span class="font-label-sm text-tertiary">Top 1 Sector</span>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between relative overflow-hidden shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-outline uppercase tracking-wider">Share of Voice Relativo</span>
+<span class="p-1.5 rounded-lg bg-surface-container text-secondary">
+<span class="material-symbols-outlined text-[18px]">pie_chart</span>
+</span>
+</div>
+<div class="mt-4 flex items-baseline gap-3">
+<span class="font-metric-display text-primary">38.4%</span>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm">
+            vs 61.6% pool
+          </span>
+</div>
+<div class="mt-3 pt-3 flex items-center justify-between font-body-sm bg-surface-container-lowest/50 px-2.5 py-1.5 rounded-lg">
+<span class="text-on-surface-variant text-xs">Liderazgo en 4 de 5 clusters</span>
+<span class="font-label-sm text-primary font-medium">+5.2% MoM</span>
+</div>
+</div>
+<!-- KPI 4 -->
+<div class="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between relative overflow-hidden shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-outline uppercase tracking-wider">Reconocimiento de Aliases</span>
+<span class="p-1.5 rounded-lg bg-surface-container text-primary-fixed-dim">
+<span class="material-symbols-outlined text-[18px]">spellcheck</span>
+</span>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="font-metric-display text-on-surface">99.1%</span>
+<span class="font-label-sm text-outline">frecuencia cero-error</span>
+</div>
+<div class="mt-3 pt-3 flex items-center justify-between font-body-sm bg-surface-container-lowest/50 px-2.5 py-1.5 rounded-lg">
+<span class="text-on-surface-variant text-xs">Sin confusión ortográfica</span>
+<span class="px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary font-label-sm">Blindado</span>
+</div>
+</div>
+</section>
+<!-- Main Workspace Split: Table (Left/Center 8 cols) + Semantic Graph Radar (Right 4 cols) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- Brands Table (8 cols on XL) -->
+<section class="xl:col-span-8 flex flex-col bg-surface-container-low rounded-xl overflow-hidden shadow-sm">
+<!-- Table Control Toolbar -->
+<div class="p-space-md bg-surface-container flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-on-surface">Entidades Configuradas</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-outline font-label-sm text-[10px]">Total: 5 mostradas</span>
+</div>
+<!-- Table internal filters & quick search -->
+<div class="flex items-center gap-space-xs">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[16px]">search</span>
+<input class="bg-surface-container-lowest text-on-surface font-body-sm pl-8 pr-3 py-1.5 rounded-lg placeholder-outline focus:outline-none focus:bg-surface-container-high transition-colors w-44 lg:w-56" placeholder="Filtrar entidad..." type="text"/>
+</div>
+<button class="p-1.5 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Exportar CSV Ontología">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+</div>
+<!-- Table Element -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest text-outline font-label-sm uppercase tracking-wider text-[11px]">
+<th class="py-3 px-4">Marca / Dominio</th>
+<th class="py-3 px-3">Clasificación &amp; Aliases</th>
+<th class="py-3 px-3 text-right">SoV en IA</th>
+<th class="py-3 px-3 text-center">Polaridad</th>
+<th class="py-3 px-3">Estado Knowledge Graph</th>
+<th class="py-3 px-4 text-right">Acciones</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container text-body-md">
+<!-- Brand 1: Contalia (Own Brand - Primary Pinned) -->
+<tr class="bg-surface-container/40 hover:bg-surface-container transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center font-headline-sm font-bold text-on-primary shadow-sm shadow-primary/30 shrink-0">
+                      C
+                    </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-on-surface font-semibold tracking-tight">Contalia</span>
+<span class="px-2 py-0.5 rounded-full bg-primary/20 text-primary font-label-sm text-[10px] font-semibold tracking-wider uppercase">Marca Propia</span>
+</div>
+<span class="font-label-sm text-outline text-[12px] truncate">contalia.com</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex flex-col gap-1 max-w-xs">
+<span class="font-body-sm text-on-surface font-medium">Primaria (Core)</span>
+<div class="flex flex-wrap gap-1">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-[10px]">Contalia Software</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-[10px]">Contalia Cloud</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-[10px]">Contalia Facturación</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="flex flex-col items-end">
+<span class="font-label-md font-semibold text-primary">38.4%</span>
+<div class="w-16 h-1.5 bg-surface-container-highest rounded-full overflow-hidden mt-1">
+<div class="bg-primary h-full rounded-full" style="width: 38.4%"></div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3 text-center">
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary/15 text-tertiary font-label-sm font-semibold">
+<span class="material-symbols-outlined text-[13px]">sentiment_very_satisfied</span>
+<span>+0.89</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex flex-col gap-1">
+<span class="inline-flex items-center gap-1.5 text-xs text-tertiary font-medium">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+<span>Verificado (Schema Org)</span>
+</span>
+<span class="font-label-sm text-[10px] text-outline">Wikidata: Q1289410 • Blindado</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded-lg text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Ver esquema JSON-LD">
+<span class="material-symbols-outlined text-[18px]">code</span>
+</button>
+<button class="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Editar entidad">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Brand 2: Cuentaflux -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-headline-sm font-semibold text-secondary shrink-0">
+                      CF
+                    </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-on-surface font-semibold tracking-tight">Cuentaflux</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-[10px]">Competidor Directo</span>
+</div>
+<span class="font-label-sm text-outline text-[12px] truncate">cuentaflux.es</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex flex-col gap-1">
+<span class="font-body-sm text-outline truncate">Gap LLM identificado:</span>
+<span class="font-body-sm text-error/90 text-xs line-clamp-1">Falta de soporte foral nativo &amp; complejidad técnica</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="flex flex-col items-end">
+<span class="font-label-md font-medium text-on-surface">24.1%</span>
+<div class="w-16 h-1.5 bg-surface-container-highest rounded-full overflow-hidden mt-1">
+<div class="bg-secondary h-full rounded-full" style="width: 24.1%"></div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3 text-center">
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">sentiment_satisfied</span>
+<span>+0.62</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex flex-col gap-0.5">
+<span class="inline-flex items-center gap-1.5 text-xs text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Parcial en Google KG
+                    </span>
+<span class="font-label-sm text-[10px] text-outline">Sin nodo Wikidata primario</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Analizar prompts competitivos">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+</button>
+<button class="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Brand 3: Ábaco Cloud -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-headline-sm font-semibold text-primary shrink-0">
+                      ÁC
+                    </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-on-surface font-semibold tracking-tight">Ábaco Cloud</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-[10px]">Competidor Directo</span>
+</div>
+<span class="font-label-sm text-outline text-[12px] truncate">abacocloud.com</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex flex-col gap-1">
+<span class="font-body-sm text-outline truncate">Fuerza contextual en IA:</span>
+<span class="font-body-sm text-tertiary text-xs line-clamp-1">Reconocimiento tradicional en pymes históricas</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="flex flex-col items-end">
+<span class="font-label-md font-medium text-on-surface">18.5%</span>
+<div class="w-16 h-1.5 bg-surface-container-highest rounded-full overflow-hidden mt-1">
+<div class="bg-primary/70 h-full rounded-full" style="width: 18.5%"></div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3 text-center">
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">sentiment_satisfied</span>
+<span>+0.71</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex flex-col gap-0.5">
+<span class="inline-flex items-center gap-1.5 text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] text-primary">verified</span>
+<span>Verificado KG</span>
+</span>
+<span class="font-label-sm text-[10px] text-outline">Dominio indexado hace &gt;8 años</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+</button>
+<button class="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Brand 4: Holded -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-headline-sm font-semibold text-secondary-fixed shrink-0">
+                      H
+                    </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-on-surface font-semibold tracking-tight">Holded</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container/30 text-secondary font-label-sm text-[10px]">Referente General</span>
+</div>
+<span class="font-label-sm text-outline text-[12px] truncate">holded.com</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex flex-col gap-1">
+<span class="font-body-sm text-outline truncate">Foco regionalizado:</span>
+<span class="font-body-sm text-on-surface-variant text-xs">Penetración residual (12.3%) en segmento foral</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="flex flex-col items-end">
+<span class="font-label-md font-medium text-on-surface">12.3%</span>
+<div class="w-16 h-1.5 bg-surface-container-highest rounded-full overflow-hidden mt-1">
+<div class="bg-secondary h-full rounded-full" style="width: 12.3%"></div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3 text-center">
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">sentiment_very_satisfied</span>
+<span>+0.80</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex flex-col gap-0.5">
+<span class="inline-flex items-center gap-1.5 text-xs text-tertiary font-medium">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+<span>Wikidata Entity Q98...</span>
+</span>
+<span class="font-label-sm text-[10px] text-outline">Alta autoridad de marca global</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+</button>
+<button class="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Brand 5: Quipu -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-headline-sm font-semibold text-outline shrink-0">
+                      Q
+                    </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-on-surface font-semibold tracking-tight">Quipu</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-[10px]">Alternativo</span>
+</div>
+<span class="font-label-sm text-outline text-[12px] truncate">getquipu.com</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex flex-col gap-1">
+<span class="font-body-sm text-outline truncate">Orientación:</span>
+<span class="font-body-sm text-on-surface-variant text-xs">Asesorías tradicionales / Gestores</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="flex flex-col items-end">
+<span class="font-label-md font-medium text-on-surface">6.7%</span>
+<div class="w-16 h-1.5 bg-surface-container-highest rounded-full overflow-hidden mt-1">
+<div class="bg-outline h-full rounded-full" style="width: 6.7%"></div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3 text-center">
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm">
+<span class="material-symbols-outlined text-[13px] text-outline">sentiment_neutral</span>
+<span>+0.58</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex flex-col gap-0.5">
+<span class="inline-flex items-center gap-1.5 text-xs text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-primary/70"></span> Sincronizado
+                    </span>
+<span class="font-label-sm text-[10px] text-outline">Baja correlación con TicketBAI</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+</button>
+<button class="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer / Schema Inspector Bar -->
+<div class="p-space-md bg-surface-container-lowest/80 flex flex-col sm:flex-row items-center justify-between gap-space-sm font-body-sm text-outline">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">shield</span>
+<span>Blindaje contra alucinaciones: <strong>100% activo</strong> para Contalia.</span>
+</div>
+<div class="flex items-center gap-3 font-label-sm">
+<span>Último crawleo ontológico: <strong class="text-on-surface">hace 38 min</strong></span>
+<span class="text-outline-variant">•</span>
+<button class="text-primary hover:underline font-medium">Historial de versiones</button>
+</div>
+</div>
+</section>
+<!-- Right Panel: Semantic Relationship Graph & Co-occurrences (4 cols on XL) -->
+<aside class="xl:col-span-4 flex flex-col gap-space-md">
+<!-- Graph Card -->
+<div class="bg-surface-container-low p-space-lg rounded-xl flex flex-col gap-space-md shadow-sm relative overflow-hidden">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">hub</span>
+<h3 class="font-headline-sm text-on-surface">Grafo de Relaciones Semánticas</h3>
+</div>
+<p class="font-body-sm text-outline">
+                Co-ocurrencias vectoriales en respuestas generativas por concepto clave.
+              </p>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-[10px] font-semibold">Live AI Graph</span>
+</div>
+<!-- Interactive Semantic Graph Visualization Canvas -->
+<div class="relative w-full h-72 bg-surface-container-lowest rounded-xl overflow-hidden flex items-center justify-center p-2 group">
+<!-- Dynamic Vector Mesh SVG -->
+<svg class="w-full h-full" fill="none" viewbox="0 0 360 270" xmlns="http://www.w3.org/2000/svg">
+<!-- Edge Lines from Central Node (Contalia) -->
+<!-- To TicketBAI (Top Left) -->
+<line class="text-primary/70" stroke="currentColor" stroke-dasharray="3 3" stroke-width="2.5" x1="180" x2="70" y1="135" y2="55"></line>
+<!-- To Facturacion Electronica (Top Right) -->
+<line class="text-primary/60" stroke="currentColor" stroke-width="2" x1="180" x2="280" y1="135" y2="60"></line>
+<!-- To Pais Vasco (Bottom Left) -->
+<line class="text-tertiary/70" stroke="currentColor" stroke-width="2.5" x1="180" x2="65" y1="135" y2="210"></line>
+<!-- To Autonomos (Bottom Right) -->
+<line class="text-primary/50" stroke="currentColor" stroke-width="1.8" x1="180" x2="295" y1="135" y2="205"></line>
+<!-- Cross competitor interference edge (Holded to Autonomos) -->
+<line class="text-secondary/40" stroke="currentColor" stroke-width="1" x1="330" x2="295" y1="110" y2="205"></line>
+<!-- Competitor Cuentaflux to TicketBAI (Weak) -->
+<line class="text-secondary/30" stroke="currentColor" stroke-dasharray="4 4" stroke-width="1" x1="45" x2="70" y1="130" y2="55"></line>
+<!-- Central Node: CONTALIA (Strongest affinity) -->
+<g class="cursor-pointer transform hover:scale-105 transition-transform">
+<circle class="fill-surface-container-high" cx="180" cy="135" r="32" stroke="currentColor" stroke-width="2" style="color: #06b6d4"></circle>
+<circle class="stroke-primary/20 animate-ping" cx="180" cy="135" r="38" stroke-width="1"></circle>
+<text class="fill-on-surface font-headline-sm text-[12px] font-bold tracking-wider" text-anchor="middle" x="180" y="132">CONTALIA</text>
+<text class="fill-primary font-label-sm text-[9px] font-semibold" text-anchor="middle" x="180" y="146">98.4% Affinity</text>
+</g>
+<!-- Concept Node 1: TicketBAI -->
+<g class="cursor-pointer">
+<circle class="fill-surface-container" cx="70" cy="55" r="26" stroke="currentColor" stroke-width="1.5" style="color: #4cd7f6"></circle>
+<text class="fill-on-surface font-headline-sm text-[10px] font-semibold" text-anchor="middle" x="70" y="52">TicketBAI</text>
+<text class="fill-tertiary font-label-sm text-[8px]" text-anchor="middle" x="70" y="65">94% Dominancia</text>
+</g>
+<!-- Concept Node 2: Facturación electrónica -->
+<g class="cursor-pointer">
+<circle class="fill-surface-container" cx="280" cy="60" r="27" stroke="currentColor" stroke-width="1.5" style="color: #06b6d4"></circle>
+<text class="fill-on-surface font-headline-sm text-[9.5px] font-semibold" text-anchor="middle" x="280" y="56">Facturación</text>
+<text class="fill-on-surface-variant font-label-sm text-[8px]" text-anchor="middle" x="280" y="67">electrónica</text>
+</g>
+<!-- Concept Node 3: País Vasco / Foral -->
+<g class="cursor-pointer">
+<circle class="fill-surface-container" cx="65" cy="210" r="25" stroke="currentColor" stroke-width="1.5" style="color: #4edea3"></circle>
+<text class="fill-on-surface font-headline-sm text-[10px] font-semibold" text-anchor="middle" x="65" y="207">País Vasco</text>
+<text class="fill-tertiary font-label-sm text-[8px]" text-anchor="middle" x="65" y="219">Top 1 Citation</text>
+</g>
+<!-- Concept Node 4: Autónomos -->
+<g class="cursor-pointer">
+<circle class="fill-surface-container" cx="295" cy="205" r="24" stroke="currentColor" stroke-width="1.5" style="color: #d0bcff"></circle>
+<text class="fill-on-surface font-headline-sm text-[9.5px] font-semibold" text-anchor="middle" x="295" y="202">Autónomos</text>
+<text class="fill-secondary font-label-sm text-[8px]" text-anchor="middle" x="295" y="214">Compartido</text>
+</g>
+<!-- External Ghost Competitor Nodes -->
+<!-- Cuentaflux -->
+<circle class="fill-surface-container-highest/60" cx="45" cy="130" r="14" stroke="#571bc1" stroke-width="1"></circle>
+<text class="fill-on-surface-variant font-label-sm text-[7px]" text-anchor="middle" x="45" y="133">CF</text>
+<!-- Holded -->
+<circle class="fill-surface-container-highest/60" cx="330" cy="110" r="15" stroke="#571bc1" stroke-width="1"></circle>
+<text class="fill-on-surface-variant font-label-sm text-[7px]" text-anchor="middle" x="330" y="113">HLD</text>
+</svg>
+<!-- Legend Overlay -->
+<div class="absolute bottom-2 left-2 flex items-center gap-2 bg-surface-container-low/90 backdrop-blur-sm px-2 py-1 rounded-md text-[10px] font-label-sm">
+<span class="flex items-center gap-1 text-primary">
+<span class="w-2 h-2 rounded-full bg-primary"></span> Contalia
+              </span>
+<span class="flex items-center gap-1 text-tertiary">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span> Alta vinculación
+              </span>
+<span class="flex items-center gap-1 text-secondary">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Competidores
+              </span>
+</div>
+</div>
+<!-- Affinity Breakdown Rows -->
+<div class="flex flex-col gap-space-xs mt-1">
+<span class="font-label-sm text-outline uppercase tracking-wider text-[10px]">Afinidad Semántica en Motores IA</span>
+<div class="bg-surface-container p-2.5 rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="font-body-sm text-on-surface font-medium">TicketBAI + Batuz</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-tertiary font-semibold">94.2%</span>
+<span class="font-label-sm text-outline text-[11px]">(Contalia vs 12% Cuentaflux)</span>
+</div>
+</div>
+<div class="bg-surface-container p-2.5 rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-body-sm text-on-surface font-medium">Facturación electrónica Foral</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-primary font-semibold">89.7%</span>
+<span class="font-label-sm text-outline text-[11px]">(Monopolio de cita)</span>
+</div>
+</div>
+<div class="bg-surface-container p-2.5 rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-body-sm text-on-surface font-medium">Autónomos y micropymes</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-on-surface font-semibold">61.4%</span>
+<span class="font-label-sm text-outline text-[11px]">(Disputado vs Holded)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Entity Disambiguation Alert Card -->
+<div class="bg-surface-container-low p-space-md rounded-xl flex items-start gap-3 shadow-sm">
+<div class="p-2 rounded-lg bg-tertiary/10 text-tertiary shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[20px]">task_alt</span>
+</div>
+<div class="flex flex-col gap-1">
+<h4 class="font-headline-sm text-on-surface text-sm">Disambiguación Vectorial Óptima</h4>
+<p class="font-body-sm text-outline leading-snug">
+              No se detectaron colisiones con entidades homónimas (ej. 'Contalux' o 'ContaSimple') en los últimos 45,000 prompts sintetizados.
+            </p>
+</div>
+</div>
+</aside>
+</div>
+<!-- Bottom Ontological Entities & Schema Payload Drawer Preview -->
+<section class="bg-surface-container-low p-space-lg rounded-xl flex flex-col gap-space-md shadow-sm">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pb-space-sm border-b border-surface-container">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-[20px]">integration_instructions</span>
+<div>
+<h3 class="font-headline-sm text-on-surface">Schema.org / JSON-LD Knowledge Injection (Activo en contalia.com)</h3>
+<p class="font-body-sm text-outline">Metadatos estructurados inyectados para el anclaje determinista de la entidad en el índice de OpenAI y Google Gemini.</p>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-xs transition-colors flex items-center gap-1.5" onclick="copySchemaSnippet()">
+<span class="material-symbols-outlined text-[15px]">content_copy</span>
+<span id="copy-btn-label">Copiar Payload</span>
+</button>
+<span class="px-2.5 py-1 rounded-full bg-tertiary/15 text-tertiary font-label-sm text-[11px] font-semibold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> 200 OK Validación W3C
+          </span>
+</div>
+</div>
+<!-- Monospace Code Terminal -->
+<div class="bg-surface-container-lowest p-space-md rounded-lg overflow-x-auto text-[12px] font-label-sm text-on-surface-variant font-mono leading-relaxed select-all">
+<pre class="text-on-surface-variant"><span class="text-secondary">{</span>
+  <span class="text-primary">"@context"</span>: <span class="text-tertiary">"https://schema.org"</span>,
+  <span class="text-primary">"@type"</span>: <span class="text-tertiary">"SoftwareApplication"</span>,
+  <span class="text-primary">"name"</span>: <span class="text-tertiary">"Contalia"</span>,
+  <span class="text-primary">"alternateName"</span>: <span class="text-secondary">[</span><span class="text-tertiary">"Contalia Software"</span>, <span class="text-tertiary">"Contalia Cloud"</span>, <span class="text-tertiary">"Contalia Facturación"</span><span class="text-secondary">]</span>,
+  <span class="text-primary">"url"</span>: <span class="text-tertiary">"https://contalia.com"</span>,
+  <span class="text-primary">"applicationCategory"</span>: <span class="text-tertiary">"BusinessApplication"</span>,
+  <span class="text-primary">"operatingSystem"</span>: <span class="text-tertiary">"Cloud, Web"</span>,
+  <span class="text-primary">"description"</span>: <span class="text-tertiary">"Software de facturación electrónica compatible con TicketBAI, Batuz y normativas tributarias forales del País Vasco."</span>,
+  <span class="text-primary">"sameAs"</span>: <span class="text-secondary">[</span>
+    <span class="text-tertiary">"https://www.wikidata.org/wiki/Q1289410"</span>,
+    <span class="text-tertiary">"https://www.linkedin.com/company/contalia"</span>
+  <span class="text-secondary">]</span>
+<span class="text-secondary">}</span></pre>
+</div>
+</section>
+</div>
+<!-- Interactive Inline Micro-scripts -->
+<script>
+    function triggerAudit(btn) {
+      const origText = btn.innerHTML;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin text-tertiary">progress_activity</span><span>Auditando nodos...</span>`;
+      btn.classList.add('pointer-events-none');
+      setTimeout(() => {
+        btn.innerHTML = `<span class="material-symbols-outlined text-[18px] text-tertiary">check_circle</span><span>Grafo Auditado (100%)</span>`;
+        setTimeout(() => {
+          btn.innerHTML = origText;
+          btn.classList.remove('pointer-events-none');
+        }, 2500);
+      }, 1500);
+    }
+
+    function triggerGraphSync(btn) {
+      const origText = btn.innerHTML;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin text-secondary">sync</span><span>Sincronizando Wikidata...</span>`;
+      btn.classList.add('pointer-events-none');
+      setTimeout(() => {
+        btn.innerHTML = `<span class="material-symbols-outlined text-[18px] text-primary">done_all</span><span>Entidades al día</span>`;
+        setTimeout(() => {
+          btn.innerHTML = origText;
+          btn.classList.remove('pointer-events-none');
+        }, 2500);
+      }, 1800);
+    }
+
+    function copySchemaSnippet() {
+      const label = document.getElementById('copy-btn-label');
+      label.innerText = '¡Copiado!';
+      setTimeout(() => {
+        label.innerText = 'Copiar Payload';
+      }, 2000);
+    }
+  </script>
+</div></main>
+<!-- END: MainContent -->
+</body></html>

@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Visibility Dashboard</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed-variant": "#004e5c",
+            "on-tertiary-fixed": "#002113",
+            "outline": "#869397",
+            "error": "#ffb4ab",
+            "tertiary-container": "#1bbd85",
+            "error-container": "#93000a",
+            "on-primary-container": "#00424f",
+            "on-background": "#dde2f5",
+            "inverse-primary": "#00687a",
+            "surface-container": "#1a1f2d",
+            "secondary-container": "#571bc1",
+            "on-secondary-fixed-variant": "#5516be",
+            "on-surface": "#dde2f5",
+            "on-secondary-fixed": "#23005c",
+            "inverse-on-surface": "#2a303f",
+            "surface": "#0d1320",
+            "secondary-fixed": "#e9ddff",
+            "on-error-container": "#ffdad6",
+            "surface-container-highest": "#2f3543",
+            "on-primary": "#003640",
+            "on-error": "#690005",
+            "surface-container-lowest": "#080e1b",
+            "on-surface-variant": "#bcc9cd",
+            "on-secondary": "#3c0091",
+            "tertiary-fixed-dim": "#4edea3",
+            "secondary": "#d0bcff",
+            "tertiary-fixed": "#6ffbbe",
+            "background": "#0d1320",
+            "on-primary-fixed": "#001f26",
+            "surface-container-high": "#242a38",
+            "primary-fixed": "#acedff",
+            "surface-variant": "#2f3543",
+            "surface-tint": "#4cd7f6",
+            "on-tertiary-container": "#00452e",
+            "tertiary": "#4edea3",
+            "primary": "#4cd7f6",
+            "on-secondary-container": "#c4abff",
+            "surface-bright": "#333948",
+            "outline-variant": "#3d494c",
+            "on-tertiary": "#003824",
+            "primary-container": "#06b6d4",
+            "on-tertiary-fixed-variant": "#005236",
+            "surface-dim": "#0d1320",
+            "inverse-surface": "#dde2f5",
+            "surface-container-low": "#161b29",
+            "primary-fixed-dim": "#4cd7f6",
+            "secondary-fixed-dim": "#d0bcff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "gutter": "1rem",
+            "margin": "1rem",
+            "space-md": "1rem",
+            "margin-desktop": "2rem",
+            "gutter-desktop": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin-tablet": "1.5rem"
+          },
+          "fontFamily": {
+            "label-sm": ["JetBrains Mono"],
+            "headline-xl-mobile": ["Inter"],
+            "headline-lg": ["Inter"],
+            "headline-xl": ["Inter"],
+            "body-sm": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "metric-display": ["Inter"],
+            "label-md": ["JetBrains Mono"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "label-sm": ["11px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+            "headline-xl": ["36px", { "lineHeight": "44px", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "metric-display": ["32px", { "lineHeight": "38px", "fontWeight": "700" }],
+            "label-md": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    @layer base {
+      html {
+        overscroll-behavior: none;
+        background-color: #0d1320;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #080e1b;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #242a38;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #3d494c;
+      }
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased">
+<!-- BEGIN: LeftSidebar -->
+<aside class="fixed top-0 bottom-0 left-0 w-64 bg-surface-container-low border-r border-surface-container flex flex-col justify-between z-40" data-purpose="sidebar-navigation">
+<div class="p-space-md flex flex-col gap-space-md overflow-y-auto">
+<!-- App Brand Header -->
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary font-headline-sm font-bold shadow-lg">
+            R
+          </div>
+<span class="text-on-surface font-headline-sm font-semibold tracking-tight">AI Visibility</span>
+</div>
+<button aria-label="Colapsar menú" class="text-outline hover:text-on-surface p-space-xs transition-colors rounded-lg" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+</div>
+<!-- Project Identifier -->
+<div class="flex flex-col gap-space-xs bg-surface-container p-space-sm rounded-lg">
+<div class="font-body-sm text-on-surface-variant flex items-center gap-1.5">
+<span>Proyecto:</span>
+<span class="text-on-surface font-medium">Contalia</span>
+<span class="text-outline">· contalia.com</span>
+</div>
+<div>
+<span class="inline-block px-2 py-0.5 font-label-sm text-[10px] text-amber-400 border border-amber-500/20 rounded-full bg-amber-500/10 font-medium">
+            Demo con datos ficticios
+          </span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-space-md mt-space-xs" data-active-classes="bg-surface-container text-primary font-medium shadow-sm border border-primary/20" data-purpose="sidebar-links">
+<!-- Group: Monitoreo -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Monitoreo</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="ai-visibility-dashboard-desktop" href="#">
+              Dashboard
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="competidores" href="#">
+              Competidores
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="fuentes" href="#">
+              Fuentes
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="sentimiento" href="#">
+              Sentimiento
+            </a>
+</div>
+</div>
+<!-- Group: Setup -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Setup</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="nuevo-proyecto" href="#">
+              Nuevo proyecto
+            </a>
+</div>
+</div>
+<!-- Group: Registro -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Registro</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="prompts" href="#">
+              Prompts
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="ofertas" href="#">
+              Ofertas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="buyer-personas" href="#">
+              Buyer personas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="tipos-de-prompt" href="#">
+              Tipos de prompt
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="marcas" href="#">
+              Marcas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="proyecto" href="#">
+              Proyecto
+            </a>
+</div>
+</div>
+</nav>
+</div>
+<!-- Theme / Mode Controls Footer -->
+<div class="p-space-sm border-t border-surface-container bg-surface-container-low shrink-0">
+<div class="bg-surface-container p-1 rounded-xl flex items-center gap-1 font-body-sm">
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-outline hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">light_mode</span>
+<span>Claro</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface font-medium shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">dark_mode</span>
+<span>Oscuro</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- END: LeftSidebar -->
+<!-- BEGIN: TopBar Header (Filter Ribbon) -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface-container-low/95 backdrop-blur-md border-b border-surface-container z-30 flex items-center px-space-xl justify-between">
+<div class="flex items-center gap-space-sm overflow-x-auto py-1 scrollbar-none">
+<!-- Filter: IA -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">IA:</span>
+<span class="font-body-sm text-on-surface font-medium">Todas</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Buyer Persona -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Buyer Persona:</span>
+<span class="font-body-sm text-on-surface font-medium">Todos</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Oferta -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Oferta:</span>
+<span class="font-body-sm text-on-surface font-medium">Todas</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Tipo de prompt -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Tipo de prompt:</span>
+<span class="font-body-sm text-on-surface font-medium">Todos</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: País -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">País:</span>
+<span class="font-body-sm text-on-surface font-medium">Global</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Período -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Período:</span>
+<span class="font-body-sm text-on-surface font-medium">Últimos 30 días</span>
+<span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span>
+</div>
+</div>
+<!-- Quick Status / Reset Action -->
+<div class="flex items-center gap-space-sm pl-space-md shrink-0">
+<button class="flex items-center gap-1 text-outline hover:text-on-surface font-body-sm px-2 py-1 rounded transition-colors" title="Restablecer filtros" type="button">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+<span class="hidden xl:inline">Limpiar</span>
+</button>
+<button class="bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 shadow-sm shadow-primary/20" type="button">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+<span>Actualizar</span>
+</button>
+</div>
+</header>
+<!-- END: TopBar Header -->
+<!-- BEGIN: MainContent -->
+<main class="pl-64 pt-16 min-h-screen bg-surface-container-lowest"><div class="flex flex-col w-full">
+<script>
+    (function highlightNav() {
+      const links = document.querySelectorAll('[data-purpose="sidebar-links"] a');
+      links.forEach(link => {
+        if (link.getAttribute('data-path') === 'buyer-personas') {
+          link.className = "block px-3 py-1.5 rounded-lg font-body-md bg-surface-container text-primary font-medium shadow-sm border border-primary/20 transition-colors";
+        } else {
+          link.classList.remove('bg-surface-container', 'text-primary', 'border-primary/20');
+        }
+      });
+    })();
+  </script>
+<div class="p-space-xl flex flex-col gap-space-xl">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs max-w-3xl">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-primary uppercase tracking-widest bg-primary/10 px-2.5 py-0.5 rounded-full">Registro Semántico GEO</span>
+<span class="font-label-sm text-outline">·</span>
+<span class="font-label-sm text-on-surface-variant">4 Arquetipos Activos</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Segmentación de Buyer Personas</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+          Modelado de perfiles objetivo y calibración de su impacto en motores generativos. Monitoriza cómo ChatGPT, Claude, Perplexity y Gemini asocian los dolores específicos con la proposición de valor de Contalia.
+        </p>
+</div>
+<div class="flex flex-wrap items-center gap-space-sm shrink-0">
+<button class="bg-surface-container hover:bg-surface-container-high text-on-surface px-3.5 py-2 rounded-lg font-body-md text-body-md font-medium transition-colors flex items-center gap-2 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">download</span>
+<span>Exportar Matriz</span>
+</button>
+<button class="bg-surface-container hover:bg-surface-container-high text-on-surface px-3.5 py-2 rounded-lg font-body-md text-body-md font-medium transition-colors flex items-center gap-2 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">psychology</span>
+<span>Simular Consulta</span>
+</button>
+<button class="bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-headline-sm px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 shadow-md shadow-primary/20" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>Crear Buyer Persona</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between relative overflow-hidden shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Segmentos Activos</span>
+<span class="font-metric-display text-metric-display text-on-surface">4</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">groups</span>
+</div>
+</div>
+<div class="mt-space-md flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm">
+<span class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+            100% monitorizados
+          </span>
+<span class="font-label-sm text-outline">142 prompts</span>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between relative overflow-hidden shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Cobertura Semántica</span>
+<span class="font-metric-display text-metric-display text-on-surface">91.2%</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[20px]">radar</span>
+</div>
+</div>
+<div class="mt-space-md flex items-center justify-between font-body-sm text-body-sm">
+<span class="text-tertiary font-label-sm flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+            +3.4% este mes
+          </span>
+<span class="text-on-surface-variant truncate max-w-[130px]" title="Respuestas contextualizadas">Dolor resuelto en IA</span>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between relative overflow-hidden shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Mayor Penetración</span>
+<div class="flex items-baseline gap-2">
+<span class="font-metric-display text-metric-display text-on-surface">94%</span>
+<span class="font-label-sm text-tertiary">Top 1</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+</div>
+</div>
+<div class="mt-space-md text-on-surface-variant font-body-sm text-body-sm truncate">
+<span class="text-on-surface font-medium">Autónomos y Microempresas</span>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between relative overflow-hidden shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Fricciones Semánticas</span>
+<span class="font-metric-display text-metric-display text-tertiary">0</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[20px]">task_alt</span>
+</div>
+</div>
+<div class="mt-space-md text-on-surface-variant font-body-sm text-body-sm truncate">
+<span>Soporte telefónico resuelto en FAQ</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Matriz de Arquetipos y Presencia LLM</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Rendimiento diferencial según dolores clave, posición media en respuestas y modelo predominante.</p>
+</div>
+<div class="hidden sm:flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+<span class="font-label-sm text-outline mr-3">Alta cuota (&gt;80%)</span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+<span class="font-label-sm text-outline">Media-Alta (70-80%)</span>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-space-lg">
+<div class="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between shadow-sm relative group hover:bg-surface-container transition-colors">
+<div class="flex flex-col gap-space-md">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[26px]">person</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">Autónomos y Microempresas</h3>
+<span class="bg-tertiary/10 text-tertiary font-label-sm text-label-sm px-2 py-0.5 rounded-full font-medium">Líder Absoluto</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Freelancers, comercios unipersonales, servicios profesionales</span>
+</div>
+</div>
+<div class="text-right shrink-0">
+<div class="font-label-md text-label-md text-tertiary font-bold">#1 Absoluto</div>
+<div class="font-label-sm text-label-sm text-outline">Posición Media</div>
+</div>
+</div>
+<div class="bg-surface-container/60 rounded-lg p-space-sm flex flex-col gap-1.5">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Pain Points Clave</span>
+<p class="font-body-md text-body-md text-on-surface">
+                Obligación TicketBAI/Batuz sin costes desorbitados, interfaz ultra-simple sin curva contable, emisión de facturas desde el móvil en menos de 30 segundos.
+              </p>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-space-sm pt-1">
+<div class="bg-surface-container rounded-lg p-2.5 flex flex-col">
+<span class="font-label-sm text-outline">Cuota en IA</span>
+<span class="font-headline-sm text-headline-sm text-on-surface mt-0.5">94%</span>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 mt-2">
+<div class="bg-tertiary h-1.5 rounded-full" style="width: 94%"></div>
+</div>
+</div>
+<div class="bg-surface-container rounded-lg p-2.5 flex flex-col">
+<span class="font-label-sm text-outline">LLM más afín</span>
+<span class="font-headline-sm text-headline-sm text-primary mt-0.5 truncate" title="ChatGPT-4o (96%)">ChatGPT-4o</span>
+<span class="font-label-sm text-outline mt-1.5">96% afinidad</span>
+</div>
+<div class="bg-surface-container rounded-lg p-2.5 flex flex-col col-span-2 sm:col-span-1">
+<span class="font-label-sm text-outline">Prompts Activos</span>
+<span class="font-headline-sm text-headline-sm text-on-surface mt-0.5">48</span>
+<span class="font-label-sm text-tertiary mt-1.5">100% validados</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-1.5 pt-1">
+<span class="font-label-sm text-outline mr-1">Atributos LLM:</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm px-2.5 py-1 rounded">Fácil de usar</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm px-2.5 py-1 rounded">Precio claro y sin extras</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm px-2.5 py-1 rounded">Homologado TicketBAI</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-outline">Última validación: Hoy, 09:24</span>
+<button class="text-primary hover:text-primary-fixed font-body-sm text-body-sm font-medium flex items-center gap-1 transition-colors" type="button">
+<span>Auditar 48 prompts</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between shadow-sm relative group hover:bg-surface-container transition-colors">
+<div class="flex flex-col gap-space-md">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-secondary shrink-0">
+<span class="material-symbols-outlined text-[26px]">account_balance</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">Gestorías y Asesores Fiscales</h3>
+<span class="bg-secondary/10 text-secondary font-label-sm text-label-sm px-2 py-0.5 rounded-full font-medium">B2B Core</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Despachos contables, asesorías laborales y mercantiles</span>
+</div>
+</div>
+<div class="text-right shrink-0">
+<div class="font-label-md text-label-md text-secondary font-bold">#1 Compartido</div>
+<div class="font-label-sm text-label-sm text-outline">vs Cegid</div>
+</div>
+</div>
+<div class="bg-surface-container/60 rounded-lg p-space-sm flex flex-col gap-1.5">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Pain Points Clave</span>
+<p class="font-body-md text-body-md text-on-surface">
+                Entorno multicliente centralizado, sincronización directa con haciendas forales, importación masiva de asientos bancarios y soporte técnico preferente.
+              </p>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-space-sm pt-1">
+<div class="bg-surface-container rounded-lg p-2.5 flex flex-col">
+<span class="font-label-sm text-outline">Cuota en IA</span>
+<span class="font-headline-sm text-headline-sm text-on-surface mt-0.5">89%</span>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 mt-2">
+<div class="bg-secondary h-1.5 rounded-full" style="width: 89%"></div>
+</div>
+</div>
+<div class="bg-surface-container rounded-lg p-2.5 flex flex-col">
+<span class="font-label-sm text-outline">LLM más afín</span>
+<span class="font-headline-sm text-headline-sm text-secondary mt-0.5 truncate" title="Claude 3.5 Sonnet">Claude 3.5 Sonnet</span>
+<span class="font-label-sm text-outline mt-1.5">92% precisión</span>
+</div>
+<div class="bg-surface-container rounded-lg p-2.5 flex flex-col col-span-2 sm:col-span-1">
+<span class="font-label-sm text-outline">Prompts Activos</span>
+<span class="font-headline-sm text-headline-sm text-on-surface mt-0.5">36</span>
+<span class="font-label-sm text-tertiary mt-1.5">Alta estabilidad</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-1.5 pt-1">
+<span class="font-label-sm text-outline mr-1">Atributos LLM:</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm px-2.5 py-1 rounded">Cumplimiento normativo</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm px-2.5 py-1 rounded">Automatización de asientos</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm px-2.5 py-1 rounded">Portal de asesor</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-outline">Última validación: Hoy, 08:45</span>
+<button class="text-primary hover:text-primary-fixed font-body-sm text-body-sm font-medium flex items-center gap-1 transition-colors" type="button">
+<span>Auditar 36 prompts</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between shadow-sm relative group hover:bg-surface-container transition-colors">
+<div class="flex flex-col gap-space-md">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[26px]">query_stats</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">CFOs &amp; Responsables Financieros</h3>
+<span class="bg-primary/10 text-primary font-label-sm text-label-sm px-2 py-0.5 rounded-full font-medium">Mid-Market</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Pymes consolidadas (20-150 empleados), scaleups</span>
+</div>
+</div>
+<div class="text-right shrink-0">
+<div class="font-label-md text-label-md text-primary font-bold">#2 Posición</div>
+<div class="font-label-sm text-label-sm text-outline">Tras Holded</div>
+</div>
+</div>
+<div class="bg-surface-container/60 rounded-lg p-space-sm flex flex-col gap-1.5">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Pain Points Clave</span>
+<p class="font-body-md text-body-md text-on-surface">
+                Conciliación bancaria PSD2 multi-entidad en tiempo real, API REST robusta para integración con ERP propio y cuadro analítico financiero exportable.
+              </p>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-space-sm pt-1">
+<div class="bg-surface-container rounded-lg p-2.5 flex flex-col">
+<span class="font-label-sm text-outline">Cuota en IA</span>
+<span class="font-headline-sm text-headline-sm text-on-surface mt-0.5">78%</span>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 mt-2">
+<div class="bg-primary h-1.5 rounded-full" style="width: 78%"></div>
+</div>
+</div>
+<div class="bg-surface-container rounded-lg p-2.5 flex flex-col">
+<span class="font-label-sm text-outline">LLM más afín</span>
+<span class="font-headline-sm text-headline-sm text-primary mt-0.5 truncate" title="Perplexity AI">Perplexity AI</span>
+<span class="font-label-sm text-outline mt-1.5">85% rigor citas</span>
+</div>
+<div class="bg-surface-container rounded-lg p-2.5 flex flex-col col-span-2 sm:col-span-1">
+<span class="font-label-sm text-outline">Prompts Activos</span>
+<span class="font-headline-sm text-headline-sm text-on-surface mt-0.5">32</span>
+<span class="font-label-sm text-outline mt-1.5">En optimización</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-1.5 pt-1">
+<span class="font-label-sm text-outline mr-1">Atributos LLM:</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm px-2.5 py-1 rounded">API abierta</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm px-2.5 py-1 rounded">Conciliación automática</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm px-2.5 py-1 rounded">Exportación BI</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-outline">Última validación: Ayer, 18:10</span>
+<button class="text-primary hover:text-primary-fixed font-body-sm text-body-sm font-medium flex items-center gap-1 transition-colors" type="button">
+<span>Auditar 32 prompts</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between shadow-sm relative group hover:bg-surface-container transition-colors">
+<div class="flex flex-col gap-space-md">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[26px]">point_of_sale</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">Comercios y Retail con TPV</h3>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm px-2 py-0.5 rounded-full font-medium">Punto de Venta</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Comercio de proximidad, hostelería y tiendas físicas</span>
+</div>
+</div>
+<div class="text-right shrink-0">
+<div class="font-label-md text-label-md text-primary font-bold">#2 Posición</div>
+<div class="font-label-sm text-label-sm text-outline">Competido</div>
+</div>
+</div>
+<div class="bg-surface-container/60 rounded-lg p-space-sm flex flex-col gap-1.5">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Pain Points Clave</span>
+<p class="font-body-md text-body-md text-on-surface">
+                Emisión instantánea de tickets QR homologados, velocidad de respuesta en mostrador durante horas punta y compatibilidad con impresoras térmicas existentes.
+              </p>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-space-sm pt-1">
+<div class="bg-surface-container rounded-lg p-2.5 flex flex-col">
+<span class="font-label-sm text-outline">Cuota en IA</span>
+<span class="font-headline-sm text-headline-sm text-on-surface mt-0.5">72%</span>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 mt-2">
+<div class="bg-primary h-1.5 rounded-full" style="width: 72%"></div>
+</div>
+</div>
+<div class="bg-surface-container rounded-lg p-2.5 flex flex-col">
+<span class="font-label-sm text-outline">LLM más afín</span>
+<span class="font-headline-sm text-headline-sm text-primary mt-0.5 truncate" title="ChatGPT-4o">ChatGPT-4o</span>
+<span class="font-label-sm text-outline mt-1.5">80% afinidad</span>
+</div>
+<div class="bg-surface-container rounded-lg p-2.5 flex flex-col col-span-2 sm:col-span-1">
+<span class="font-label-sm text-outline">Prompts Activos</span>
+<span class="font-headline-sm text-headline-sm text-on-surface mt-0.5">26</span>
+<span class="font-label-sm text-outline mt-1.5">Crecimiento +15%</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-1.5 pt-1">
+<span class="font-label-sm text-outline mr-1">Atributos LLM:</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm px-2.5 py-1 rounded">Ticket QR</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm px-2.5 py-1 rounded">TPV Web ligero</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm px-2.5 py-1 rounded">Cumplimiento Antifraude</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-outline">Última validación: Hoy, 07:15</span>
+<button class="text-primary hover:text-primary-fixed font-body-sm text-body-sm font-medium flex items-center gap-1 transition-colors" type="button">
+<span>Auditar 26 prompts</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-lg flex flex-col gap-space-md shadow-sm">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Matriz de Intersección: Dolores vs Argumentarios de IA</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Fuentes canónicas y citas indexadas que blindan las respuestas de cada arquetipo frente a la competencia.</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-tertiary bg-tertiary/10 px-3 py-1 rounded-full">100% Fuentes Indexadas</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container text-outline font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-3 px-4 rounded-l-lg">Arquetipo</th>
+<th class="py-3 px-4">Dolor Principal Evaluado</th>
+<th class="py-3 px-4">Respuesta Síntesis de IA</th>
+<th class="py-3 px-4">Fuente Canónica Indexada</th>
+<th class="py-3 px-4 text-right rounded-r-lg">Índice Convicción</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md divide-y-0">
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="py-3.5 px-4 font-medium text-on-surface flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+                Autónomos
+              </td>
+<td class="py-3.5 px-4 text-on-surface-variant">Coste de adopción TicketBAI</td>
+<td class="py-3.5 px-4 text-on-surface">"Contalia incluye el módulo TicketBAI sin cuota mensual añadida."</td>
+<td class="py-3.5 px-4">
+<a class="text-primary hover:underline font-label-sm flex items-center gap-1" href="#">
+<span>/precios-autonomos#ticketbai</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</td>
+<td class="py-3.5 px-4 text-right font-label-md font-semibold text-tertiary">98/100</td>
+</tr>
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="py-3.5 px-4 font-medium text-on-surface flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                Gestorías
+              </td>
+<td class="py-3.5 px-4 text-on-surface-variant">Pérdida de tiempo en traspaso contable</td>
+<td class="py-3.5 px-4 text-on-surface">"Permite acceso simultáneo despacho-cliente con volcado instantáneo a Bizkaia, Gipuzkoa y Álava."</td>
+<td class="py-3.5 px-4">
+<a class="text-primary hover:underline font-label-sm flex items-center gap-1" href="#">
+<span>/despachos/integracion-foral</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</td>
+<td class="py-3.5 px-4 text-right font-label-md font-semibold text-secondary">94/100</td>
+</tr>
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="py-3.5 px-4 font-medium text-on-surface flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+                CFOs &amp; Pymes
+              </td>
+<td class="py-3.5 px-4 text-on-surface-variant">Seguridad y aislamiento bancario API</td>
+<td class="py-3.5 px-4 text-on-surface">"Conectores PSD2 certificados por Banco de España con encriptación AES-256."</td>
+<td class="py-3.5 px-4">
+<a class="text-primary hover:underline font-label-sm flex items-center gap-1" href="#">
+<span>/seguridad-y-cumplimiento</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</td>
+<td class="py-3.5 px-4 text-right font-label-md font-semibold text-primary">88/100</td>
+</tr>
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="py-3.5 px-4 font-medium text-on-surface flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+                Retail / TPV
+              </td>
+<td class="py-3.5 px-4 text-on-surface-variant">Lentitud de expedición con QR obligatorio</td>
+<td class="py-3.5 px-4 text-on-surface">"Generación offline de código encadenado en menos de 0.2 segundos por ticket."</td>
+<td class="py-3.5 px-4">
+<a class="text-primary hover:underline font-label-sm flex items-center gap-1" href="#">
+<span>/tpv-ticketbai-offline</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</td>
+<td class="py-3.5 px-4 text-right font-label-md font-semibold text-primary">82/100</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div></main>
+<!-- END: MainContent -->
+</body></html>

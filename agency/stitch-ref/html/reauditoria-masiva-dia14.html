@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Visibility Dashboard</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed-variant": "#004e5c",
+            "on-tertiary-fixed": "#002113",
+            "outline": "#869397",
+            "error": "#ffb4ab",
+            "tertiary-container": "#1bbd85",
+            "error-container": "#93000a",
+            "on-primary-container": "#00424f",
+            "on-background": "#dde2f5",
+            "inverse-primary": "#00687a",
+            "surface-container": "#1a1f2d",
+            "secondary-container": "#571bc1",
+            "on-secondary-fixed-variant": "#5516be",
+            "on-surface": "#dde2f5",
+            "on-secondary-fixed": "#23005c",
+            "inverse-on-surface": "#2a303f",
+            "surface": "#0d1320",
+            "secondary-fixed": "#e9ddff",
+            "on-error-container": "#ffdad6",
+            "surface-container-highest": "#2f3543",
+            "on-primary": "#003640",
+            "on-error": "#690005",
+            "surface-container-lowest": "#080e1b",
+            "on-surface-variant": "#bcc9cd",
+            "on-secondary": "#3c0091",
+            "tertiary-fixed-dim": "#4edea3",
+            "secondary": "#d0bcff",
+            "tertiary-fixed": "#6ffbbe",
+            "background": "#0d1320",
+            "on-primary-fixed": "#001f26",
+            "surface-container-high": "#242a38",
+            "primary-fixed": "#acedff",
+            "surface-variant": "#2f3543",
+            "surface-tint": "#4cd7f6",
+            "on-tertiary-container": "#00452e",
+            "tertiary": "#4edea3",
+            "primary": "#4cd7f6",
+            "on-secondary-container": "#c4abff",
+            "surface-bright": "#333948",
+            "outline-variant": "#3d494c",
+            "on-tertiary": "#003824",
+            "primary-container": "#06b6d4",
+            "on-tertiary-fixed-variant": "#005236",
+            "surface-dim": "#0d1320",
+            "inverse-surface": "#dde2f5",
+            "surface-container-low": "#161b29",
+            "primary-fixed-dim": "#4cd7f6",
+            "secondary-fixed-dim": "#d0bcff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "gutter": "1rem",
+            "margin": "1rem",
+            "space-md": "1rem",
+            "margin-desktop": "2rem",
+            "gutter-desktop": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin-tablet": "1.5rem"
+          },
+          "fontFamily": {
+            "label-sm": ["JetBrains Mono"],
+            "headline-xl-mobile": ["Inter"],
+            "headline-lg": ["Inter"],
+            "headline-xl": ["Inter"],
+            "body-sm": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "metric-display": ["Inter"],
+            "label-md": ["JetBrains Mono"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "label-sm": ["11px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+            "headline-xl": ["36px", { "lineHeight": "44px", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "metric-display": ["32px", { "lineHeight": "38px", "fontWeight": "700" }],
+            "label-md": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    @layer base {
+      html {
+        overscroll-behavior: none;
+        background-color: #0d1320;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #080e1b;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #242a38;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #3d494c;
+      }
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased">
+<!-- BEGIN: LeftSidebar -->
+<aside class="fixed top-0 bottom-0 left-0 w-64 bg-surface-container-low border-r border-surface-container flex flex-col justify-between z-40" data-purpose="sidebar-navigation">
+<div class="p-space-md flex flex-col gap-space-md overflow-y-auto">
+<!-- App Brand Header -->
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary font-headline-sm font-bold shadow-lg">
+            R
+          </div>
+<span class="text-on-surface font-headline-sm font-semibold tracking-tight">AI Visibility</span>
+</div>
+<button aria-label="Colapsar menú" class="text-outline hover:text-on-surface p-space-xs transition-colors rounded-lg" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+</div>
+<!-- Project Identifier -->
+<div class="flex flex-col gap-space-xs bg-surface-container p-space-sm rounded-lg">
+<div class="font-body-sm text-on-surface-variant flex items-center gap-1.5">
+<span>Proyecto:</span>
+<span class="text-on-surface font-medium">Contalia</span>
+<span class="text-outline">· contalia.com</span>
+</div>
+<div>
+<span class="inline-block px-2 py-0.5 font-label-sm text-[10px] text-amber-400 border border-amber-500/20 rounded-full bg-amber-500/10 font-medium">
+            Demo con datos ficticios
+          </span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-space-md mt-space-xs" data-active-classes="bg-surface-container text-primary font-medium shadow-sm border border-primary/20" data-purpose="sidebar-links">
+<!-- Group: Monitoreo -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Monitoreo</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="ai-visibility-dashboard-desktop" href="#">
+              Dashboard
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="competidores" href="#">
+              Competidores
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="fuentes" href="#">
+              Fuentes
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="sentimiento" href="#">
+              Sentimiento
+            </a>
+</div>
+</div>
+<!-- Group: Setup -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Setup</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="nuevo-proyecto" href="#">
+              Nuevo proyecto
+            </a>
+</div>
+</div>
+<!-- Group: Registro -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Registro</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="prompts" href="#">
+              Prompts
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="ofertas" href="#">
+              Ofertas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="buyer-personas" href="#">
+              Buyer personas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="tipos-de-prompt" href="#">
+              Tipos de prompt
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="marcas" href="#">
+              Marcas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="proyecto" href="#">
+              Proyecto
+            </a>
+</div>
+</div>
+</nav>
+</div>
+<!-- Theme / Mode Controls Footer -->
+<div class="p-space-sm border-t border-surface-container bg-surface-container-low shrink-0">
+<div class="bg-surface-container p-1 rounded-xl flex items-center gap-1 font-body-sm">
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-outline hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">light_mode</span>
+<span>Claro</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface font-medium shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">dark_mode</span>
+<span>Oscuro</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- END: LeftSidebar -->
+<!-- BEGIN: TopBar Header (Filter Ribbon) -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface-container-low/95 backdrop-blur-md border-b border-surface-container z-30 flex items-center px-space-xl justify-between">
+<div class="flex items-center gap-space-sm overflow-x-auto py-1 scrollbar-none">
+<!-- Filter: IA -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">IA:</span>
+<span class="font-body-sm text-on-surface font-medium">Todas</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Buyer Persona -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Buyer Persona:</span>
+<span class="font-body-sm text-on-surface font-medium">Todos</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Oferta -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Oferta:</span>
+<span class="font-body-sm text-on-surface font-medium">Todas</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Tipo de prompt -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Tipo de prompt:</span>
+<span class="font-body-sm text-on-surface font-medium">Todos</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: País -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">País:</span>
+<span class="font-body-sm text-on-surface font-medium">Global</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Período -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Período:</span>
+<span class="font-body-sm text-on-surface font-medium">Últimos 30 días</span>
+<span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span>
+</div>
+</div>
+<!-- Quick Status / Reset Action -->
+<div class="flex items-center gap-space-sm pl-space-md shrink-0">
+<button class="flex items-center gap-1 text-outline hover:text-on-surface font-body-sm px-2 py-1 rounded transition-colors" title="Restablecer filtros" type="button">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+<span class="hidden xl:inline">Limpiar</span>
+</button>
+<button class="bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 shadow-sm shadow-primary/20" type="button">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+<span>Actualizar</span>
+</button>
+</div>
+</header>
+<!-- END: TopBar Header -->
+<!-- BEGIN: MainContent -->
+<main class="pl-64 pt-16 min-h-screen bg-surface-container-lowest"><div class="flex flex-col w-full">
+<!-- SECTION: Ambient Horizon Glow & Master Banner -->
+<div class="relative overflow-hidden bg-gradient-to-b from-surface-container via-surface-container-low to-surface-container-lowest p-space-lg lg:p-space-xl">
+<div class="absolute -top-32 right-12 w-96 h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none"></div>
+<div class="absolute top-1/2 left-1/4 w-80 h-80 rounded-full bg-tertiary/10 blur-3xl pointer-events-none"></div>
+<!-- Breadcrumb Pathway -->
+<nav aria-label="Navegación de auditoría" class="flex items-center gap-2 font-label-sm text-xs text-outline mb-space-md">
+<a class="hover:text-primary transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[15px]">radar</span>
+        Monitoreo
+      </a>
+<span>/</span>
+<a class="hover:text-primary transition-colors" href="#">Sentimiento</a>
+<span>/</span>
+<a class="hover:text-primary transition-colors" href="#">Mitigación GEO TicketBAI</a>
+<span>/</span>
+<span class="text-on-surface font-semibold flex items-center gap-1.5 bg-surface-container-high px-2 py-0.5 rounded">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+        Check 3: Re-auditoría Masiva (Día 14)
+      </span>
+</nav>
+<!-- Top Certification Meta Bar -->
+<div class="flex flex-wrap items-center justify-between gap-3 mb-space-md bg-surface-container-lowest/80 p-3 rounded-xl backdrop-blur-md">
+<div class="flex flex-wrap items-center gap-2 sm:gap-3">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary-container/20 text-tertiary font-label-sm text-xs font-semibold shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary" style="font-variation-settings: 'FILL' 1;">verified</span>
+          Certificación GEO Definitiva: 50 / 50 Permutaciones Blindadas
+        </span>
+<span class="inline-flex items-center gap-1 font-label-sm text-[11px] text-primary px-2.5 py-0.5 rounded bg-primary/10 font-mono">
+<span class="material-symbols-outlined text-[13px]">fingerprint</span>
+          #AUDIT-FINAL-D14-9940
+        </span>
+<span class="font-label-sm text-[11px] text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">calendar_month</span>
+          16 Mar 2025 · 14:00 CET
+        </span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-[11px] text-tertiary bg-tertiary/10 px-2 py-0.5 rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">check_circle</span>
+          Caso #8.492 Resuelto
+        </span>
+</div>
+</div>
+<!-- Header Hero Split: Title & Actions -->
+<div class="flex flex-col xl:flex-row xl:items-end justify-between gap-space-lg">
+<div class="space-y-2 max-w-4xl">
+<div class="flex items-center gap-2 text-primary font-label-sm text-xs tracking-wider uppercase">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+          Auditoría de Cierre Cuantitativa &amp; Convergencia Algorítmica
+        </div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">
+          Cierre Definitivo de Auditoría Masiva <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-tertiary">— 50 Permutaciones Semánticas</span>
+</h1>
+<p class="font-body-md text-on-surface-variant max-w-3xl leading-relaxed">
+          Evaluación exhaustiva multimodelo en 50 variaciones de consulta por intención de compra, territorio foral (Bizkaia, Gipuzkoa, Álava) y tipología de usuario. Se confirma la neutralización total de la alucinación sobre precios de TicketBAI.
+        </p>
+</div>
+<!-- Header Action Dock -->
+<div class="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-sm text-xs font-medium transition-colors shadow-sm" onclick="alert('Exportando Certificado Criptográfico GEO (.PDF)...')" type="button">
+<span class="material-symbols-outlined text-[17px] text-primary">picture_as_pdf</span>
+          Exportar Certificado (.pdf)
+        </button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-sm text-xs font-medium transition-colors shadow-sm" onclick="alert('Descargando 50 ejecuciones en formato NDJSON / Parquet...')" type="button">
+<span class="material-symbols-outlined text-[17px] text-secondary">data_object</span>
+          Raw JSON (50 Runs)
+        </button>
+<button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-tertiary-container hover:bg-tertiary text-on-tertiary font-headline-sm text-xs font-semibold shadow-md shadow-tertiary/20 transition-all hover:scale-[1.02]" onclick="document.getElementById('closure-modal').classList.remove('hidden')" type="button">
+<span class="material-symbols-outlined text-[18px]">archive</span>
+          Archivar Incidente &amp; Marcar Caso Cerrado
+        </button>
+</div>
+</div>
+</div>
+<!-- SECTION: Master KPI Metrics Grid -->
+<div class="p-space-lg lg:p-space-xl grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md -mt-4">
+<!-- KPI 1 -->
+<div class="relative bg-surface-container-low p-space-md rounded-xl shadow-md overflow-hidden flex flex-col justify-between">
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-tertiary to-primary"></div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-xs text-outline uppercase tracking-wider">Tasa de Éxito Global</span>
+<span class="w-8 h-8 rounded-lg bg-tertiary/15 text-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">task_alt</span>
+</span>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="font-metric-display text-metric-display text-on-surface font-bold">100%</span>
+<span class="font-label-md text-xs text-tertiary font-semibold">50/50 Limpios</span>
+</div>
+<p class="font-body-sm text-xs text-on-surface-variant mt-1">Cero alucinaciones detectadas en prompts forales.</p>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-lowest/60 -mx-4 -mb-4 px-4 py-2 flex items-center justify-between text-[11px] font-label-sm">
+<span class="text-outline">Pre-mitigación: 14%</span>
+<span class="text-tertiary font-medium">+86% incremento neto</span>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="relative bg-surface-container-low p-space-md rounded-xl shadow-md overflow-hidden flex flex-col justify-between">
+<div class="absolute top-0 left-0 right-0 h-1 bg-primary"></div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-xs text-outline uppercase tracking-wider">Polaridad Promedio</span>
+<span class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">sentiment_very_satisfied</span>
+</span>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="font-metric-display text-metric-display text-on-surface font-bold">+0.89</span>
+<span class="font-label-sm text-xs text-tertiary font-medium bg-tertiary/15 px-1.5 py-0.5 rounded">+1.53 pts</span>
+</div>
+<p class="font-body-sm text-xs text-on-surface-variant mt-1">Línea base previa: <span class="text-error font-mono">-0.64</span> (Riesgo corregido).</p>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-lowest/60 -mx-4 -mb-4 px-4 py-2 flex items-center justify-between text-[11px] font-label-sm">
+<span class="text-outline">Rango: +0.78 a +0.97</span>
+<span class="text-primary font-medium">Cuadrante Verde Puro</span>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="relative bg-surface-container-low p-space-md rounded-xl shadow-md overflow-hidden flex flex-col justify-between">
+<div class="absolute top-0 left-0 right-0 h-1 bg-secondary"></div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-xs text-outline uppercase tracking-wider">Atribución Canónica #1</span>
+<span class="w-8 h-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</span>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="font-metric-display text-metric-display text-on-surface font-bold">96.0%</span>
+<span class="font-label-md text-xs text-on-surface-variant">48/50 Citados</span>
+</div>
+<p class="font-body-sm text-xs text-on-surface-variant mt-1">Citan docs oficiales de Contalia como fuente primordial.</p>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-lowest/60 -mx-4 -mb-4 px-4 py-2 flex items-center justify-between text-[11px] font-label-sm">
+<span class="text-outline">Foros obsoletos: 0%</span>
+<span class="text-secondary font-medium">Prioridad SEO/GEO</span>
+</div>
+</div>
+<!-- KPI 4 -->
+<div class="relative bg-surface-container-low p-space-md rounded-xl shadow-md overflow-hidden flex flex-col justify-between">
+<div class="absolute top-0 left-0 right-0 h-1 bg-primary-container"></div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-xs text-outline uppercase tracking-wider">Convergencia Motores LLM</span>
+<span class="w-8 h-8 rounded-lg bg-primary-container/15 text-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">hub</span>
+</span>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="font-metric-display text-metric-display text-on-surface font-bold">4 / 4</span>
+<span class="font-label-md text-xs text-tertiary font-medium">100% Sincronía</span>
+</div>
+<p class="font-body-sm text-xs text-on-surface-variant mt-1">Gemini, ChatGPT, Perplexity y Claude alineados.</p>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-lowest/60 -mx-4 -mb-4 px-4 py-2 flex items-center justify-between text-[11px] font-label-sm">
+<span class="text-outline">Desfase temporal: 0h</span>
+<span class="text-tertiary font-medium">Grounding Unificado</span>
+</div>
+</div>
+</div>
+<!-- SECTION: Multidimensional Coverage Matrix & Scatter Heatmap -->
+<div class="px-space-lg lg:px-space-xl pb-space-lg grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+<!-- Territory & Buyer Persona Deconstruction (7 Cols) -->
+<div class="lg:col-span-7 bg-surface-container-low p-space-lg rounded-2xl shadow-lg flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<div>
+<span class="font-label-sm text-xs text-primary uppercase tracking-wider block">Desglose Estratégico</span>
+<h2 class="font-headline-md text-headline-md text-on-surface font-semibold">Matriz de Cobertura de las 50 Permutaciones</h2>
+</div>
+<span class="font-label-sm text-xs bg-surface-container-high text-on-surface px-2.5 py-1 rounded-lg">
+            3 Territorios · 3 Personas
+          </span>
+</div>
+<!-- Sub-grid: Territorios Forales -->
+<div class="space-y-3 mb-space-lg">
+<span class="font-label-sm text-xs text-outline uppercase tracking-wide block">1. Cobertura por Territorio Foral</span>
+<!-- Bizkaia -->
+<div class="p-3 bg-surface-container rounded-xl flex items-center justify-between gap-4">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold font-label-sm text-xs">
+                BIZ
+              </div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-xs font-semibold text-on-surface">Bizkaia (Batuz / TicketBAI)</span>
+<span class="font-label-sm text-[10px] text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">18/18 Limpios</span>
+</div>
+<p class="font-body-sm text-[11px] text-on-surface-variant truncate">
+                  Modelos de facturación 140/240 confirmados en plan base sin coste extra.
+                </p>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<div class="w-24 bg-surface-container-highest rounded-full h-2 overflow-hidden hidden sm:block">
+<div class="bg-tertiary h-full rounded-full" style="width: 100%"></div>
+</div>
+<span class="font-label-sm text-xs text-on-surface font-semibold">100%</span>
+</div>
+</div>
+<!-- Gipuzkoa -->
+<div class="p-3 bg-surface-container rounded-xl flex items-center justify-between gap-4">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center shrink-0 font-bold font-label-sm text-xs">
+                GIP
+              </div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-xs font-semibold text-on-surface">Gipuzkoa (TicketBAI Diputación)</span>
+<span class="font-label-sm text-[10px] text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">16/16 Limpios</span>
+</div>
+<p class="font-body-sm text-[11px] text-on-surface-variant truncate">
+                  Generación de código QR y fichero XML foral verificados en respuestas sintéticas.
+                </p>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<div class="w-24 bg-surface-container-highest rounded-full h-2 overflow-hidden hidden sm:block">
+<div class="bg-tertiary h-full rounded-full" style="width: 100%"></div>
+</div>
+<span class="font-label-sm text-xs text-on-surface font-semibold">100%</span>
+</div>
+</div>
+<!-- Álava -->
+<div class="p-3 bg-surface-container rounded-xl flex items-center justify-between gap-4">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-tertiary/10 text-tertiary flex items-center justify-center shrink-0 font-bold font-label-sm text-xs">
+                ALA
+              </div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-xs font-semibold text-on-surface">Álava (TicketBAI DFA)</span>
+<span class="font-label-sm text-[10px] text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">16/16 Limpios</span>
+</div>
+<p class="font-body-sm text-[11px] text-on-surface-variant truncate">
+                  Validación de envío automático y compatibilidad sin módulos de pago.
+                </p>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<div class="w-24 bg-surface-container-highest rounded-full h-2 overflow-hidden hidden sm:block">
+<div class="bg-tertiary h-full rounded-full" style="width: 100%"></div>
+</div>
+<span class="font-label-sm text-xs text-on-surface font-semibold">100%</span>
+</div>
+</div>
+</div>
+<!-- Sub-grid: Buyer Personas -->
+<div class="space-y-2.5">
+<span class="font-label-sm text-xs text-outline uppercase tracking-wide block">2. Cobertura por Buyer Persona Evaluada</span>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+<div class="bg-surface-container p-3 rounded-xl">
+<div class="flex items-center justify-between text-outline text-[11px] font-label-sm mb-1">
+<span>Gestorías Fiscales</span>
+<span class="text-tertiary">15 / 15</span>
+</div>
+<div class="font-headline-sm text-xs text-on-surface font-semibold">100% Positivo</div>
+<div class="font-body-sm text-[10px] text-on-surface-variant mt-0.5">Multicliente sin coste adicional</div>
+</div>
+<div class="bg-surface-container p-3 rounded-xl">
+<div class="flex items-center justify-between text-outline text-[11px] font-label-sm mb-1">
+<span>Autónomos y Micros</span>
+<span class="text-tertiary">20 / 20</span>
+</div>
+<div class="font-headline-sm text-xs text-on-surface font-semibold">100% Positivo</div>
+<div class="font-body-sm text-[10px] text-on-surface-variant mt-0.5">Plan Básico clarificado</div>
+</div>
+<div class="bg-surface-container p-3 rounded-xl">
+<div class="flex items-center justify-between text-outline text-[11px] font-label-sm mb-1">
+<span>CFOs &amp; Medianas</span>
+<span class="text-tertiary">15 / 15</span>
+</div>
+<div class="font-headline-sm text-xs text-on-surface font-semibold">100% Positivo</div>
+<div class="font-body-sm text-[10px] text-on-surface-variant mt-0.5">Auditoría fiscal e integración ERP</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-space-md pt-3 bg-surface-container-lowest/40 rounded-lg p-2.5 flex items-center justify-between font-label-sm text-[11px] text-outline">
+<span class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px] text-tertiary">tune</span>
+          Temperatura de muestreo estandarizada en 0.2 para evitar variabilidad no determinista
+        </span>
+<span class="text-primary font-medium">100% Convergencia</span>
+</div>
+</div>
+<!-- Semantic Scatter / Polar Distribution Matrix (5 Cols) -->
+<div class="lg:col-span-5 bg-surface-container-low p-space-lg rounded-2xl shadow-lg flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<div>
+<span class="font-label-sm text-xs text-tertiary uppercase tracking-wider block">Distribución de Sentimiento</span>
+<h2 class="font-headline-md text-headline-md text-on-surface font-semibold">Nube de Dispersión (50 Runs)</h2>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-tertiary/15 text-tertiary font-label-sm text-[10px] font-semibold">
+            Todas &gt; +0.75
+          </span>
+</div>
+<p class="font-body-sm text-xs text-on-surface-variant mb-space-md">
+          Mapeo de las 50 respuestas simuladas. La zona roja representa la polaridad inicial (-0.64). Todos los puntos actuales convergen en el cuadrante seguro de alta reputación.
+        </p>
+<!-- Inline Visual Chart: Simulated Scatter Heatmap -->
+<div class="relative bg-surface-container-lowest rounded-xl p-4 h-64 flex flex-col justify-between overflow-hidden">
+<!-- Background Axis Grid Lines -->
+<div class="absolute inset-x-4 top-1/2 h-px bg-outline-variant/40"></div>
+<div class="absolute inset-y-4 left-1/2 w-px bg-outline-variant/40"></div>
+<!-- Danger vs Target Zones -->
+<div class="absolute top-2 left-2 text-[10px] font-label-sm text-error/60 bg-error/10 px-1.5 py-0.5 rounded">
+            Pre-mitigación (-0.64)
+          </div>
+<div class="absolute top-2 right-2 text-[10px] font-label-sm text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded font-semibold">
+            Zona Actual (+0.75 a +1.0)
+          </div>
+<!-- Scatter Dots Container (Inline SVG) -->
+<svg class="w-full h-full text-tertiary" fill="none" viewbox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
+<!-- Historical Failure Point (Red Ghost) -->
+<circle cx="50" cy="160" fill="#ffb4ab" fill-opacity="0.3" r="6" stroke="#ffb4ab" stroke-dasharray="2 2" stroke-width="1.5"></circle>
+<text fill="#ffb4ab" font-family="JetBrains Mono" font-size="9" x="62" y="164">Incidente #8.492</text>
+<!-- 50 Green Clustered Verification Dots in High Positive Quadrant (cx: 210 to 300, cy: 20 to 90) -->
+<g opacity="0.9">
+<!-- Cluster 1: Bizkaia (18 points) -->
+<circle cx="230" cy="40" fill="#4edea3" r="3.5"></circle><circle cx="242" cy="35" fill="#4edea3" r="3.5"></circle>
+<circle cx="250" cy="50" fill="#4edea3" r="4"></circle><circle cx="238" cy="62" fill="#4edea3" r="3"></circle>
+<circle cx="260" cy="42" fill="#4edea3" r="3.5"></circle><circle cx="270" cy="30" fill="#4edea3" r="4.5"></circle>
+<circle cx="255" cy="68" fill="#4edea3" r="3"></circle><circle cx="245" cy="45" fill="#4edea3" r="3.5"></circle>
+<circle cx="265" cy="55" fill="#4edea3" r="4"></circle><circle cx="280" cy="38" fill="#4edea3" r="3.5"></circle>
+<circle cx="275" cy="60" fill="#4edea3" r="3"></circle><circle cx="285" cy="48" fill="#4edea3" r="4"></circle>
+<circle cx="235" cy="72" fill="#4edea3" r="3.5"></circle><circle cx="248" cy="78" fill="#4edea3" r="3"></circle>
+<circle cx="258" cy="30" fill="#4edea3" r="3.5"></circle><circle cx="268" cy="75" fill="#4edea3" r="4"></circle>
+<circle cx="290" cy="52" fill="#4edea3" r="3.5"></circle><circle cx="278" cy="44" fill="#4edea3" r="3"></circle>
+<!-- Cluster 2: Gipuzkoa (16 points - Cyan tint) -->
+<circle cx="225" cy="55" fill="#4cd7f6" r="3.5"></circle><circle cx="236" cy="48" fill="#4cd7f6" r="4"></circle>
+<circle cx="246" cy="60" fill="#4cd7f6" r="3.5"></circle><circle cx="252" cy="38" fill="#4cd7f6" r="3"></circle>
+<circle cx="262" cy="48" fill="#4cd7f6" r="4"></circle><circle cx="272" cy="65" fill="#4cd7f6" r="3.5"></circle>
+<circle cx="282" cy="58" fill="#4cd7f6" r="3"></circle><circle cx="292" cy="40" fill="#4cd7f6" r="4"></circle>
+<circle cx="240" cy="52" fill="#4cd7f6" r="3.5"></circle><circle cx="250" cy="70" fill="#4cd7f6" r="3.5"></circle>
+<circle cx="260" cy="62" fill="#4cd7f6" r="4"></circle><circle cx="270" cy="50" fill="#4cd7f6" r="3"></circle>
+<circle cx="280" cy="66" fill="#4cd7f6" r="3.5"></circle><circle cx="288" cy="62" fill="#4cd7f6" r="4"></circle>
+<circle cx="295" cy="45" fill="#4cd7f6" r="3.5"></circle><circle cx="266" cy="36" fill="#4cd7f6" r="3"></circle>
+<!-- Cluster 3: Álava (16 points - Secondary violet tint) -->
+<circle cx="220" cy="68" fill="#d0bcff" r="3.5"></circle><circle cx="232" cy="80" fill="#d0bcff" r="3"></circle>
+<circle cx="244" cy="74" fill="#d0bcff" r="4"></circle><circle cx="254" cy="82" fill="#d0bcff" r="3.5"></circle>
+<circle cx="264" cy="70" fill="#d0bcff" r="3"></circle><circle cx="274" cy="78" fill="#d0bcff" r="4"></circle>
+<circle cx="284" cy="72" fill="#d0bcff" r="3.5"></circle><circle cx="296" cy="58" fill="#d0bcff" r="3"></circle>
+<circle cx="228" cy="62" fill="#d0bcff" r="4"></circle><circle cx="238" cy="88" fill="#d0bcff" r="3.5"></circle>
+<circle cx="248" cy="84" fill="#d0bcff" r="3"></circle><circle cx="258" cy="85" fill="#d0bcff" r="4"></circle>
+<circle cx="268" cy="82" fill="#d0bcff" r="3.5"></circle><circle cx="278" cy="84" fill="#d0bcff" r="3"></circle>
+<circle cx="286" cy="76" fill="#d0bcff" r="4"></circle><circle cx="298" cy="65" fill="#d0bcff" r="3.5"></circle>
+</g>
+<!-- Centroid Indicator Vector -->
+<circle cx="262" cy="56" fill="none" r="8" stroke="#acedff" stroke-dasharray="2 2" stroke-width="1.5"></circle>
+<circle cx="262" cy="56" fill="#acedff" r="2.5"></circle>
+<text fill="#acedff" font-family="JetBrains Mono" font-size="9" font-weight="600" x="220" y="24">Centroide Promedio: +0.89</text>
+</svg>
+<!-- Axis Labels -->
+<div class="flex justify-between items-center text-[10px] font-label-sm text-outline">
+<span>Intención Exploratoria</span>
+<span>Intención Transaccional / Compra</span>
+</div>
+</div>
+</div>
+<!-- Heatmap Legend -->
+<div class="mt-space-md pt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] font-label-sm text-outline">
+<div class="flex items-center gap-3">
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span> Bizkaia (18)</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-primary"></span> Gipuzkoa (16)</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-secondary"></span> Álava (16)</span>
+</div>
+<span class="text-on-surface font-mono">σ = 0.04 (Alta coherencia)</span>
+</div>
+</div>
+</div>
+<!-- SECTION: Cross-LLM Benchmark (4 Engine Cards) -->
+<div class="px-space-lg lg:px-space-xl pb-space-lg">
+<div class="flex items-center justify-between mb-space-md">
+<div>
+<span class="font-label-sm text-xs text-primary uppercase tracking-wider block">Validación Multi-Arquitectura</span>
+<h2 class="font-headline-md text-headline-md text-on-surface font-semibold">Comparativa Definitiva en Motores de IA Generativa</h2>
+</div>
+<span class="font-label-sm text-xs text-tertiary bg-tertiary/10 px-2.5 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">sync_saved_locally</span>
+        Re-auditoría Simultánea Ejecutada
+      </span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<!-- LLM 1: Gemini 1.5 Pro -->
+<div class="bg-surface-container-low p-space-md rounded-xl shadow-md space-y-3 relative overflow-hidden">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-8 h-8 rounded-lg bg-secondary-container/20 text-secondary flex items-center justify-center font-bold text-xs">
+              G
+            </span>
+<div>
+<span class="font-headline-sm text-xs text-on-surface font-semibold block">Google Gemini 1.5 Pro</span>
+<span class="font-label-sm text-[10px] text-outline">Grounding Google Search</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded font-label-sm text-[11px] bg-tertiary/15 text-tertiary font-bold">50/50</span>
+</div>
+<div class="space-y-1.5 text-xs font-body-sm text-on-surface-variant">
+<div class="flex justify-between py-1 bg-surface-container px-2 rounded">
+<span class="text-outline font-label-sm text-[11px]">Alucinaciones:</span>
+<span class="text-tertiary font-semibold font-label-sm text-[11px]">0 detectadas</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container px-2 rounded">
+<span class="text-outline font-label-sm text-[11px]">Cita Canónica:</span>
+<span class="text-on-surface font-semibold font-label-sm text-[11px]">98% contalia.com/docs</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container px-2 rounded">
+<span class="text-outline font-label-sm text-[11px]">Polaridad Neta:</span>
+<span class="text-primary font-bold font-label-sm text-[11px]">+0.93</span>
+</div>
+</div>
+<div class="text-[11px] font-body-sm text-on-surface-variant bg-surface-container-lowest p-2 rounded-lg">
+<span class="text-outline font-semibold">Causa raíz resuelta:</span> El motor indexó el nuevo sitemap de compatibilidad foral sin costes.
+        </div>
+</div>
+<!-- LLM 2: OpenAI ChatGPT-4o -->
+<div class="bg-surface-container-low p-space-md rounded-xl shadow-md space-y-3 relative overflow-hidden">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">
+              4o
+            </span>
+<div>
+<span class="font-headline-sm text-xs text-on-surface font-semibold block">ChatGPT-4o (SearchGPT)</span>
+<span class="font-label-sm text-[10px] text-outline">Bing Index &amp; Live Retrieval</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded font-label-sm text-[11px] bg-tertiary/15 text-tertiary font-bold">50/50</span>
+</div>
+<div class="space-y-1.5 text-xs font-body-sm text-on-surface-variant">
+<div class="flex justify-between py-1 bg-surface-container px-2 rounded">
+<span class="text-outline font-label-sm text-[11px]">Alucinaciones:</span>
+<span class="text-tertiary font-semibold font-label-sm text-[11px]">0 detectadas</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container px-2 rounded">
+<span class="text-outline font-label-sm text-[11px]">Cita Canónica:</span>
+<span class="text-on-surface font-semibold font-label-sm text-[11px]">96% Docs + G2 2025</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container px-2 rounded">
+<span class="text-outline font-label-sm text-[11px]">Polaridad Neta:</span>
+<span class="text-primary font-bold font-label-sm text-[11px]">+0.88</span>
+</div>
+</div>
+<div class="text-[11px] font-body-sm text-on-surface-variant bg-surface-container-lowest p-2 rounded-lg">
+<span class="text-outline font-semibold">Causa raíz resuelta:</span> Las reseñas externas verificadas sobrepasan a foros antiguos de 2023.
+        </div>
+</div>
+<!-- LLM 3: Perplexity AI -->
+<div class="bg-surface-container-low p-space-md rounded-xl shadow-md space-y-3 relative overflow-hidden">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-8 h-8 rounded-lg bg-tertiary/20 text-tertiary flex items-center justify-center font-bold text-xs">
+              P
+            </span>
+<div>
+<span class="font-headline-sm text-xs text-on-surface font-semibold block">Perplexity AI (Sonar)</span>
+<span class="font-label-sm text-[10px] text-outline">Real-time Web Grounding</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded font-label-sm text-[11px] bg-tertiary/15 text-tertiary font-bold">50/50</span>
+</div>
+<div class="space-y-1.5 text-xs font-body-sm text-on-surface-variant">
+<div class="flex justify-between py-1 bg-surface-container px-2 rounded">
+<span class="text-outline font-label-sm text-[11px]">Alucinaciones:</span>
+<span class="text-tertiary font-semibold font-label-sm text-[11px]">0 detectadas</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container px-2 rounded">
+<span class="text-outline font-label-sm text-[11px]">Cita Canónica:</span>
+<span class="text-on-surface font-semibold font-label-sm text-[11px]">100% con Favicon verificado</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container px-2 rounded">
+<span class="text-outline font-label-sm text-[11px]">Polaridad Neta:</span>
+<span class="text-primary font-bold font-label-sm text-[11px]">+0.91</span>
+</div>
+</div>
+<div class="text-[11px] font-body-sm text-on-surface-variant bg-surface-container-lowest p-2 rounded-lg">
+<span class="text-outline font-semibold">Causa raíz resuelta:</span> El esquema FAQ estructurado en contalia.com es el fragmento destacado.
+        </div>
+</div>
+<!-- LLM 4: Claude 3.5 Sonnet -->
+<div class="bg-surface-container-low p-space-md rounded-xl shadow-md space-y-3 relative overflow-hidden">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-8 h-8 rounded-lg bg-primary-container/20 text-primary-container flex items-center justify-center font-bold text-xs">
+              C
+            </span>
+<div>
+<span class="font-headline-sm text-xs text-on-surface font-semibold block">Claude 3.5 Sonnet</span>
+<span class="font-label-sm text-[10px] text-outline">Brave Search Web Index</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded font-label-sm text-[11px] bg-tertiary/15 text-tertiary font-bold">50/50</span>
+</div>
+<div class="space-y-1.5 text-xs font-body-sm text-on-surface-variant">
+<div class="flex justify-between py-1 bg-surface-container px-2 rounded">
+<span class="text-outline font-label-sm text-[11px]">Alucinaciones:</span>
+<span class="text-tertiary font-semibold font-label-sm text-[11px]">0 detectadas</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container px-2 rounded">
+<span class="text-outline font-label-sm text-[11px]">Cita Canónica:</span>
+<span class="text-on-surface font-semibold font-label-sm text-[11px]">92% Docs + Nota Prensa</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container px-2 rounded">
+<span class="text-outline font-label-sm text-[11px]">Polaridad Neta:</span>
+<span class="text-primary font-bold font-label-sm text-[11px]">+0.84</span>
+</div>
+</div>
+<div class="text-[11px] font-body-sm text-on-surface-variant bg-surface-container-lowest p-2 rounded-lg">
+<span class="text-outline font-semibold">Causa raíz resuelta:</span> Consolidación de indexación en Brave tras la solicitud del Check 2.
+        </div>
+</div>
+</div>
+</div>
+<!-- SECTION: Interactive Granular Explorer (Data Table of the 50 Permutations) -->
+<div class="px-space-lg lg:px-space-xl pb-space-lg">
+<div class="bg-surface-container-low rounded-2xl shadow-lg overflow-hidden">
+<!-- Table Controls & Quick Filter Strip -->
+<div class="p-space-md lg:p-space-lg bg-surface-container/40 space-y-4">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div>
+<span class="font-label-sm text-xs text-primary uppercase tracking-wider block">Auditoría Individual</span>
+<h3 class="font-headline-md text-headline-md text-on-surface font-semibold">Explorador de las 50 Permutaciones Semánticas</h3>
+</div>
+<div class="flex items-center gap-2">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-[16px] text-outline">search</span>
+<input class="bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-sm text-xs pl-8 pr-3 py-1.5 rounded-lg border-0 focus:outline-none focus:ring-1 focus:ring-primary w-56 sm:w-64" placeholder="Filtrar por query o entidad..." type="text"/>
+</div>
+<button class="bg-surface-container-high hover:bg-surface-bright text-on-surface px-3 py-1.5 rounded-lg font-body-sm text-xs flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[16px] text-outline">filter_list</span>
+<span>Modelos</span>
+</button>
+</div>
+</div>
+<!-- Pill Segmented Filters -->
+<div class="flex flex-wrap items-center gap-1.5 pt-1">
+<button class="px-3 py-1 rounded-lg bg-primary-container text-on-primary font-label-sm text-xs font-semibold shadow-sm" type="button">
+            Todas (50)
+          </button>
+<button class="px-3 py-1 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface-variant hover:text-on-surface font-label-sm text-xs transition-colors" type="button">
+            Bizkaia (18)
+          </button>
+<button class="px-3 py-1 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface-variant hover:text-on-surface font-label-sm text-xs transition-colors" type="button">
+            Gipuzkoa (16)
+          </button>
+<button class="px-3 py-1 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface-variant hover:text-on-surface font-label-sm text-xs transition-colors" type="button">
+            Álava (16)
+          </button>
+<span class="text-outline-variant mx-1">|</span>
+<button class="px-3 py-1 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface-variant hover:text-on-surface font-label-sm text-xs transition-colors" type="button">
+            Gestorías (15)
+          </button>
+<button class="px-3 py-1 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface-variant hover:text-on-surface font-label-sm text-xs transition-colors" type="button">
+            Autónomos (20)
+          </button>
+<button class="px-3 py-1 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface-variant hover:text-on-surface font-label-sm text-xs transition-colors" type="button">
+            CFOs / Pymes (15)
+          </button>
+</div>
+</div>
+<!-- Data Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm text-xs">
+<thead class="bg-surface-container-lowest text-outline font-label-sm uppercase tracking-wider text-[11px] sticky top-0">
+<tr>
+<th class="py-3 px-4"># Run</th>
+<th class="py-3 px-4">Consulta Simulada (Query Prompt)</th>
+<th class="py-3 px-4">Modelo LLM</th>
+<th class="py-3 px-4">Veredicto Semántico</th>
+<th class="py-3 px-4 text-right">Score</th>
+<th class="py-3 px-4">Fuente Principal Citada</th>
+<th class="py-3 px-4 text-center">Acción</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container">
+<!-- Row 1: Gemini (Exact mirror of original incident #8.492) -->
+<tr class="hover:bg-surface-container/60 transition-colors group">
+<td class="py-3.5 px-4 font-mono font-label-sm text-[11px] text-outline">#TB-01</td>
+<td class="py-3.5 px-4 max-w-sm">
+<span class="text-on-surface font-medium block truncate" title="¿Es compatible Contalia con TicketBAI en Bizkaia sin pagar módulos adicionales?">
+                  "¿Es compatible Contalia con TicketBAI en Bizkaia sin pagar módulos adicionales?"
+                </span>
+<span class="text-outline text-[11px]">Buyer Persona: Autónomo · Intención: Transaccional</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-secondary-container/20 text-secondary font-label-sm text-[11px]">
+                  Gemini 1.5 Pro
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-1.5 text-tertiary font-medium">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Certificado 100% incluido en Plan Básico</span>
+</div>
+<span class="text-outline text-[10px]">Cero alusiones a costes ocultos</span>
+</td>
+<td class="py-3.5 px-4 text-right font-mono font-label-sm text-tertiary font-bold text-xs">
+                +0.94
+              </td>
+<td class="py-3.5 px-4">
+<span class="font-mono text-[11px] text-primary truncate max-w-[180px] block hover:underline cursor-pointer">
+                  contalia.com/docs/ticketbai
+                </span>
+<span class="text-[10px] text-outline">Anchor Verificado #1</span>
+</td>
+<td class="py-3.5 px-4 text-center">
+<button class="text-outline hover:text-primary transition-colors p-1" onclick="document.getElementById('ai-citation-modal').classList.remove('hidden')" title="Ver snippet generado por el modelo" type="button">
+<span class="material-symbols-outlined text-[17px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: ChatGPT-4o -->
+<tr class="hover:bg-surface-container/60 transition-colors group">
+<td class="py-3.5 px-4 font-mono font-label-sm text-[11px] text-outline">#TB-02</td>
+<td class="py-3.5 px-4 max-w-sm">
+<span class="text-on-surface font-medium block truncate" title="Mejores software contabilidad TicketBAI Gipuzkoa para gestorías autónomos comparativa">
+                  "Mejores software contabilidad TicketBAI Gipuzkoa para gestorías autónomos comparativa"
+                </span>
+<span class="text-outline text-[11px]">Buyer Persona: Gestoría / Asesoría Fiscal · Comparativa</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/20 text-primary font-label-sm text-[11px]">
+                  ChatGPT-4o
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-1.5 text-tertiary font-medium">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Recomendado #1 sin sobrecostes</span>
+</div>
+<span class="text-outline text-[10px]">Destaca soporte humano ágil</span>
+</td>
+<td class="py-3.5 px-4 text-right font-mono font-label-sm text-tertiary font-bold text-xs">
+                +0.89
+              </td>
+<td class="py-3.5 px-4">
+<span class="font-mono text-[11px] text-primary truncate max-w-[180px] block hover:underline cursor-pointer">
+                  g2.com/contalia-reviews-2025
+                </span>
+<span class="text-[10px] text-outline">Third-party Authority</span>
+</td>
+<td class="py-3.5 px-4 text-center">
+<button class="text-outline hover:text-primary transition-colors p-1" onclick="document.getElementById('ai-citation-modal').classList.remove('hidden')" title="Ver snippet generado por el modelo" type="button">
+<span class="material-symbols-outlined text-[17px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Perplexity AI -->
+<tr class="hover:bg-surface-container/60 transition-colors group">
+<td class="py-3.5 px-4 font-mono font-label-sm text-[11px] text-outline">#TB-03</td>
+<td class="py-3.5 px-4 max-w-sm">
+<span class="text-on-surface font-medium block truncate" title="Opiniones sobre recargos ocultos de Contalia en régimen foral de Álava">
+                  "Opiniones sobre recargos ocultos de Contalia en régimen foral de Álava"
+                </span>
+<span class="text-outline text-[11px]">Buyer Persona: CFO Pyme · Intención: Reputación / Dudas</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary/20 text-tertiary font-label-sm text-[11px]">
+                  Perplexity AI
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-1.5 text-tertiary font-medium">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Desmentido tajante: 0€ costes extra</span>
+</div>
+<span class="text-outline text-[10px]">Cita aclaración oficial v2.3</span>
+</td>
+<td class="py-3.5 px-4 text-right font-mono font-label-sm text-tertiary font-bold text-xs">
+                +0.92
+              </td>
+<td class="py-3.5 px-4">
+<span class="font-mono text-[11px] text-primary truncate max-w-[180px] block hover:underline cursor-pointer">
+                  contalia.com/pricing/ticketbai-faq
+                </span>
+<span class="text-[10px] text-outline">Schema FAQ Directo</span>
+</td>
+<td class="py-3.5 px-4 text-center">
+<button class="text-outline hover:text-primary transition-colors p-1" onclick="document.getElementById('ai-citation-modal').classList.remove('hidden')" title="Ver snippet generado por el modelo" type="button">
+<span class="material-symbols-outlined text-[17px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Claude 3.5 Sonnet -->
+<tr class="hover:bg-surface-container/60 transition-colors group">
+<td class="py-3.5 px-4 font-mono font-label-sm text-[11px] text-outline">#TB-04</td>
+<td class="py-3.5 px-4 max-w-sm">
+<span class="text-on-surface font-medium block truncate" title="Software para facturar Batuz 140/240 con soporte técnico incluido en País Vasco">
+                  "Software para facturar Batuz 140/240 con soporte técnico incluido en País Vasco"
+                </span>
+<span class="text-outline text-[11px]">Buyer Persona: Gestoría / Empresa · Solución Técnica</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary-container/20 text-primary-container font-label-sm text-[11px]">
+                  Claude 3.5 Sonnet
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-1.5 text-tertiary font-medium">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Totalmente integrado y verificado</span>
+</div>
+<span class="text-outline text-[10px]">Homologación foral confirmada</span>
+</td>
+<td class="py-3.5 px-4 text-right font-mono font-label-sm text-tertiary font-bold text-xs">
+                +0.85
+              </td>
+<td class="py-3.5 px-4">
+<span class="font-mono text-[11px] text-primary truncate max-w-[180px] block hover:underline cursor-pointer">
+                  prensa-tech.es/contalia-batuz-update
+                </span>
+<span class="text-[10px] text-outline">Cobertura de Medios</span>
+</td>
+<td class="py-3.5 px-4 text-center">
+<button class="text-outline hover:text-primary transition-colors p-1" onclick="document.getElementById('ai-citation-modal').classList.remove('hidden')" title="Ver snippet generado por el modelo" type="button">
+<span class="material-symbols-outlined text-[17px]">visibility</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination & Status Footer -->
+<div class="p-space-md bg-surface-container/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-body-sm text-outline">
+<div class="flex items-center gap-2">
+<span>Mostrando <strong class="text-on-surface">1 - 4</strong> de <strong class="text-on-surface">50</strong> permutaciones auditadas</span>
+<span class="text-outline-variant">•</span>
+<span class="text-tertiary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+            100% de convergencia positiva
+          </span>
+</div>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded bg-surface-container text-outline hover:text-on-surface disabled:opacity-40 transition-colors" disabled="">
+            Anterior
+          </button>
+<span class="px-2.5 py-1 rounded bg-primary-container text-on-primary font-mono font-label-sm text-xs font-bold">1</span>
+<button class="px-2.5 py-1 rounded bg-surface-container text-on-surface hover:bg-surface-bright font-mono font-label-sm text-xs transition-colors">2</button>
+<button class="px-2.5 py-1 rounded bg-surface-container text-on-surface hover:bg-surface-bright font-mono font-label-sm text-xs transition-colors">3</button>
+<span class="px-1 text-outline">...</span>
+<button class="px-2.5 py-1 rounded bg-surface-container text-on-surface hover:bg-surface-bright font-mono font-label-sm text-xs transition-colors">13</button>
+<button class="px-2.5 py-1 rounded bg-surface-container text-on-surface hover:bg-surface-bright transition-colors">
+            Siguiente
+          </button>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION: Continuous Shielding & Active Sentinel Guards -->
+<div class="px-space-lg lg:px-space-xl pb-space-xl">
+<div class="bg-gradient-to-r from-surface-container via-surface-container-low to-surface-container p-space-lg lg:p-space-xl rounded-2xl shadow-xl border border-primary/20 relative overflow-hidden">
+<div class="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-tertiary/10 blur-2xl pointer-events-none"></div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-center">
+<!-- Sentinel Guard Details (8 Cols) -->
+<div class="lg:col-span-8 space-y-3">
+<div class="flex items-center gap-2 text-tertiary font-label-sm text-xs tracking-wider uppercase">
+<span class="material-symbols-outlined text-[18px]">security</span>
+            Blindaje Algorítmico Permanente &amp; Monitoreo Centinela
+          </div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface font-semibold tracking-tight">
+            Protocolo de Salvaguarda Activo: Re-escaneo Automático Quincenal
+          </h3>
+<p class="font-body-md text-on-surface-variant text-sm leading-relaxed">
+            Las 50 permutaciones semánticas han sido integradas en el pipeline de telemetría continua de Contalia. En caso de que cualquier actualización de pesos en Gemini, GPT o Claude altere la polaridad por debajo de <span class="text-on-surface font-mono font-semibold">+0.70</span>, se disparará una alerta prioritaria en Slack / Teams con regeneración automática del Schema de mitigación.
+          </p>
+<div class="flex flex-wrap items-center gap-4 pt-2 font-label-sm text-xs">
+<div class="flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded-lg text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-tertiary">notifications_active</span>
+<span>Canal: #alertas-geo-reputacion (Slack)</span>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded-lg text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary">menu_book</span>
+<span>Playbook: #GEO-TB9921 Archivado en Knowledge Hub</span>
+</div>
+</div>
+</div>
+<!-- Completion CTA Box (4 Cols) -->
+<div class="lg:col-span-4 bg-surface-container-lowest/80 p-space-md rounded-xl flex flex-col items-stretch gap-3 text-center backdrop-blur-md">
+<div class="w-12 h-12 rounded-full bg-tertiary/15 text-tertiary flex items-center justify-center mx-auto">
+<span class="material-symbols-outlined text-[24px]">verified</span>
+</div>
+<div>
+<span class="font-headline-sm text-xs text-on-surface font-semibold block">Mitigación TicketBAI Concluida</span>
+<span class="font-body-sm text-[11px] text-outline">Día 14 de 14 · Proceso completado exitosamente</span>
+</div>
+<button class="w-full py-2.5 px-4 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-xs font-semibold shadow-md shadow-primary/20 transition-all" onclick="alert('Redirigiendo a Dashboard Principal de Sentimiento...')" type="button">
+            Finalizar Flujo &amp; Volver a Sentimiento
+          </button>
+<a class="font-label-sm text-[11px] text-outline hover:text-primary transition-colors" href="#">
+            Ver registro de auditoría completa (#AUDIT-FINAL-D14-9940)
+          </a>
+</div>
+</div>
+</div>
+</div>
+<!-- MODAL: Confirmation of Incident Closure -->
+<div aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-container-lowest/85 backdrop-blur-md hidden" id="closure-modal" role="dialog">
+<div class="bg-surface-container-low max-w-lg w-full rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4">
+<div class="w-12 h-12 rounded-xl bg-tertiary/20 text-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-[28px]">lock</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-surface font-semibold">¿Archivar Incidente #8.492 y Marcar Caso Cerrado?</h4>
+<p class="font-body-sm text-on-surface-variant text-xs mt-2 leading-relaxed">
+          Esta acción cerrará formalmente el expediente de mitigación GEO en el dashboard de Sentimiento. Se emitirá el certificado final con firma de convergencia para los registros de compliance de Contalia.
+        </p>
+</div>
+<div class="bg-surface-container p-3 rounded-xl font-label-sm text-[11px] space-y-1">
+<div class="flex justify-between text-outline">
+<span>Identificador de Auditoría:</span>
+<span class="font-mono text-on-surface">#AUDIT-FINAL-D14-9940</span>
+</div>
+<div class="flex justify-between text-outline">
+<span>Permutaciones Consolidadas:</span>
+<span class="text-tertiary font-semibold">50 / 50 (100% Éxito)</span>
+</div>
+<div class="flex justify-between text-outline">
+<span>Estado del Monitor Centinela:</span>
+<span class="text-primary font-semibold">Vigilancia Permanente Activa</span>
+</div>
+</div>
+<div class="flex items-center justify-end gap-3 pt-2">
+<button class="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface font-body-sm text-xs transition-colors" onclick="document.getElementById('closure-modal').classList.add('hidden')" type="button">
+          Cancelar
+        </button>
+<button class="px-4 py-2 rounded-lg bg-tertiary-container hover:bg-tertiary text-on-tertiary font-headline-sm text-xs font-semibold shadow-md transition-all" onclick="alert('Incidente #8.492 archivado como Caso Cerrado Exitoso.'); document.getElementById('closure-modal').classList.add('hidden');" type="button">
+          Confirmar y Cerrar Caso
+        </button>
+</div>
+</div>
+</div>
+</div></main>
+<!-- END: MainContent -->
+<!-- BEGIN: Modal Detalle de Cita de IA & Diagnóstico GEO -->
+<div aria-labelledby="modal-citation-title" aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-surface-container-lowest/80 backdrop-blur-md overflow-y-auto" id="ai-citation-modal" role="dialog">
+<div class="relative w-full max-w-5xl bg-surface-container-low border border-outline-variant rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto">
+<!-- MODAL HEADER -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 sm:px-6 border-b border-surface-container bg-surface-container/60">
+<div class="space-y-1.5">
+<div class="flex flex-wrap items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-label-sm text-xs bg-secondary-container/20 text-secondary border border-secondary/30 font-medium">
+<span class="material-symbols-outlined text-[15px] text-secondary">smart_toy</span>
+            Google Gemini 1.5 Pro
+          </span>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-label-sm text-[11px] bg-error/15 text-error border border-error/30 font-medium">
+<span class="material-symbols-outlined text-[13px]">warning</span>
+            Polaridad: Negativa / Riesgo Leve (-0.64)
+          </span>
+<span class="font-label-sm text-[11px] text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">schedule</span>
+            Hoy, 02 Mar 2025 · 14:32 CET
+          </span>
+</div>
+<div class="flex flex-wrap items-center gap-3 pt-0.5 font-body-sm text-xs text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="text-outline font-label-sm uppercase">Buyer Persona:</span>
+<span class="text-on-surface font-medium">Pyme Gestoría / Autónomo</span>
+</span>
+<span class="text-outline-variant">•</span>
+<span class="flex items-center gap-1">
+<span class="text-outline font-label-sm uppercase">Oferta evaluada:</span>
+<span class="text-on-surface font-medium">Módulo Fiscal TicketBAI / Plan Básico</span>
+</span>
+</div>
+</div>
+<!-- Quick Action Controls & Close Button -->
+<div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+<button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface-variant hover:text-on-surface text-xs font-body-sm transition-colors border border-outline-variant/60" title="Compartir snippet" type="button">
+<span class="material-symbols-outlined text-[15px]">share</span>
+<span class="hidden sm:inline">Compartir</span>
+</button>
+<button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface-variant hover:text-on-surface text-xs font-body-sm transition-colors border border-outline-variant/60" title="Exportar JSON" type="button">
+<span class="material-symbols-outlined text-[15px]">code</span>
+<span class="hidden sm:inline">JSON</span>
+</button>
+<button aria-label="Cerrar modal" class="w-8 h-8 rounded-lg bg-surface-container-high hover:bg-surface-bright text-outline hover:text-on-surface flex items-center justify-center transition-colors" onclick="document.getElementById('ai-citation-modal').classList.add('hidden')" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- MODAL BODY: 2 COLUMNS (PROMPT & RESPONSE VS DIAGNOSTIC & GEO ACTION) -->
+<div class="p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-y-auto max-h-[757px]">
+<!-- LEFT COLUMN: PROMPT & GENERATED CITATION (7 COLS) -->
+<div class="lg:col-span-7 space-y-4">
+<!-- Prompt Executed Box -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<label class="font-label-sm text-xs text-outline uppercase tracking-wider flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-primary">terminal</span>
+              Prompt Ejecutado (Consulta Simulada)
+            </label>
+<span class="font-label-sm text-[11px] text-outline">Simulación #8.492</span>
+</div>
+<div class="bg-surface-container-lowest border border-surface-container rounded-xl p-3.5 font-label-md text-xs text-on-surface leading-relaxed relative selection:bg-primary/20">
+<p>"¿Cuáles son los mejores softwares de contabilidad para autónomos en País Vasco compatibles con TicketBAI y qué debilidades tiene Contalia frente a Cuentaflux?"</p>
+</div>
+</div>
+<!-- Full Synthetic Response Box with Highlighted Citation -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<label class="font-label-sm text-xs text-outline uppercase tracking-wider flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-secondary">forum</span>
+              Respuesta Completa del Modelo (Fragmento Auditado)
+            </label>
+<span class="font-label-sm text-[10px] text-tertiary bg-tertiary/10 px-2 py-0.5 rounded-full">Grounding Activo</span>
+</div>
+<div class="bg-surface-container-lowest border border-surface-container rounded-xl p-4 font-body-sm text-xs text-on-surface-variant leading-relaxed space-y-3">
+<p>
+              En el mercado de software contable para el País Vasco, tanto <strong class="text-on-surface">Cuentaflux</strong> como <strong class="text-on-surface">Ábaco Cloud</strong> ofrecen soporte nativo para los tres regímenes forales (Bizkaia, Gipuzkoa y Álava).
+            </p>
+<div class="p-3 rounded-lg bg-error/10 border-l-2 border-error text-on-surface space-y-1">
+<div class="font-label-sm text-[11px] text-error font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">highlight</span>
+                Cita de Impacto Reputacional Negativo:
+              </div>
+<p class="italic text-on-surface">
+                "...Por otro lado, <mark class="bg-error/25 text-error px-1 rounded font-semibold">algunos usuarios señalan dudas sobre el cumplimiento inmediato de normativas TicketBAI forales en el plan básico de Contalia sin módulos extras</mark>, situando a Cuentaflux por delante en inmediatez de alta fiscal..."
+              </p>
+</div>
+<p>
+              No obstante, Contalia sobresale ampliamente en tiempos de respuesta de soporte técnico humano y automatización de conciliación bancaria PSD2.
+            </p>
+</div>
+</div>
+<!-- Execution Metadata Badges -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-label-sm text-[11px]">
+<div class="bg-surface-container p-2 rounded-lg border border-surface-container">
+<span class="text-outline block text-[10px]">TEMPERATURA</span>
+<span class="text-on-surface font-semibold">0.20 (Determinista)</span>
+</div>
+<div class="bg-surface-container p-2 rounded-lg border border-surface-container">
+<span class="text-outline block text-[10px]">TOP_P / TOP_K</span>
+<span class="text-on-surface font-semibold">0.95 / 40</span>
+</div>
+<div class="bg-surface-container p-2 rounded-lg border border-surface-container">
+<span class="text-outline block text-[10px]">TOKENS USADOS</span>
+<span class="text-on-surface font-semibold">412 tokens</span>
+</div>
+<div class="bg-surface-container p-2 rounded-lg border border-surface-container">
+<span class="text-outline block text-[10px]">BÚSQUEDA WEB</span>
+<span class="text-primary font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Habilitada</span>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: SEMANTIC DIAGNOSIS & GEO MITIGATION ACTION (5 COLS) -->
+<div class="lg:col-span-5 space-y-4">
+<!-- Diagnostic Root-Cause Card -->
+<div class="bg-surface-container border border-amber-500/20 rounded-xl p-4 space-y-2.5">
+<div class="flex items-center gap-2 text-amber-400 font-headline-sm text-xs font-semibold">
+<span class="material-symbols-outlined text-[18px]">psychology_alt</span>
+            Diagnóstico de Alucinación / Información Obsoleta
+          </div>
+<div class="text-xs font-body-sm text-on-surface-variant leading-relaxed space-y-1.5">
+<p><strong class="text-on-surface">Realidad de producto:</strong> El plan básico de Contalia incluye TicketBAI y facturación foral verificada sin coste desde la versión 2.3 (Noviembre 2024).</p>
+<p><strong class="text-amber-300">Causa raíz:</strong> El motor LLM recuperó foros no oficiales y un artículo comparativo de terceros de 2023 con precios y paquetes desactualizados.</p>
+</div>
+</div>
+<!-- Sources and Grounding Citations Used by LLM -->
+<div class="bg-surface-container rounded-xl p-4 border border-surface-container space-y-2.5">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-xs text-outline uppercase tracking-wider flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-outline">link</span>
+              Fuentes de Grounding del LLM
+            </span>
+<span class="font-label-sm text-[11px] text-outline">2 fuentes externas</span>
+</div>
+<div class="space-y-1.5 text-xs font-body-sm">
+<a class="flex items-center justify-between p-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors text-on-surface group border border-transparent hover:border-outline-variant" href="#">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-[15px] text-error shrink-0">cancel</span>
+<span class="truncate font-label-md text-[11px] text-outline group-hover:text-on-surface">foro.contabilidad.es/thread-219...</span>
+</div>
+<span class="font-label-sm text-[10px] text-error shrink-0 ml-2">Obsoleto 2023</span>
+</a>
+<a class="flex items-center justify-between p-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors text-on-surface group border border-transparent hover:border-outline-variant" href="#">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-[15px] text-outline shrink-0">article</span>
+<span class="truncate font-label-md text-[11px] text-outline group-hover:text-on-surface">comparativas-software.com/ticketbai-24</span>
+</div>
+<span class="font-label-sm text-[10px] text-outline shrink-0 ml-2">Cita parcial</span>
+</a>
+</div>
+</div>
+<!-- Semantic Drivers Tagging -->
+<div class="bg-surface-container rounded-xl p-4 border border-surface-container space-y-2">
+<span class="font-label-sm text-xs text-outline uppercase tracking-wider block">Atributos Afectados en este Prompt</span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-1 rounded-md bg-error/10 text-error font-label-sm text-[11px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">gavel</span>
+              TicketBAI / Fiscalidad (-0.64)
+            </span>
+<span class="px-2 py-1 rounded-md bg-amber-400/10 text-amber-300 font-label-sm text-[11px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">sell</span>
+              Claridad de Pricing / Extras
+            </span>
+<span class="px-2 py-1 rounded-md bg-tertiary/10 text-tertiary font-label-sm text-[11px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">support_agent</span>
+              Soporte Técnico (+0.75)
+            </span>
+</div>
+</div>
+<!-- GEO Mitigation Playbook Action Buttons -->
+<div class="space-y-2 pt-1">
+<button class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-xs font-semibold shadow-md shadow-primary-container/20 transition-all" type="button">
+<span class="material-symbols-outlined text-[17px]">auto_fix_high</span>
+<span>Generar Guía de Mitigación / Briefing para IA</span>
+</button>
+<div class="grid grid-cols-2 gap-2">
+<button class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface font-body-sm text-xs transition-colors border border-outline-variant/60" type="button">
+<span class="material-symbols-outlined text-[15px] text-primary">cloud_sync</span>
+<span>Indexar en Docs Hub</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-bright text-outline hover:text-error font-body-sm text-xs transition-colors border border-outline-variant/60" type="button">
+<span class="material-symbols-outlined text-[15px]">flag</span>
+<span>Flag Alucinación</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- MODAL FOOTER -->
+<div class="p-3.5 px-6 bg-surface-container-high/60 border-t border-surface-container flex items-center justify-between text-xs font-body-sm text-outline">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span>Motor GEO Activo: Monitoreando próximas reevaluaciones periódicas en Google Gemini.</span>
+</div>
+<button class="px-3 py-1 rounded-md bg-surface-container text-on-surface hover:bg-surface-bright font-label-sm text-xs transition-colors" onclick="document.getElementById('ai-citation-modal').classList.add('hidden')" type="button">
+        Cerrar (Esc)
+      </button>
+</div>
+</div>
+</div>
+<!-- END: Modal Detalle de Cita de IA & Diagnóstico GEO --></body></html>

@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Visibility Dashboard</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed-variant": "#004e5c",
+            "on-tertiary-fixed": "#002113",
+            "outline": "#869397",
+            "error": "#ffb4ab",
+            "tertiary-container": "#1bbd85",
+            "error-container": "#93000a",
+            "on-primary-container": "#00424f",
+            "on-background": "#dde2f5",
+            "inverse-primary": "#00687a",
+            "surface-container": "#1a1f2d",
+            "secondary-container": "#571bc1",
+            "on-secondary-fixed-variant": "#5516be",
+            "on-surface": "#dde2f5",
+            "on-secondary-fixed": "#23005c",
+            "inverse-on-surface": "#2a303f",
+            "surface": "#0d1320",
+            "secondary-fixed": "#e9ddff",
+            "on-error-container": "#ffdad6",
+            "surface-container-highest": "#2f3543",
+            "on-primary": "#003640",
+            "on-error": "#690005",
+            "surface-container-lowest": "#080e1b",
+            "on-surface-variant": "#bcc9cd",
+            "on-secondary": "#3c0091",
+            "tertiary-fixed-dim": "#4edea3",
+            "secondary": "#d0bcff",
+            "tertiary-fixed": "#6ffbbe",
+            "background": "#0d1320",
+            "on-primary-fixed": "#001f26",
+            "surface-container-high": "#242a38",
+            "primary-fixed": "#acedff",
+            "surface-variant": "#2f3543",
+            "surface-tint": "#4cd7f6",
+            "on-tertiary-container": "#00452e",
+            "tertiary": "#4edea3",
+            "primary": "#4cd7f6",
+            "on-secondary-container": "#c4abff",
+            "surface-bright": "#333948",
+            "outline-variant": "#3d494c",
+            "on-tertiary": "#003824",
+            "primary-container": "#06b6d4",
+            "on-tertiary-fixed-variant": "#005236",
+            "surface-dim": "#0d1320",
+            "inverse-surface": "#dde2f5",
+            "surface-container-low": "#161b29",
+            "primary-fixed-dim": "#4cd7f6",
+            "secondary-fixed-dim": "#d0bcff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "gutter": "1rem",
+            "margin": "1rem",
+            "space-md": "1rem",
+            "margin-desktop": "2rem",
+            "gutter-desktop": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin-tablet": "1.5rem"
+          },
+          "fontFamily": {
+            "label-sm": ["JetBrains Mono"],
+            "headline-xl-mobile": ["Inter"],
+            "headline-lg": ["Inter"],
+            "headline-xl": ["Inter"],
+            "body-sm": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "metric-display": ["Inter"],
+            "label-md": ["JetBrains Mono"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "label-sm": ["11px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+            "headline-xl": ["36px", { "lineHeight": "44px", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "metric-display": ["32px", { "lineHeight": "38px", "fontWeight": "700" }],
+            "label-md": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    @layer base {
+      html {
+        overscroll-behavior: none;
+        background-color: #0d1320;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #080e1b;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #242a38;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #3d494c;
+      }
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased">
+<!-- BEGIN: LeftSidebar -->
+<aside class="fixed top-0 bottom-0 left-0 w-64 bg-surface-container-low border-r border-surface-container flex flex-col justify-between z-40" data-purpose="sidebar-navigation">
+<div class="p-space-md flex flex-col gap-space-md overflow-y-auto">
+<!-- App Brand Header -->
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary font-headline-sm font-bold shadow-lg">
+            R
+          </div>
+<span class="text-on-surface font-headline-sm font-semibold tracking-tight">AI Visibility</span>
+</div>
+<button aria-label="Colapsar menú" class="text-outline hover:text-on-surface p-space-xs transition-colors rounded-lg" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+</div>
+<!-- Project Identifier -->
+<div class="flex flex-col gap-space-xs bg-surface-container p-space-sm rounded-lg">
+<div class="font-body-sm text-on-surface-variant flex items-center gap-1.5">
+<span>Proyecto:</span>
+<span class="text-on-surface font-medium">Contalia</span>
+<span class="text-outline">· contalia.com</span>
+</div>
+<div>
+<span class="inline-block px-2 py-0.5 font-label-sm text-[10px] text-amber-400 border border-amber-500/20 rounded-full bg-amber-500/10 font-medium">
+            Demo con datos ficticios
+          </span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-space-md mt-space-xs" data-active-classes="bg-surface-container text-primary font-medium shadow-sm border border-primary/20" data-purpose="sidebar-links">
+<!-- Group: Monitoreo -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Monitoreo</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="ai-visibility-dashboard-desktop" href="#">
+              Dashboard
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="competidores" href="#">
+              Competidores
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="fuentes" href="#">
+              Fuentes
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="sentimiento" href="#">
+              Sentimiento
+            </a>
+</div>
+</div>
+<!-- Group: Setup -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Setup</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="nuevo-proyecto" href="#">
+              Nuevo proyecto
+            </a>
+</div>
+</div>
+<!-- Group: Registro -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Registro</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="prompts" href="#">
+              Prompts
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="ofertas" href="#">
+              Ofertas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="buyer-personas" href="#">
+              Buyer personas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="tipos-de-prompt" href="#">
+              Tipos de prompt
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="marcas" href="#">
+              Marcas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="proyecto" href="#">
+              Proyecto
+            </a>
+</div>
+</div>
+</nav>
+</div>
+<!-- Theme / Mode Controls Footer -->
+<div class="p-space-sm border-t border-surface-container bg-surface-container-low shrink-0">
+<div class="bg-surface-container p-1 rounded-xl flex items-center gap-1 font-body-sm">
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-outline hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">light_mode</span>
+<span>Claro</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface font-medium shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">dark_mode</span>
+<span>Oscuro</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- END: LeftSidebar -->
+<!-- BEGIN: TopBar Header (Filter Ribbon) -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface-container-low/95 backdrop-blur-md border-b border-surface-container z-30 flex items-center px-space-xl justify-between">
+<div class="flex items-center gap-space-sm overflow-x-auto py-1 scrollbar-none">
+<!-- Filter: IA -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">IA:</span>
+<span class="font-body-sm text-on-surface font-medium">Todas</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Buyer Persona -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Buyer Persona:</span>
+<span class="font-body-sm text-on-surface font-medium">Todos</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Oferta -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Oferta:</span>
+<span class="font-body-sm text-on-surface font-medium">Todas</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Tipo de prompt -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Tipo de prompt:</span>
+<span class="font-body-sm text-on-surface font-medium">Todos</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: País -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">País:</span>
+<span class="font-body-sm text-on-surface font-medium">Global</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Período -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Período:</span>
+<span class="font-body-sm text-on-surface font-medium">Últimos 30 días</span>
+<span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span>
+</div>
+</div>
+<!-- Quick Status / Reset Action -->
+<div class="flex items-center gap-space-sm pl-space-md shrink-0">
+<button class="flex items-center gap-1 text-outline hover:text-on-surface font-body-sm px-2 py-1 rounded transition-colors" title="Restablecer filtros" type="button">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+<span class="hidden xl:inline">Limpiar</span>
+</button>
+<button class="bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 shadow-sm shadow-primary/20" type="button">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+<span>Actualizar</span>
+</button>
+</div>
+</header>
+<!-- END: TopBar Header -->
+<!-- BEGIN: MainContent -->
+<main class="pl-64 pt-16 min-h-screen bg-surface-container-lowest"><div class="flex flex-col w-full">
+<!-- Content Container with strict adherence to layout & spacing tokens -->
+<div class="p-space-lg lg:p-space-xl space-y-space-lg">
+<!-- BEGIN: Breadcrumb & Page Header Section -->
+<section class="flex flex-col gap-space-md">
+<!-- Nav Breadcrumb -->
+<nav aria-label="Ruta de navegación" class="flex items-center gap-2 font-body-sm text-outline">
+<a class="hover:text-on-surface transition-colors" href="#">Monitoreo</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<a class="hover:text-on-surface transition-colors" href="#">Sentimiento</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<a class="hover:text-on-surface transition-colors" href="#">Protocolo Centinela</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary font-medium">Configurar Reglas de Alerta</span>
+</nav>
+<!-- Headline & Global Actions -->
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-md pb-space-xs">
+<div class="space-y-1">
+<div class="flex flex-wrap items-center gap-space-sm">
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">
+              Configurador de Reglas de Alerta Preventiva Centinela
+            </h1>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-tertiary-container/15 text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+              Motor Centinela v2.4 Activo · Frecuencia Continua
+            </span>
+</div>
+<p class="font-body-md text-on-surface-variant max-w-4xl">
+            Monitoreo continuo autónomo, detección precoz de alucinaciones sintéticas, deriva de polaridad LLM y reaparición de fuentes desactualizadas en el grounding cognitivo.
+          </p>
+</div>
+<div class="flex items-center gap-space-sm shrink-0">
+<button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-headline-sm text-sm transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">play_arrow</span>
+<span>Probar con simulador</span>
+</button>
+<button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-sm font-semibold transition-all shadow-lg shadow-primary-container/20" id="save-rule-btn" type="button">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span>Guardar y Activar Regla Centinela</span>
+</button>
+</div>
+</div>
+</section>
+<!-- END: Breadcrumb & Page Header Section -->
+<!-- BEGIN: Two-Column Interactive Workstation (65% Builder / 35% Simulation) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg">
+<!-- LEFT COLUMN: Rule Builder & Trigger Logic (approx 65% / 8 cols) -->
+<div class="xl:col-span-8 space-y-space-lg">
+<!-- CARD 1: Identificación y Alcance de la Regla -->
+<article class="bg-surface-container-low rounded-xl p-space-lg shadow-md space-y-space-md">
+<header class="flex items-center justify-between pb-2 border-b border-surface-container">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">1. Identificación y Alcance de la Regla</h2>
+</div>
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Módulo ID: RULE-TBAI-084</span>
+</header>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Rule Name -->
+<div class="space-y-1.5 md:col-span-2">
+<label class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1" for="rule-name">
+<span>Nombre descriptivo de la regla</span>
+<span class="text-error">*</span>
+</label>
+<input class="w-full bg-surface-container-lowest text-on-surface rounded-lg px-3.5 py-2.5 font-body-md text-body-md focus:outline-none focus:ring-1 focus:ring-primary placeholder-outline" id="rule-name" type="text" value="Guardia Centinela TicketBAI &amp; Fiscalidad Foral (Anti-Alucinaciones)"/>
+</div>
+<!-- Description -->
+<div class="space-y-1.5 md:col-span-2">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="rule-desc">Propósito operativo / Descripción del caso de contingencia</label>
+<textarea class="w-full bg-surface-container-lowest text-on-surface rounded-lg px-3.5 py-2 font-body-md text-body-md focus:outline-none focus:ring-1 focus:ring-primary resize-none placeholder-outline" id="rule-desc" rows="2">Supervisa variaciones en recomendaciones de software fiscal en Bizkaia, Gipuzkoa y Álava para prevenir menciones obsoletas de costes ocultos y fallos en normativas Batuz.</textarea>
+</div>
+<!-- Severity Selector -->
+<div class="space-y-2 md:col-span-2">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Nivel de Severidad Operativa</label>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+<!-- P0 -->
+<label class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-2">
+<input class="text-error focus:ring-0 bg-surface" name="severity" type="radio" value="P0"/>
+<span class="font-label-md text-label-md text-error">Crítica (P0)</span>
+</div>
+<span class="font-label-sm text-[10px] text-outline">Escala SLA 15m</span>
+</label>
+<!-- P1 (Selected) -->
+<label class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container cursor-pointer shadow-sm">
+<div class="flex items-center gap-2">
+<input checked="" class="text-primary-container focus:ring-0 bg-surface" name="severity" type="radio" value="P1"/>
+<span class="font-label-md text-label-md text-primary font-semibold">Alta (P1)</span>
+</div>
+<span class="font-label-sm text-[10px] text-primary">SLA 1h</span>
+</label>
+<!-- P2 -->
+<label class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-2">
+<input class="text-secondary focus:ring-0 bg-surface" name="severity" type="radio" value="P2"/>
+<span class="font-label-md text-label-md text-on-surface-variant">Moderada (P2)</span>
+</div>
+<span class="font-label-sm text-[10px] text-outline">SLA 6h</span>
+</label>
+<!-- Info -->
+<label class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-2">
+<input class="text-outline focus:ring-0 bg-surface" name="severity" type="radio" value="P3"/>
+<span class="font-label-md text-label-md text-outline">Informativa</span>
+</div>
+<span class="font-label-sm text-[10px] text-outline">Batch</span>
+</label>
+</div>
+</div>
+<!-- Engines Coverage -->
+<div class="space-y-2 md:col-span-2">
+<div class="flex items-center justify-between">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Motores de IA Generativa Bajo Escaneo</label>
+<span class="font-label-sm text-[11px] text-primary">4 / 4 Motores Activos</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+<!-- Gemini -->
+<label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-colors cursor-pointer">
+<input checked="" class="rounded bg-surface text-primary-container focus:ring-0" type="checkbox"/>
+<div class="min-w-0 flex flex-col">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate">Google Gemini</span>
+<span class="font-label-sm text-[10px] text-outline">1.5 Pro &amp; Flash</span>
+</div>
+</label>
+<!-- ChatGPT -->
+<label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-colors cursor-pointer">
+<input checked="" class="rounded bg-surface text-primary-container focus:ring-0" type="checkbox"/>
+<div class="min-w-0 flex flex-col">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate">OpenAI ChatGPT</span>
+<span class="font-label-sm text-[10px] text-outline">GPT-4o / SearchGPT</span>
+</div>
+</label>
+<!-- Perplexity -->
+<label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-colors cursor-pointer">
+<input checked="" class="rounded bg-surface text-primary-container focus:ring-0" type="checkbox"/>
+<div class="min-w-0 flex flex-col">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate">Perplexity AI</span>
+<span class="font-label-sm text-[10px] text-outline">Sonar Online Grounding</span>
+</div>
+</label>
+<!-- Claude -->
+<label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-colors cursor-pointer">
+<input checked="" class="rounded bg-surface text-primary-container focus:ring-0" type="checkbox"/>
+<div class="min-w-0 flex flex-col">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate">Claude 3.5</span>
+<span class="font-label-sm text-[10px] text-outline">Sonnet &amp; Haiku</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Territorio y Segmentos de Audiencia -->
+<div class="space-y-2 md:col-span-2">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Territorio Foral y Buyer Personas Vinculados</label>
+<div class="flex flex-wrap items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label-sm text-label-sm bg-surface-container text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-primary">location_on</span>
+                  Bizkaia (Batuz LROE)
+                  <button class="hover:text-error ml-1" type="button">×</button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label-sm text-label-sm bg-surface-container text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-primary">location_on</span>
+                  Gipuzkoa (TicketBAI)
+                  <button class="hover:text-error ml-1" type="button">×</button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label-sm text-label-sm bg-surface-container text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-primary">location_on</span>
+                  Álava (TicketBAI)
+                  <button class="hover:text-error ml-1" type="button">×</button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label-sm text-label-sm bg-surface-container text-secondary">
+<span class="material-symbols-outlined text-[14px]">groups</span>
+                  Gestorías &amp; Asesorías
+                  <button class="hover:text-error ml-1" type="button">×</button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label-sm text-label-sm bg-surface-container text-secondary">
+<span class="material-symbols-outlined text-[14px]">person</span>
+                  Autónomos &amp; Pymes
+                  <button class="hover:text-error ml-1" type="button">×</button>
+</span>
+<button class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-surface-container-lowest hover:bg-surface-container text-outline hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[14px]">add</span>
+                  Vincular segmento
+                </button>
+</div>
+</div>
+</div>
+</article>
+<!-- CARD 2: Condiciones y Umbrales de Disparo (Trigger Logic) -->
+<article class="bg-surface-container-low rounded-xl p-space-lg shadow-md space-y-space-md">
+<header class="flex items-center justify-between pb-2 border-b border-surface-container">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">rule</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">2. Condiciones y Umbrales de Disparo (Trigger Logic)</h2>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container px-2.5 py-1 rounded-lg">
+<span class="font-label-sm text-[11px] text-outline">Operador Lógico:</span>
+<span class="font-label-sm text-[11px] text-primary font-semibold">Cualquiera activa (OR) / Filtro Cruzado</span>
+</div>
+</header>
+<div class="space-y-4">
+<!-- Condición 1: Polaridad / NSI Slider -->
+<div class="p-space-md rounded-lg bg-surface-container-lowest space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-5 h-5 rounded-full bg-surface-container text-primary font-label-sm text-[11px] flex items-center justify-center font-bold">1</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Caída Brusca de Polaridad Semántica (Índice NSI)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-outline">Actual:</span>
+<span class="font-label-md text-label-md text-tertiary font-bold">+0.89</span>
+<span class="text-outline">·</span>
+<span class="font-label-sm text-label-sm text-error font-medium">Disparo: &lt; +0.70</span>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex items-center gap-3">
+<span class="font-label-sm text-[10px] text-error">-1.0 (Adverso)</span>
+<div class="relative flex-1 py-1">
+<input class="w-full accent-primary-container cursor-pointer bg-surface-container rounded-lg h-2" id="polarity-slider" max="100" min="-100" type="range" value="70"/>
+<div class="flex justify-between text-[9px] font-label-sm text-outline mt-1 px-1">
+<span>0.0 (Neutro)</span>
+<span class="text-primary font-bold">Umbral Centinela: +0.70</span>
+<span class="text-tertiary">+1.0 (Canónico Ideal)</span>
+</div>
+</div>
+<span class="font-label-sm text-[10px] text-tertiary">+1.0 (Óptimo)</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Dispara advertencia si 2 o más respuestas concurrentes en la misma ventana temporal ponderan a Contalia por debajo de neutralidad favorable en consultas de facturación legal.
+                </p>
+</div>
+</div>
+<!-- Condición 2: Detección de Fuentes Desacreditadas/Obsoletas -->
+<div class="p-space-md rounded-lg bg-surface-container-lowest space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-5 h-5 rounded-full bg-surface-container text-primary font-label-sm text-[11px] flex items-center justify-center font-bold">2</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Grounding en Fuentes Desacreditadas u Obsoletas</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-error-container/30 text-error font-label-sm text-[10px] font-medium">Anti-Alucinación Activa</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                Alertar de inmediato si los citadores RAG de Perplexity o SearchGPT referencian URLs o dominios marcados con penalización temporal:
+              </p>
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px] text-error">link_off</span>
+                  foro.contabilidad.es/*
+                  <button class="text-outline hover:text-error" type="button">×</button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px] text-error">link_off</span>
+                  comparativas-software.com/ticketbai-2023
+                  <button class="text-outline hover:text-error" type="button">×</button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px] text-error">link_off</span>
+                  foros-pymes-legales.org (&lt; Nov 2024)
+                  <button class="text-outline hover:text-error" type="button">×</button>
+</span>
+<button class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-surface-container-high text-primary hover:bg-surface-container font-label-sm text-label-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[14px]">add</span>
+                  Añadir dominio o patrón URL
+                </button>
+</div>
+</div>
+<!-- Condición 3: Alucinación de Términos / Conceptos Clave -->
+<div class="p-space-md rounded-lg bg-surface-container-lowest space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-5 h-5 rounded-full bg-surface-container text-primary font-label-sm text-[11px] flex items-center justify-center font-bold">3</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Alucinación Semántica de Términos Críticos</span>
+</div>
+<span class="font-label-sm text-[11px] text-outline">Coincidencia Semántica Parcial</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                Dispara si el modelo sintetiza afirmaciones engañosas o atributos falsos asociados a Contalia en la respuesta:
+              </p>
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-error font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                  "coste extra por dispositivo"
+                  <button class="text-outline hover:text-on-surface ml-1" type="button">×</button>
+</span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-error font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                  "módulo adicional para Batuz"
+                  <button class="text-outline hover:text-on-surface ml-1" type="button">×</button>
+</span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-error font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                  "sin soporte directo Bizkaia"
+                  <button class="text-outline hover:text-on-surface ml-1" type="button">×</button>
+</span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-error font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                  "no homologado TicketBAI"
+                  <button class="text-outline hover:text-on-surface ml-1" type="button">×</button>
+</span>
+<button class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-outline hover:text-on-surface font-body-sm text-body-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[14px]">add</span>
+                  Nuevo descriptor de riesgo
+                </button>
+</div>
+</div>
+<!-- Condición 4: Desplome de Cita Canónica -->
+<div class="p-space-md rounded-lg bg-surface-container-lowest space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-5 h-5 rounded-full bg-surface-container text-primary font-label-sm text-[11px] flex items-center justify-center font-bold">4</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Desplome de Cita Canónica Oficial</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-outline">Cuota canónica actual:</span>
+<span class="font-label-md text-label-md text-primary font-bold">94.2%</span>
+</div>
+</div>
+<div class="flex items-center justify-between bg-surface-container p-3 rounded-lg gap-4">
+<div class="flex items-center gap-2 font-body-sm text-body-sm text-on-surface-variant">
+<span>Disparar si la cuota de atribución oficial (<code class="text-primary font-label-sm">contalia.com/docs/...</code>) decae por debajo de:</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<input class="w-16 bg-surface-container-lowest text-on-surface rounded px-2 py-1 font-label-md text-label-md text-center focus:outline-none focus:ring-1 focus:ring-primary" max="99" min="50" type="number" value="85"/>
+<span class="font-label-md text-label-md text-on-surface">%</span>
+</div>
+</div>
+</div>
+<!-- Botón Añadir Condición -->
+<div class="pt-1">
+<button class="w-full py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-headline-sm text-sm transition-all flex items-center justify-center gap-2 border border-dashed border-outline-variant hover:border-primary" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>Añadir condición compuesta personalizada</span>
+</button>
+</div>
+</div>
+</article>
+<!-- CARD 3: Acciones Automáticas y Notificaciones (Playbook) -->
+<article class="bg-surface-container-low rounded-xl p-space-lg shadow-md space-y-space-md">
+<header class="flex items-center justify-between pb-2 border-b border-surface-container">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">3. Acciones Automáticas y Playbook de Mitigación Inmediata</h2>
+</div>
+<span class="inline-flex items-center gap-1 font-label-sm text-[11px] text-tertiary">
+<span class="material-symbols-outlined text-[14px]">auto_mode</span>
+              Ejecución autónoma sin fricción
+            </span>
+</header>
+<div class="space-y-4">
+<!-- Canales de Notificación Directa -->
+<div class="space-y-3">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider block">Canales de Enrutamiento de Emergencia</span>
+<!-- Slack Webhook -->
+<div class="p-3 rounded-lg bg-surface-container-lowest flex flex-col md:flex-row md:items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-secondary-container/40 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[20px]">chat</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface">Slack Webhook</span>
+<span class="font-label-sm text-[11px] text-secondary">#alertas-geo-reputacion</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Envío de snapshot sintético y payload JSON con 1-click re-test</span>
+</div>
+</div>
+<div class="flex items-center gap-3 self-end md:self-auto">
+<span class="font-label-sm text-[11px] text-tertiary font-semibold">ACTIVO</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+<!-- PagerDuty On-Call -->
+<div class="p-3 rounded-lg bg-surface-container-lowest flex flex-col md:flex-row md:items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-outline">
+<span class="material-symbols-outlined text-[20px]">notifications_active</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface">PagerDuty Incident Escalation</span>
+<span class="font-label-sm text-[11px] text-outline">Desactivado para P1</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Solo sugerido para incidentes de bloqueo total P0</span>
+</div>
+</div>
+<div class="flex items-center gap-3 self-end md:self-auto">
+<span class="font-label-sm text-[11px] text-outline">INACTIVO</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+<!-- Email a Producto & Legal -->
+<div class="p-3 rounded-lg bg-surface-container-lowest flex flex-col md:flex-row md:items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface">Email a Producto &amp; Asesoría Jurídica</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary">geo-intel@contalia.com, legal-compliance@contalia.com</span>
+</div>
+</div>
+<div class="flex items-center gap-3 self-end md:self-auto">
+<span class="font-label-sm text-[11px] text-tertiary font-semibold">ACTIVO</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Respuestas Autónomas del Sistema -->
+<div class="space-y-3 pt-2">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider block">Respuestas Autónomas y Mitigación Inmediata</span>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+<!-- Auto-Audit Trigger -->
+<div class="p-3 rounded-lg bg-surface-container-lowest flex flex-col justify-between space-y-3">
+<div class="space-y-1">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-primary text-[20px]">reorder</span>
+<input checked="" class="rounded bg-surface text-primary-container focus:ring-0" type="checkbox"/>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Re-auditoría masiva instantánea</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                      Dispara 50 permutaciones instantáneas si se confirman 2 anomalías en ventana de 60m.
+                    </p>
+</div>
+<span class="font-label-sm text-[10px] text-tertiary">Activo · Prioridad Alta</span>
+</div>
+<!-- FactCheck Injection -->
+<div class="p-3 rounded-lg bg-surface-container-lowest flex flex-col justify-between space-y-3">
+<div class="space-y-1">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-tertiary text-[20px]">sync_saved_locally</span>
+<input checked="" class="rounded bg-surface text-primary-container focus:ring-0" type="checkbox"/>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Inyección Schema FactCheck</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                      Fuerza ping IndexNow y re-publica microdatos canónicos para acelerar re-indexación RAG.
+                    </p>
+</div>
+<span class="font-label-sm text-[10px] text-tertiary">Activo · Autocura GEO</span>
+</div>
+<!-- SEM Pause -->
+<div class="p-3 rounded-lg bg-surface-container-lowest flex flex-col justify-between space-y-3 opacity-75">
+<div class="space-y-1">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-outline text-[20px]">pause_circle</span>
+<input class="rounded bg-surface text-primary-container focus:ring-0" type="checkbox"/>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Pausar campañas SEM</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                      Suspende temporalmente pujas Google Ads para el cluster semántico afectado.
+                    </p>
+</div>
+<span class="font-label-sm text-[10px] text-outline">Inactivo · Manual</span>
+</div>
+</div>
+</div>
+</div>
+</article>
+</div>
+<!-- END: LEFT COLUMN -->
+<!-- RIGHT COLUMN: Impact Simulator & Sentinel Demonstrator (35% / 4 cols) -->
+<div class="xl:col-span-4 space-y-space-lg">
+<!-- CARD: Simulador en Tiempo Real (Dry Run) -->
+<article class="bg-surface-container-low rounded-xl p-space-lg shadow-md space-y-space-md">
+<header class="flex items-center justify-between pb-2 border-b border-surface-container">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">science</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Simulador de Impacto Histórico</h2>
+</div>
+<span class="font-label-sm text-label-sm text-primary">Dry Run 30d</span>
+</header>
+<!-- Backtesting Summary -->
+<div class="p-3 rounded-lg bg-surface-container-lowest space-y-2">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline">Diagnóstico Retrospectivo:</span>
+<span class="font-label-md text-label-md text-tertiary font-bold">1 Incidente Prevenido</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Esta regla habría interceptado con éxito la alucinación de <strong class="text-on-surface">#8.492 TicketBAI</strong> hace 16 días, neutralizando la propagación en Perplexity 11 horas antes de su detección humana.
+            </p>
+</div>
+<!-- Micro Chart: Scatter / Detection Bar -->
+<div class="space-y-2">
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-outline">Línea temporal de auditorías (Últimos 30 días)</span>
+<span class="text-primary">99.6% Cobertura</span>
+</div>
+<!-- SVG Chart Sparkline/Event Timeline -->
+<div class="bg-surface-container-lowest p-3 rounded-lg">
+<svg class="w-full h-14" fill="none" viewbox="0 0 340 60" xmlns="http://www.w3.org/2000/svg">
+<!-- Grid baseline -->
+<line stroke="#242a38" stroke-dasharray="2 2" stroke-width="1" x1="10" x2="330" y1="50" y2="50"></line>
+<!-- Normal distribution spikes -->
+<path d="M 10,48 Q 40,46 70,47 T 130,46 T 170,22 T 210,48 T 270,47 T 330,48" stroke="#06b6d4" stroke-linecap="round" stroke-width="2"></path>
+<!-- Highlight incident at x=170 -->
+<circle class="animate-ping" cx="170" cy="22" fill="#ffb4ab" opacity="0.6" r="5"></circle>
+<circle cx="170" cy="22" fill="#ffb4ab" r="4"></circle>
+<!-- Annotations -->
+<text fill="#ffb4ab" font-family="Inter" font-size="9" font-weight="600" x="145" y="14">Alerta #8.492</text>
+<text fill="#869397" font-family="JetBrains Mono" font-size="8" x="10" y="58">Día -30</text>
+<text fill="#869397" font-family="JetBrains Mono" font-size="8" x="160" y="58">Día -16</text>
+<text fill="#869397" font-family="JetBrains Mono" font-size="8" x="300" y="58">Hoy</text>
+</svg>
+</div>
+</div>
+<!-- KPIs Metrics Grid -->
+<div class="grid grid-cols-2 gap-2">
+<div class="bg-surface-container-lowest p-3 rounded-lg space-y-1">
+<span class="font-label-sm text-[11px] text-outline block">Falsos Positivos Est.</span>
+<span class="font-metric-display text-2xl text-tertiary font-bold">0.4%</span>
+<span class="font-body-sm text-[11px] text-outline block">Alta especificidad</span>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded-lg space-y-1">
+<span class="font-label-sm text-[11px] text-outline block">Respuesta Proyectada</span>
+<span class="font-metric-display text-2xl text-primary font-bold">&lt; 12 min</span>
+<span class="font-body-sm text-[11px] text-outline block">Tras deriva de LLM</span>
+</div>
+</div>
+<button class="w-full py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-headline-sm text-xs font-semibold transition-all flex items-center justify-center gap-2" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">play_circle</span>
+<span>Re-ejecutar Dry Run con Prompt #8.492</span>
+</button>
+</article>
+<!-- CARD: Biblioteca de Plantillas Centinela Rápidas -->
+<article class="bg-surface-container-low rounded-xl p-space-lg shadow-md space-y-space-md">
+<header class="flex items-center justify-between pb-2 border-b border-surface-container">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-tertiary-container/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[18px]">library_add_check</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Plantillas Rápidas Centinela</h2>
+</div>
+</header>
+<div class="space-y-2.5">
+<!-- Template 1 (Active) -->
+<div class="p-3 rounded-lg bg-surface-container flex items-center justify-between shadow-sm">
+<div class="space-y-0.5">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-sm text-on-surface font-semibold">Blindaje Canónico TicketBAI</span>
+<span class="px-1.5 py-0.2 rounded font-label-sm text-[9px] bg-primary-container text-on-primary font-bold">CARGADA</span>
+</div>
+<p class="font-body-sm text-[11px] text-on-surface-variant">Protección contra desinformación en Bizkaia/Álava</p>
+</div>
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+</div>
+<!-- Template 2 -->
+<div class="p-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-colors flex items-center justify-between">
+<div class="space-y-0.5">
+<h3 class="font-headline-sm text-sm text-on-surface font-medium">Defensa vs Campañas de Competencia</h3>
+<p class="font-body-sm text-[11px] text-outline">Vigilancia de menciones cruzadas (Ábaco / Cuentaflux)</p>
+</div>
+<button class="px-2.5 py-1 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary text-primary font-label-sm text-xs transition-colors" type="button">
+                Cargar
+              </button>
+</div>
+<!-- Template 3 -->
+<div class="p-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-colors flex items-center justify-between">
+<div class="space-y-0.5">
+<h3 class="font-headline-sm text-sm text-on-surface font-medium">Deriva de Precios &amp; Licenciamiento</h3>
+<p class="font-body-sm text-[11px] text-outline">Detecta costes inexactos reportados por ChatGPT</p>
+</div>
+<button class="px-2.5 py-1 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary text-primary font-label-sm text-xs transition-colors" type="button">
+                Cargar
+              </button>
+</div>
+<!-- Template 4 -->
+<div class="p-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-colors flex items-center justify-between">
+<div class="space-y-0.5">
+<h3 class="font-headline-sm text-sm text-on-surface font-medium">Vigilancia de Agregadores B2B</h3>
+<p class="font-body-sm text-[11px] text-outline">Monitorea sesgos basados en G2, Capterra y Trustpilot</p>
+</div>
+<button class="px-2.5 py-1 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary text-primary font-label-sm text-xs transition-colors" type="button">
+                Cargar
+              </button>
+</div>
+</div>
+</article>
+<!-- CARD: Estado del Demonio Centinela -->
+<article class="bg-surface-container-low rounded-xl p-space-lg shadow-md space-y-space-sm">
+<header class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Telemetría del Demonio Centinela</span>
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+</header>
+<div class="space-y-2 text-body-sm">
+<div class="flex justify-between py-1 border-b border-surface-container">
+<span class="text-on-surface-variant">Frecuencia de escaneo:</span>
+<span class="font-label-sm text-label-sm text-on-surface font-medium">Cada 12 horas (Cron)</span>
+</div>
+<div class="flex justify-between py-1 border-b border-surface-container">
+<span class="text-on-surface-variant">Próxima ejecución:</span>
+<span class="font-label-sm text-label-sm text-primary font-medium">Hoy, 00:00 CET</span>
+</div>
+<div class="flex justify-between py-1 border-b border-surface-container">
+<span class="text-on-surface-variant">Permutaciones monitorizadas:</span>
+<span class="font-label-sm text-label-sm text-on-surface font-medium">50 queries activas</span>
+</div>
+<div class="flex justify-between py-1">
+<span class="text-on-surface-variant">Grounding crawler status:</span>
+<span class="font-label-sm text-label-sm text-tertiary font-medium">Verificado (HTTP 200 OK)</span>
+</div>
+</div>
+</article>
+</div>
+<!-- END: RIGHT COLUMN -->
+</div>
+<!-- END: Two-Column Interactive Workstation -->
+</div>
+</div>
+<script>
+  // Simple micro-interaction for Save Action feedback
+  document.getElementById('save-rule-btn')?.addEventListener('click', function() {
+    const originalText = this.innerHTML;
+    this.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span> Guardando regla...';
+    this.disabled = true;
+    setTimeout(() => {
+      this.innerHTML = '<span class="material-symbols-outlined text-[18px]">done_all</span> Regla Activada';
+      this.classList.remove('bg-primary-container', 'hover:bg-primary');
+      this.classList.add('bg-tertiary', 'text-on-tertiary');
+      setTimeout(() => {
+        this.innerHTML = originalText;
+        this.classList.remove('bg-tertiary', 'text-on-tertiary');
+        this.classList.add('bg-primary-container', 'hover:bg-primary');
+        this.disabled = false;
+      }, 2500);
+    }, 800);
+  });
+</script></main>
+<!-- END: MainContent -->
+</body></html>

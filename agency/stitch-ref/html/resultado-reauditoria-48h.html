@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Visibility Dashboard</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed-variant": "#004e5c",
+            "on-tertiary-fixed": "#002113",
+            "outline": "#869397",
+            "error": "#ffb4ab",
+            "tertiary-container": "#1bbd85",
+            "error-container": "#93000a",
+            "on-primary-container": "#00424f",
+            "on-background": "#dde2f5",
+            "inverse-primary": "#00687a",
+            "surface-container": "#1a1f2d",
+            "secondary-container": "#571bc1",
+            "on-secondary-fixed-variant": "#5516be",
+            "on-surface": "#dde2f5",
+            "on-secondary-fixed": "#23005c",
+            "inverse-on-surface": "#2a303f",
+            "surface": "#0d1320",
+            "secondary-fixed": "#e9ddff",
+            "on-error-container": "#ffdad6",
+            "surface-container-highest": "#2f3543",
+            "on-primary": "#003640",
+            "on-error": "#690005",
+            "surface-container-lowest": "#080e1b",
+            "on-surface-variant": "#bcc9cd",
+            "on-secondary": "#3c0091",
+            "tertiary-fixed-dim": "#4edea3",
+            "secondary": "#d0bcff",
+            "tertiary-fixed": "#6ffbbe",
+            "background": "#0d1320",
+            "on-primary-fixed": "#001f26",
+            "surface-container-high": "#242a38",
+            "primary-fixed": "#acedff",
+            "surface-variant": "#2f3543",
+            "surface-tint": "#4cd7f6",
+            "on-tertiary-container": "#00452e",
+            "tertiary": "#4edea3",
+            "primary": "#4cd7f6",
+            "on-secondary-container": "#c4abff",
+            "surface-bright": "#333948",
+            "outline-variant": "#3d494c",
+            "on-tertiary": "#003824",
+            "primary-container": "#06b6d4",
+            "on-tertiary-fixed-variant": "#005236",
+            "surface-dim": "#0d1320",
+            "inverse-surface": "#dde2f5",
+            "surface-container-low": "#161b29",
+            "primary-fixed-dim": "#4cd7f6",
+            "secondary-fixed-dim": "#d0bcff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "gutter": "1rem",
+            "margin": "1rem",
+            "space-md": "1rem",
+            "margin-desktop": "2rem",
+            "gutter-desktop": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin-tablet": "1.5rem"
+          },
+          "fontFamily": {
+            "label-sm": ["JetBrains Mono"],
+            "headline-xl-mobile": ["Inter"],
+            "headline-lg": ["Inter"],
+            "headline-xl": ["Inter"],
+            "body-sm": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "metric-display": ["Inter"],
+            "label-md": ["JetBrains Mono"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "label-sm": ["11px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+            "headline-xl": ["36px", { "lineHeight": "44px", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "metric-display": ["32px", { "lineHeight": "38px", "fontWeight": "700" }],
+            "label-md": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    @layer base {
+      html {
+        overscroll-behavior: none;
+        background-color: #0d1320;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #080e1b;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #242a38;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #3d494c;
+      }
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased">
+<!-- BEGIN: LeftSidebar -->
+<aside class="fixed top-0 bottom-0 left-0 w-64 bg-surface-container-low border-r border-surface-container flex flex-col justify-between z-40" data-purpose="sidebar-navigation">
+<div class="p-space-md flex flex-col gap-space-md overflow-y-auto">
+<!-- App Brand Header -->
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary font-headline-sm font-bold shadow-lg">
+            R
+          </div>
+<span class="text-on-surface font-headline-sm font-semibold tracking-tight">AI Visibility</span>
+</div>
+<button aria-label="Colapsar menú" class="text-outline hover:text-on-surface p-space-xs transition-colors rounded-lg" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+</div>
+<!-- Project Identifier -->
+<div class="flex flex-col gap-space-xs bg-surface-container p-space-sm rounded-lg">
+<div class="font-body-sm text-on-surface-variant flex items-center gap-1.5">
+<span>Proyecto:</span>
+<span class="text-on-surface font-medium">Contalia</span>
+<span class="text-outline">· contalia.com</span>
+</div>
+<div>
+<span class="inline-block px-2 py-0.5 font-label-sm text-[10px] text-amber-400 border border-amber-500/20 rounded-full bg-amber-500/10 font-medium">
+            Demo con datos ficticios
+          </span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-space-md mt-space-xs" data-active-classes="bg-surface-container text-primary font-medium shadow-sm border border-primary/20" data-purpose="sidebar-links">
+<!-- Group: Monitoreo -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Monitoreo</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="ai-visibility-dashboard-desktop" href="#">
+              Dashboard
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="competidores" href="#">
+              Competidores
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="fuentes" href="#">
+              Fuentes
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="sentimiento" href="#">
+              Sentimiento
+            </a>
+</div>
+</div>
+<!-- Group: Setup -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Setup</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="nuevo-proyecto" href="#">
+              Nuevo proyecto
+            </a>
+</div>
+</div>
+<!-- Group: Registro -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Registro</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="prompts" href="#">
+              Prompts
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="ofertas" href="#">
+              Ofertas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="buyer-personas" href="#">
+              Buyer personas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="tipos-de-prompt" href="#">
+              Tipos de prompt
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="marcas" href="#">
+              Marcas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="proyecto" href="#">
+              Proyecto
+            </a>
+</div>
+</div>
+</nav>
+</div>
+<!-- Theme / Mode Controls Footer -->
+<div class="p-space-sm border-t border-surface-container bg-surface-container-low shrink-0">
+<div class="bg-surface-container p-1 rounded-xl flex items-center gap-1 font-body-sm">
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-outline hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">light_mode</span>
+<span>Claro</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface font-medium shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">dark_mode</span>
+<span>Oscuro</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- END: LeftSidebar -->
+<!-- BEGIN: TopBar Header (Filter Ribbon) -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface-container-low/95 backdrop-blur-md border-b border-surface-container z-30 flex items-center px-space-xl justify-between">
+<div class="flex items-center gap-space-sm overflow-x-auto py-1 scrollbar-none">
+<!-- Filter: IA -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">IA:</span>
+<span class="font-body-sm text-on-surface font-medium">Todas</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Buyer Persona -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Buyer Persona:</span>
+<span class="font-body-sm text-on-surface font-medium">Todos</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Oferta -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Oferta:</span>
+<span class="font-body-sm text-on-surface font-medium">Todas</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Tipo de prompt -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Tipo de prompt:</span>
+<span class="font-body-sm text-on-surface font-medium">Todos</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: País -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">País:</span>
+<span class="font-body-sm text-on-surface font-medium">Global</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Período -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Período:</span>
+<span class="font-body-sm text-on-surface font-medium">Últimos 30 días</span>
+<span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span>
+</div>
+</div>
+<!-- Quick Status / Reset Action -->
+<div class="flex items-center gap-space-sm pl-space-md shrink-0">
+<button class="flex items-center gap-1 text-outline hover:text-on-surface font-body-sm px-2 py-1 rounded transition-colors" title="Restablecer filtros" type="button">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+<span class="hidden xl:inline">Limpiar</span>
+</button>
+<button class="bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 shadow-sm shadow-primary/20" type="button">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+<span>Actualizar</span>
+</button>
+</div>
+</header>
+<!-- END: TopBar Header -->
+<!-- BEGIN: MainContent -->
+<main class="pl-64 pt-16 min-h-screen bg-surface-container-lowest"><div class="flex flex-col w-full">
+<!-- Subtle Ambient Glow Element -->
+<div class="relative w-full overflow-hidden">
+<div class="absolute -top-32 left-1/3 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute top-20 right-10 w-80 h-80 bg-tertiary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<!-- MAIN DASHBOARD CONTAINER -->
+<div class="relative p-space-md lg:p-space-xl flex flex-col gap-space-lg w-full max-w-7xl mx-auto">
+<!-- SECTION 1: HEADER & CERTIFICATION BANNER -->
+<div class="flex flex-col gap-space-md">
+<!-- Breadcrumbs & Quick Identifiers -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm text-body-sm text-on-surface-variant font-body-sm">
+<div class="flex items-center gap-2">
+<span class="hover:text-on-surface cursor-pointer transition-colors">Monitoreo</span>
+<span class="text-outline-variant font-label-sm">/</span>
+<span class="hover:text-on-surface cursor-pointer transition-colors">Mitigación GEO</span>
+<span class="text-outline-variant font-label-sm">/</span>
+<span class="text-primary font-medium flex items-center gap-1.5 bg-primary/10 px-2 py-0.5 rounded-md text-label-sm font-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+              Check 48h (Completado)
+            </span>
+</div>
+<div class="flex items-center gap-3">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Hash de Verificación:</span>
+<span class="font-label-sm text-label-sm text-on-surface bg-surface-container px-2 py-1 rounded-md font-mono select-all">#AUDIT-48H-9821</span>
+</div>
+</div>
+<!-- Main Title & Operational Status -->
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-md">
+<div class="space-y-1.5">
+<div class="flex flex-wrap items-center gap-2">
+<span class="px-2.5 py-0.5 rounded-full font-label-sm text-label-sm bg-tertiary/15 text-tertiary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+                Check 1 / 3 Superado con Éxito
+              </span>
+<span class="px-2.5 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container text-on-surface-variant">
+                Ejecutado hace 12 min (04 Mar 2025 · 14:02 CET)
+              </span>
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container-high text-primary font-medium">
+                Incidente #8.492
+              </span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-bold">
+              Resultado de Re-auditoría GEO — Check 48h Ejecutado
+            </h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+              Análisis forense automatizado tras la inyección del paquete canónico de mitigación para TicketBAI foral. Validación de purga de caché semántica en motores LLM con grounding activo.
+            </p>
+</div>
+<!-- Executive Action Buttons -->
+<div class="flex flex-wrap items-center gap-2.5 shrink-0 self-start xl:self-center">
+<button class="bg-surface-container hover:bg-surface-bright text-on-surface font-body-sm text-body-sm px-3.5 py-2 rounded-xl font-medium transition-all shadow-sm flex items-center gap-2" type="button">
+<span class="material-symbols-outlined text-[18px] text-outline">data_object</span>
+<span>Ver Logs de Inferencia</span>
+</button>
+<button class="bg-surface-container hover:bg-surface-bright text-on-surface font-body-sm text-body-sm px-3.5 py-2 rounded-xl font-medium transition-all shadow-sm flex items-center gap-2" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">forum</span>
+<span>Compartir en Slack</span>
+</button>
+<button class="bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-headline-sm px-4 py-2 rounded-xl font-semibold transition-all shadow-md shadow-primary-container/20 flex items-center gap-2" type="button">
+<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+<span>Exportar Informe (.pdf)</span>
+</button>
+</div>
+</div>
+<!-- Banner: Mitigación Certificada & Erradicación de Riesgo -->
+<div class="bg-gradient-to-r from-surface-container via-surface-container-high to-surface-container p-4 lg:p-5 rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-tertiary/15 text-tertiary flex items-center justify-center shrink-0 shadow-inner">
+<span class="material-symbols-outlined text-[28px]">format_image_left</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Riesgo Reputacional Erradicado en Google Gemini y Perplexity</span>
+<span class="px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-tertiary-container/30 text-tertiary-fixed font-semibold uppercase">Mitigado</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                La hipótesis desactualizada de carencia de módulo TicketBAI ha sido reemplazada por citas al repositorio oficial de Contalia (v2.3+). Nivel de confianza sintética: 99.4%.
+              </p>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 self-end md:self-center">
+<div class="flex flex-col text-right">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Tiempo de Asimilación</span>
+<span class="font-label-md text-label-md text-tertiary font-bold">41h 18min (Récord SLA)</span>
+</div>
+<div class="h-8 w-px bg-surface-variant"></div>
+<span class="material-symbols-outlined text-tertiary text-[26px]">task_alt</span>
+</div>
+</div>
+</div>
+<!-- SECTION 2: COMPARATIVE KEY METRICS (4 TILE KPI BENTO) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- KPI 1: Polaridad en Gemini 1.5 Pro -->
+<div class="bg-surface-container-low p-5 rounded-2xl shadow-lg flex flex-col justify-between gap-3 relative overflow-hidden group hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Polaridad Gemini 1.5 Pro</span>
+<span class="p-1 rounded bg-secondary-container/20 text-secondary">
+<span class="material-symbols-outlined text-[16px]">smart_toy</span>
+</span>
+</div>
+<div class="space-y-1">
+<div class="flex items-baseline gap-2">
+<span class="font-metric-display text-metric-display text-tertiary font-bold tracking-tight">+0.81</span>
+<span class="font-body-sm text-body-sm text-outline line-through">-0.64</span>
+</div>
+<div class="flex items-center gap-1.5 text-label-sm font-label-sm text-tertiary">
+<span class="material-symbols-outlined text-[15px]">trending_up</span>
+<span class="font-semibold">+1.45 pts netos</span>
+<span class="text-on-surface-variant">· Altamente Favorable</span>
+</div>
+</div>
+<!-- Micro Sparkline SVG -->
+<div class="pt-2">
+<svg class="w-full h-8 text-tertiary" fill="none" preserveaspectratio="none" viewbox="0 0 160 32">
+<path d="M0,28 L30,26 L60,28 L90,16 L120,6 L160,2" stroke="currentColor" stroke-linecap="round" stroke-width="2.5"></path>
+<path d="M0,28 L30,26 L60,28 L90,16 L120,6 L160,2 L160,32 L0,32 Z" fill="currentColor" fill-opacity="0.1"></path>
+</svg>
+</div>
+</div>
+<!-- KPI 2: Menciones Canónicas Directas -->
+<div class="bg-surface-container-low p-5 rounded-2xl shadow-lg flex flex-col justify-between gap-3 relative overflow-hidden group hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Citas Canónicas Directas</span>
+<span class="p-1 rounded bg-primary-container/20 text-primary">
+<span class="material-symbols-outlined text-[16px]">link</span>
+</span>
+</div>
+<div class="space-y-1">
+<div class="flex items-baseline gap-2">
+<span class="font-metric-display text-metric-display text-primary font-bold tracking-tight">92%</span>
+<span class="font-body-sm text-body-sm text-outline line-through">14%</span>
+</div>
+<div class="flex items-center gap-1.5 text-label-sm font-label-sm text-primary">
+<span class="material-symbols-outlined text-[15px]">arrow_upward</span>
+<span class="font-semibold">+78 pp de ganancia</span>
+<span class="text-on-surface-variant">· Guía 2025</span>
+</div>
+</div>
+<!-- Progress Bar Representation -->
+<div class="w-full bg-surface-container-highest rounded-full h-2 mt-3 overflow-hidden">
+<div class="bg-primary h-2 rounded-full transition-all duration-1000" style="width: 92%"></div>
+</div>
+</div>
+<!-- KPI 3: Ingesta en Grounding Cache -->
+<div class="bg-surface-container-low p-5 rounded-2xl shadow-lg flex flex-col justify-between gap-3 relative overflow-hidden group hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Grounding Cache Purge</span>
+<span class="p-1 rounded bg-tertiary/20 text-tertiary">
+<span class="material-symbols-outlined text-[16px]">cleaning_services</span>
+</span>
+</div>
+<div class="space-y-1">
+<div class="flex items-baseline gap-2">
+<span class="font-metric-display text-metric-display text-on-surface font-bold tracking-tight">100%</span>
+<span class="font-body-sm text-body-sm text-tertiary font-medium">Completada</span>
+</div>
+<div class="flex items-center gap-1 text-label-sm font-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px] text-tertiary">check_circle</span>
+<span>Foros 2023 desindexados y purgados</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-label-sm font-label-sm pt-2 text-outline">
+<span>RAG Synced</span>
+<span class="text-primary font-mono font-medium">IndexNow 200 OK</span>
+</div>
+</div>
+<!-- KPI 4: Tasa de Recomendación Neta -->
+<div class="bg-surface-container-low p-5 rounded-2xl shadow-lg flex flex-col justify-between gap-3 relative overflow-hidden group hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Recomendación Neta</span>
+<span class="p-1 rounded bg-secondary-container/20 text-secondary">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+</span>
+</div>
+<div class="space-y-1">
+<div class="flex items-baseline gap-2">
+<span class="font-metric-display text-metric-display text-tertiary font-bold tracking-tight">94%</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">(47/50 Prompts)</span>
+</div>
+<div class="flex items-center gap-1 text-label-sm font-label-sm text-tertiary">
+<span class="material-symbols-outlined text-[15px]">security</span>
+<span class="font-medium">Cero advertencias activas en Euskadi</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-label-sm font-label-sm pt-2 text-outline">
+<span>Pyme Gestoría Segment</span>
+<span class="text-secondary font-medium">Tier 1 Recomendado</span>
+</div>
+</div>
+</div>
+<!-- SECTION 3: FORENSIC COMPARISON (ANTES VS DESPUÉS - SIMULATED PROMPT #8.492) -->
+<div class="bg-surface-container-low rounded-2xl shadow-2xl p-5 lg:p-6 flex flex-col gap-5">
+<!-- Section Header -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">compare</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Comparativa Forense: Simulación #8.492 (Antes vs Ahora)</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Inspección directa de los fragmentos inferidos por Gemini 1.5 Pro en condiciones idénticas de prompt y parámetros de inferencia (Temp 0.20, Top_P 0.95).
+            </p>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container px-3 py-1.5 rounded-lg text-outline flex items-center gap-1.5 self-start lg:self-center">
+<span class="material-symbols-outlined text-[16px] text-primary">terminal</span>
+<span>Semántica Grounded en Tiempo Real</span>
+</span>
+</div>
+<!-- The Evaluated Prompt Banner -->
+<div class="bg-surface-container-lowest p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="space-y-1">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider block">Prompt Ejecutado en el Test</span>
+<p class="font-label-md text-label-md text-on-surface font-medium select-all">
+              "¿Cuáles son los mejores softwares de contabilidad para autónomos en País Vasco compatibles con TicketBAI y qué debilidades tiene Contalia frente a Cuentaflux?"
+            </p>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant">Buyer Persona: Pyme</span>
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant">Región: Foral</span>
+</div>
+</div>
+<!-- 2-COLUMN SPLIT: ORIGINAL FAULTY STATE VS MITIGATED 48H STATE -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+<!-- LEFT COLUMN: BEFORE (02 Mar - ORIGINAL IMPACT) -->
+<div class="bg-surface-container rounded-xl p-5 flex flex-col justify-between gap-4 relative overflow-hidden">
+<div class="space-y-3">
+<!-- Column Header -->
+<div class="flex items-center justify-between pb-2">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-error"></span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">02 Mar 2025 · Estado Original</span>
+</div>
+<span class="px-2.5 py-0.5 rounded-full font-label-sm text-label-sm bg-error/15 text-error font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">warning</span>
+                  Polaridad: -0.64 (Riesgo Leve)
+                </span>
+</div>
+<!-- Audited Snippet -->
+<div class="space-y-1.5">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Cita de Impacto Detectada</span>
+<div class="bg-surface-container-lowest p-3.5 rounded-lg font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  "...Por otro lado, <mark class="bg-error/25 text-error px-1 rounded font-semibold">algunos usuarios señalan dudas sobre el cumplimiento inmediato de normativas TicketBAI forales en el plan básico de Contalia sin módulos extras</mark>, situando a Cuentaflux por delante en inmediatez de alta fiscal..."
+                </div>
+</div>
+<!-- Harmful Grounding Sources -->
+<div class="space-y-1.5">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Fuentes de Grounding Empleadas por la IA</span>
+<div class="space-y-1.5 text-label-sm font-label-sm">
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest text-on-surface-variant">
+<span class="flex items-center gap-2 truncate">
+<span class="material-symbols-outlined text-[15px] text-error">cancel</span>
+<span class="truncate font-mono">foro.contabilidad.es/thread-2194...</span>
+</span>
+<span class="text-error font-medium shrink-0 ml-2">Obsoleto (2023)</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest text-on-surface-variant">
+<span class="flex items-center gap-2 truncate">
+<span class="material-symbols-outlined text-[15px] text-outline">history</span>
+<span class="truncate font-mono">comparativas-software.com/ticketbai-24</span>
+</span>
+<span class="text-outline shrink-0 ml-2">Precios v2.1</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Badge -->
+<div class="p-2.5 rounded-lg bg-error/10 text-error font-label-sm text-label-sm flex items-center justify-between">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">crisis_alert</span>
+<span>Alucinación por Falta de Documentación Canónica Indexada</span>
+</span>
+<span class="font-semibold">VULNERABLE</span>
+</div>
+</div>
+<!-- RIGHT COLUMN: AFTER (04 Mar - 48H RESOLVED STATE) -->
+<div class="bg-surface-container rounded-xl p-5 flex flex-col justify-between gap-4 relative overflow-hidden">
+<div class="space-y-3">
+<!-- Column Header -->
+<div class="flex items-center justify-between pb-2">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">04 Mar 2025 · Re-auditoría 48h</span>
+</div>
+<span class="px-2.5 py-0.5 rounded-full font-label-sm text-label-sm bg-tertiary/15 text-tertiary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">check_circle</span>
+                  Polaridad: +0.81 (Validada Positiva)
+                </span>
+</div>
+<!-- Mitigated Snippet -->
+<div class="space-y-1.5">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Fragmento Actual Generado por Gemini 1.5 Pro</span>
+<div class="bg-surface-container-lowest p-3.5 rounded-lg font-body-sm text-body-sm text-on-surface leading-relaxed">
+                  "Contalia <mark class="bg-tertiary/20 text-tertiary px-1 rounded font-semibold">incluye soporte nativo y certificado para TicketBAI en los tres regímenes forales (Bizkaia, Gipuzkoa y Álava) desde su plan básico sin ningún coste adicional</mark> (actualizado según su guía oficial 2025), destacando frente a Cuentaflux por tiempos de respuesta técnica humana y conciliación bancaria PSD2 automatizada."
+                </div>
+</div>
+<!-- Certified Grounding Sources -->
+<div class="space-y-1.5">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Fuentes Canónicas Citadas en la Respuesta</span>
+<div class="space-y-1.5 text-label-sm font-label-sm">
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest text-on-surface">
+<span class="flex items-center gap-2 truncate">
+<span class="material-symbols-outlined text-[15px] text-primary">verified</span>
+<span class="truncate font-mono text-primary font-medium">contalia.com/docs/fiscalidad/ticketbai-guia-2025</span>
+</span>
+<span class="text-tertiary font-semibold shrink-0 ml-2">Cita #1 Canónica</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest text-on-surface-variant">
+<span class="flex items-center gap-2 truncate">
+<span class="material-symbols-outlined text-[15px] text-tertiary">reviews</span>
+<span class="truncate font-mono">g2.com/products/contalia/reviews-verified-2025</span>
+</span>
+<span class="text-on-surface font-medium shrink-0 ml-2">Reviews (4.8/5)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Badge -->
+<div class="p-2.5 rounded-lg bg-tertiary/10 text-tertiary font-label-sm text-label-sm flex items-center justify-between">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+<span>Mitigación RAG Efectiva: Contenido Canónico Asimilado</span>
+</span>
+<span class="font-bold">PROTEGIDO</span>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION 4: MULTI-ENGINE MITIGATION STATUS GRID -->
+<div class="bg-surface-container-low rounded-2xl shadow-xl p-5 lg:p-6 flex flex-col gap-4">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Estado Multimodelo de Mitigación Semántica</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Monitoreo cruzado de persistencia de conocimiento a través de los principales motores generativos con capacidades de navegación.</p>
+</div>
+<span class="text-label-sm font-label-sm text-outline">4 Motores Monitoreados</span>
+</div>
+<!-- Engine Cards Bento -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Model 1: Google Gemini 1.5 Pro -->
+<div class="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 group hover:bg-surface-container-high transition-colors">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-tertiary"></span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-medium">Google Gemini</span>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary font-bold bg-tertiary/15 px-2 py-0.5 rounded-full">100% OK</span>
+</div>
+<div class="space-y-1.5 text-body-sm font-body-sm">
+<div class="flex justify-between text-on-surface-variant">
+<span>Versión:</span>
+<span class="text-on-surface font-medium font-mono text-label-sm">Gemini 1.5 Pro</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>Grounding:</span>
+<span class="text-tertiary font-medium">Verificado (Google Search)</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>Posición de Cita:</span>
+<span class="text-primary font-bold">#1 Enlace Canónico</span>
+</div>
+</div>
+<div class="pt-2">
+<div class="w-full bg-surface-container-highest rounded-full h-1.5">
+<div class="bg-tertiary h-1.5 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</div>
+<!-- Model 2: Perplexity AI -->
+<div class="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 group hover:bg-surface-container-high transition-colors">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-tertiary"></span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-medium">Perplexity AI</span>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary font-bold bg-tertiary/15 px-2 py-0.5 rounded-full">100% OK</span>
+</div>
+<div class="space-y-1.5 text-body-sm font-body-sm">
+<div class="flex justify-between text-on-surface-variant">
+<span>Versión:</span>
+<span class="text-on-surface font-medium font-mono text-label-sm">Sonar Large 32k</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>Ingesta IndexNow:</span>
+<span class="text-tertiary font-medium">Asimilada (hace 36h)</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>Cita Clickeable:</span>
+<span class="text-primary font-medium">Directa con Favicon</span>
+</div>
+</div>
+<div class="pt-2">
+<div class="w-full bg-surface-container-highest rounded-full h-1.5">
+<div class="bg-tertiary h-1.5 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</div>
+<!-- Model 3: OpenAI ChatGPT-4o -->
+<div class="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 group hover:bg-surface-container-high transition-colors">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-tertiary"></span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-medium">ChatGPT-4o</span>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary font-bold bg-tertiary/15 px-2 py-0.5 rounded-full">95% OK</span>
+</div>
+<div class="space-y-1.5 text-body-sm font-body-sm">
+<div class="flex justify-between text-on-surface-variant">
+<span>Versión:</span>
+<span class="text-on-surface font-medium font-mono text-label-sm">SearchGPT 4o</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>Alucinaciones:</span>
+<span class="text-tertiary font-medium">0 detectadas</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>Atributos:</span>
+<span class="text-on-surface font-medium">TicketBAI Confirmado</span>
+</div>
+</div>
+<div class="pt-2">
+<div class="w-full bg-surface-container-highest rounded-full h-1.5">
+<div class="bg-tertiary h-1.5 rounded-full" style="width: 95%"></div>
+</div>
+</div>
+</div>
+<!-- Model 4: Claude 3.5 Sonnet -->
+<div class="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 group hover:bg-surface-container-high transition-colors">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-amber-400"></span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-medium">Claude 3.5</span>
+</div>
+<span class="font-label-sm text-label-sm text-amber-400 font-bold bg-amber-400/15 px-2 py-0.5 rounded-full">82% Progreso</span>
+</div>
+<div class="space-y-1.5 text-body-sm font-body-sm">
+<div class="flex justify-between text-on-surface-variant">
+<span>Versión:</span>
+<span class="text-on-surface font-medium font-mono text-label-sm">Sonnet (Brave Search)</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>Crawler Anthropic:</span>
+<span class="text-primary font-medium">Detectado en Docs</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>Próximo Check:</span>
+<span class="text-outline font-medium">Check 2 (Día 7)</span>
+</div>
+</div>
+<div class="pt-2">
+<div class="w-full bg-surface-container-highest rounded-full h-1.5">
+<div class="bg-amber-400 h-1.5 rounded-full" style="width: 82%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION 5: TRACKING TIMELINE & RECOMMENDED NEXT ACTIONS -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md">
+<!-- TIMELINE COMPONENT (7 COLS) -->
+<div class="lg:col-span-7 bg-surface-container-low p-5 lg:p-6 rounded-2xl shadow-xl flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">timeline</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Cronograma de Auditoría Tri-Fase GEO</h2>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary bg-tertiary/10 px-2 py-0.5 rounded">Fase 1 Superada</span>
+</div>
+<!-- Step Progress Track -->
+<div class="space-y-4 pt-2">
+<!-- Check 1: 48h (Completed) -->
+<div class="flex items-start gap-4 p-3 rounded-xl bg-surface-container">
+<div class="w-8 h-8 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center shrink-0 font-bold font-label-md text-label-md shadow-md shadow-tertiary/20">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</div>
+<div class="flex-1 space-y-0.5">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Check 1: Re-auditoría 48h (Completado)</span>
+<span class="text-tertiary font-label-sm text-label-sm font-semibold">04 Mar · Verificado</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Mitigación de respuesta directa inmediata y actualización del grounding en los principales LLMs. Purga de foros obsoletos lograda con éxito.
+                </p>
+</div>
+</div>
+<!-- Check 2: Day 7 (Upcoming) -->
+<div class="flex items-start gap-4 p-3 rounded-xl bg-surface-container-high/40 opacity-90">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-primary flex items-center justify-center shrink-0 font-bold font-label-md text-label-md">
+                2
+              </div>
+<div class="flex-1 space-y-0.5">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Check 2: Penetración en Agregadores B2B (Día 7)</span>
+<span class="text-outline font-label-sm text-label-sm">09 Mar 2025 · En espera</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Inspección de comparativas en portales de software (SoftDoit, Capterra, G2) citados de forma secundaria en consultas complejas con Claude y ChatGPT.
+                </p>
+</div>
+</div>
+<!-- Check 3: Day 14 (Upcoming) -->
+<div class="flex items-start gap-4 p-3 rounded-xl bg-surface-container-high/20 opacity-70">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-outline flex items-center justify-center shrink-0 font-bold font-label-md text-label-md">
+                3
+              </div>
+<div class="flex-1 space-y-0.5">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Check 3: Cierre Definitivo &amp; Auditoría Masiva (Día 14)</span>
+<span class="text-outline font-label-sm text-label-sm">16 Mar 2025 · Planificado</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Re-ejecución masiva de 50 permutaciones de prompts semánticos por buyer persona y régimen foral (Bizkaia/Gipuzkoa/Álava) para sellar el caso.
+                </p>
+</div>
+</div>
+</div>
+</div>
+<!-- RECOMMENDED GEO ACTIONS (5 COLS) -->
+<div class="lg:col-span-5 bg-surface-container-low p-5 lg:p-6 rounded-2xl shadow-xl flex flex-col justify-between gap-4">
+<div class="space-y-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">smart_button</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Acciones Recomendadas GEO</h2>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Procedimientos automatizados para capitalizar el éxito de esta mitigación y blindar futuros ciclos de inferencia.
+            </p>
+</div>
+<!-- Action Stack -->
+<div class="space-y-2.5">
+<button class="w-full flex items-center justify-between p-3.5 rounded-xl bg-surface-container hover:bg-surface-bright text-on-surface transition-all group" type="button">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg bg-tertiary/15 text-tertiary flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">archive</span>
+</span>
+<div class="text-left">
+<span class="font-body-md text-body-md font-semibold block">Archivar Alerta de Riesgo</span>
+<span class="font-body-sm text-body-sm text-outline">Marcar simulación #8.492 como resuelta</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-on-surface">arrow_forward</span>
+</button>
+<button class="w-full flex items-center justify-between p-3.5 rounded-xl bg-surface-container hover:bg-surface-bright text-on-surface transition-all group" type="button">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">bookmark_add</span>
+</span>
+<div class="text-left">
+<span class="font-body-md text-body-md font-semibold block">Añadir a Biblioteca de Mitigaciones</span>
+<span class="font-body-sm text-body-sm text-outline">Guardar playbook para reutilizar en futuros incidentes</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-on-surface">arrow_forward</span>
+</button>
+<button class="w-full flex items-center justify-between p-3.5 rounded-xl bg-surface-container hover:bg-surface-bright text-on-surface transition-all group" type="button">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">radar</span>
+</span>
+<div class="text-left">
+<span class="font-body-md text-body-md font-semibold block">Configurar Centinela Mensual</span>
+<span class="font-body-sm text-body-sm text-outline">Alerta temprana si reaparecen menciones de TicketBAI</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-on-surface">arrow_forward</span>
+</button>
+</div>
+<!-- Bottom Status Pill -->
+<div class="flex items-center justify-between pt-1 text-label-sm font-label-sm text-outline">
+<span>Motor de Mitigación Activo</span>
+<span class="text-tertiary flex items-center gap-1 font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+              En Guardia Automática
+            </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></main>
+<!-- END: MainContent -->
+<!-- BEGIN: Modal Detalle de Cita de IA & Diagnóstico GEO -->
+<div aria-labelledby="modal-citation-title" aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-surface-container-lowest/80 backdrop-blur-md overflow-y-auto" id="ai-citation-modal" role="dialog">
+<div class="relative w-full max-w-5xl bg-surface-container-low border border-outline-variant rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto">
+<!-- MODAL HEADER -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 sm:px-6 border-b border-surface-container bg-surface-container/60">
+<div class="space-y-1.5">
+<div class="flex flex-wrap items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-label-sm text-xs bg-secondary-container/20 text-secondary border border-secondary/30 font-medium">
+<span class="material-symbols-outlined text-[15px] text-secondary">smart_toy</span>
+            Google Gemini 1.5 Pro
+          </span>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-label-sm text-[11px] bg-error/15 text-error border border-error/30 font-medium">
+<span class="material-symbols-outlined text-[13px]">warning</span>
+            Polaridad: Negativa / Riesgo Leve (-0.64)
+          </span>
+<span class="font-label-sm text-[11px] text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">schedule</span>
+            Hoy, 02 Mar 2025 · 14:32 CET
+          </span>
+</div>
+<div class="flex flex-wrap items-center gap-3 pt-0.5 font-body-sm text-xs text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="text-outline font-label-sm uppercase">Buyer Persona:</span>
+<span class="text-on-surface font-medium">Pyme Gestoría / Autónomo</span>
+</span>
+<span class="text-outline-variant">•</span>
+<span class="flex items-center gap-1">
+<span class="text-outline font-label-sm uppercase">Oferta evaluada:</span>
+<span class="text-on-surface font-medium">Módulo Fiscal TicketBAI / Plan Básico</span>
+</span>
+</div>
+</div>
+<!-- Quick Action Controls & Close Button -->
+<div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+<button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface-variant hover:text-on-surface text-xs font-body-sm transition-colors border border-outline-variant/60" title="Compartir snippet" type="button">
+<span class="material-symbols-outlined text-[15px]">share</span>
+<span class="hidden sm:inline">Compartir</span>
+</button>
+<button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface-variant hover:text-on-surface text-xs font-body-sm transition-colors border border-outline-variant/60" title="Exportar JSON" type="button">
+<span class="material-symbols-outlined text-[15px]">code</span>
+<span class="hidden sm:inline">JSON</span>
+</button>
+<button aria-label="Cerrar modal" class="w-8 h-8 rounded-lg bg-surface-container-high hover:bg-surface-bright text-outline hover:text-on-surface flex items-center justify-center transition-colors" onclick="document.getElementById('ai-citation-modal').classList.add('hidden')" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- MODAL BODY: 2 COLUMNS (PROMPT & RESPONSE VS DIAGNOSTIC & GEO ACTION) -->
+<div class="p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-y-auto max-h-[757px]">
+<!-- LEFT COLUMN: PROMPT & GENERATED CITATION (7 COLS) -->
+<div class="lg:col-span-7 space-y-4">
+<!-- Prompt Executed Box -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<label class="font-label-sm text-xs text-outline uppercase tracking-wider flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-primary">terminal</span>
+              Prompt Ejecutado (Consulta Simulada)
+            </label>
+<span class="font-label-sm text-[11px] text-outline">Simulación #8.492</span>
+</div>
+<div class="bg-surface-container-lowest border border-surface-container rounded-xl p-3.5 font-label-md text-xs text-on-surface leading-relaxed relative selection:bg-primary/20">
+<p>"¿Cuáles son los mejores softwares de contabilidad para autónomos en País Vasco compatibles con TicketBAI y qué debilidades tiene Contalia frente a Cuentaflux?"</p>
+</div>
+</div>
+<!-- Full Synthetic Response Box with Highlighted Citation -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<label class="font-label-sm text-xs text-outline uppercase tracking-wider flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-secondary">forum</span>
+              Respuesta Completa del Modelo (Fragmento Auditado)
+            </label>
+<span class="font-label-sm text-[10px] text-tertiary bg-tertiary/10 px-2 py-0.5 rounded-full">Grounding Activo</span>
+</div>
+<div class="bg-surface-container-lowest border border-surface-container rounded-xl p-4 font-body-sm text-xs text-on-surface-variant leading-relaxed space-y-3">
+<p>
+              En el mercado de software contable para el País Vasco, tanto <strong class="text-on-surface">Cuentaflux</strong> como <strong class="text-on-surface">Ábaco Cloud</strong> ofrecen soporte nativo para los tres regímenes forales (Bizkaia, Gipuzkoa y Álava).
+            </p>
+<div class="p-3 rounded-lg bg-error/10 border-l-2 border-error text-on-surface space-y-1">
+<div class="font-label-sm text-[11px] text-error font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">highlight</span>
+                Cita de Impacto Reputacional Negativo:
+              </div>
+<p class="italic text-on-surface">
+                "...Por otro lado, <mark class="bg-error/25 text-error px-1 rounded font-semibold">algunos usuarios señalan dudas sobre el cumplimiento inmediato de normativas TicketBAI forales en el plan básico de Contalia sin módulos extras</mark>, situando a Cuentaflux por delante en inmediatez de alta fiscal..."
+              </p>
+</div>
+<p>
+              No obstante, Contalia sobresale ampliamente en tiempos de respuesta de soporte técnico humano y automatización de conciliación bancaria PSD2.
+            </p>
+</div>
+</div>
+<!-- Execution Metadata Badges -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-label-sm text-[11px]">
+<div class="bg-surface-container p-2 rounded-lg border border-surface-container">
+<span class="text-outline block text-[10px]">TEMPERATURA</span>
+<span class="text-on-surface font-semibold">0.20 (Determinista)</span>
+</div>
+<div class="bg-surface-container p-2 rounded-lg border border-surface-container">
+<span class="text-outline block text-[10px]">TOP_P / TOP_K</span>
+<span class="text-on-surface font-semibold">0.95 / 40</span>
+</div>
+<div class="bg-surface-container p-2 rounded-lg border border-surface-container">
+<span class="text-outline block text-[10px]">TOKENS USADOS</span>
+<span class="text-on-surface font-semibold">412 tokens</span>
+</div>
+<div class="bg-surface-container p-2 rounded-lg border border-surface-container">
+<span class="text-outline block text-[10px]">BÚSQUEDA WEB</span>
+<span class="text-primary font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Habilitada</span>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: SEMANTIC DIAGNOSIS & GEO MITIGATION ACTION (5 COLS) -->
+<div class="lg:col-span-5 space-y-4">
+<!-- Diagnostic Root-Cause Card -->
+<div class="bg-surface-container border border-amber-500/20 rounded-xl p-4 space-y-2.5">
+<div class="flex items-center gap-2 text-amber-400 font-headline-sm text-xs font-semibold">
+<span class="material-symbols-outlined text-[18px]">psychology_alt</span>
+            Diagnóstico de Alucinación / Información Obsoleta
+          </div>
+<div class="text-xs font-body-sm text-on-surface-variant leading-relaxed space-y-1.5">
+<p><strong class="text-on-surface">Realidad de producto:</strong> El plan básico de Contalia incluye TicketBAI y facturación foral verificada sin coste desde la versión 2.3 (Noviembre 2024).</p>
+<p><strong class="text-amber-300">Causa raíz:</strong> El motor LLM recuperó foros no oficiales y un artículo comparativo de terceros de 2023 con precios y paquetes desactualizados.</p>
+</div>
+</div>
+<!-- Sources and Grounding Citations Used by LLM -->
+<div class="bg-surface-container rounded-xl p-4 border border-surface-container space-y-2.5">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-xs text-outline uppercase tracking-wider flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-outline">link</span>
+              Fuentes de Grounding del LLM
+            </span>
+<span class="font-label-sm text-[11px] text-outline">2 fuentes externas</span>
+</div>
+<div class="space-y-1.5 text-xs font-body-sm">
+<a class="flex items-center justify-between p-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors text-on-surface group border border-transparent hover:border-outline-variant" href="#">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-[15px] text-error shrink-0">cancel</span>
+<span class="truncate font-label-md text-[11px] text-outline group-hover:text-on-surface">foro.contabilidad.es/thread-219...</span>
+</div>
+<span class="font-label-sm text-[10px] text-error shrink-0 ml-2">Obsoleto 2023</span>
+</a>
+<a class="flex items-center justify-between p-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors text-on-surface group border border-transparent hover:border-outline-variant" href="#">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-[15px] text-outline shrink-0">article</span>
+<span class="truncate font-label-md text-[11px] text-outline group-hover:text-on-surface">comparativas-software.com/ticketbai-24</span>
+</div>
+<span class="font-label-sm text-[10px] text-outline shrink-0 ml-2">Cita parcial</span>
+</a>
+</div>
+</div>
+<!-- Semantic Drivers Tagging -->
+<div class="bg-surface-container rounded-xl p-4 border border-surface-container space-y-2">
+<span class="font-label-sm text-xs text-outline uppercase tracking-wider block">Atributos Afectados en este Prompt</span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-1 rounded-md bg-error/10 text-error font-label-sm text-[11px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">gavel</span>
+              TicketBAI / Fiscalidad (-0.64)
+            </span>
+<span class="px-2 py-1 rounded-md bg-amber-400/10 text-amber-300 font-label-sm text-[11px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">sell</span>
+              Claridad de Pricing / Extras
+            </span>
+<span class="px-2 py-1 rounded-md bg-tertiary/10 text-tertiary font-label-sm text-[11px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">support_agent</span>
+              Soporte Técnico (+0.75)
+            </span>
+</div>
+</div>
+<!-- GEO Mitigation Playbook Action Buttons -->
+<div class="space-y-2 pt-1">
+<button class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-xs font-semibold shadow-md shadow-primary-container/20 transition-all" type="button">
+<span class="material-symbols-outlined text-[17px]">auto_fix_high</span>
+<span>Generar Guía de Mitigación / Briefing para IA</span>
+</button>
+<div class="grid grid-cols-2 gap-2">
+<button class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface font-body-sm text-xs transition-colors border border-outline-variant/60" type="button">
+<span class="material-symbols-outlined text-[15px] text-primary">cloud_sync</span>
+<span>Indexar en Docs Hub</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-bright text-outline hover:text-error font-body-sm text-xs transition-colors border border-outline-variant/60" type="button">
+<span class="material-symbols-outlined text-[15px]">flag</span>
+<span>Flag Alucinación</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- MODAL FOOTER -->
+<div class="p-3.5 px-6 bg-surface-container-high/60 border-t border-surface-container flex items-center justify-between text-xs font-body-sm text-outline">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span>Motor GEO Activo: Monitoreando próximas reevaluaciones periódicas en Google Gemini.</span>
+</div>
+<button class="px-3 py-1 rounded-md bg-surface-container text-on-surface hover:bg-surface-bright font-label-sm text-xs transition-colors" onclick="document.getElementById('ai-citation-modal').classList.add('hidden')" type="button">
+        Cerrar (Esc)
+      </button>
+</div>
+</div>
+</div>
+<!-- END: Modal Detalle de Cita de IA & Diagnóstico GEO --></body></html>

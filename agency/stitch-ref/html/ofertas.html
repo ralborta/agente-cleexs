@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Visibility Dashboard</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed-variant": "#004e5c",
+            "on-tertiary-fixed": "#002113",
+            "outline": "#869397",
+            "error": "#ffb4ab",
+            "tertiary-container": "#1bbd85",
+            "error-container": "#93000a",
+            "on-primary-container": "#00424f",
+            "on-background": "#dde2f5",
+            "inverse-primary": "#00687a",
+            "surface-container": "#1a1f2d",
+            "secondary-container": "#571bc1",
+            "on-secondary-fixed-variant": "#5516be",
+            "on-surface": "#dde2f5",
+            "on-secondary-fixed": "#23005c",
+            "inverse-on-surface": "#2a303f",
+            "surface": "#0d1320",
+            "secondary-fixed": "#e9ddff",
+            "on-error-container": "#ffdad6",
+            "surface-container-highest": "#2f3543",
+            "on-primary": "#003640",
+            "on-error": "#690005",
+            "surface-container-lowest": "#080e1b",
+            "on-surface-variant": "#bcc9cd",
+            "on-secondary": "#3c0091",
+            "tertiary-fixed-dim": "#4edea3",
+            "secondary": "#d0bcff",
+            "tertiary-fixed": "#6ffbbe",
+            "background": "#0d1320",
+            "on-primary-fixed": "#001f26",
+            "surface-container-high": "#242a38",
+            "primary-fixed": "#acedff",
+            "surface-variant": "#2f3543",
+            "surface-tint": "#4cd7f6",
+            "on-tertiary-container": "#00452e",
+            "tertiary": "#4edea3",
+            "primary": "#4cd7f6",
+            "on-secondary-container": "#c4abff",
+            "surface-bright": "#333948",
+            "outline-variant": "#3d494c",
+            "on-tertiary": "#003824",
+            "primary-container": "#06b6d4",
+            "on-tertiary-fixed-variant": "#005236",
+            "surface-dim": "#0d1320",
+            "inverse-surface": "#dde2f5",
+            "surface-container-low": "#161b29",
+            "primary-fixed-dim": "#4cd7f6",
+            "secondary-fixed-dim": "#d0bcff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "gutter": "1rem",
+            "margin": "1rem",
+            "space-md": "1rem",
+            "margin-desktop": "2rem",
+            "gutter-desktop": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin-tablet": "1.5rem"
+          },
+          "fontFamily": {
+            "label-sm": ["JetBrains Mono"],
+            "headline-xl-mobile": ["Inter"],
+            "headline-lg": ["Inter"],
+            "headline-xl": ["Inter"],
+            "body-sm": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "metric-display": ["Inter"],
+            "label-md": ["JetBrains Mono"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "label-sm": ["11px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+            "headline-xl": ["36px", { "lineHeight": "44px", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "metric-display": ["32px", { "lineHeight": "38px", "fontWeight": "700" }],
+            "label-md": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    @layer base {
+      html {
+        overscroll-behavior: none;
+        background-color: #0d1320;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #080e1b;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #242a38;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #3d494c;
+      }
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased">
+<!-- BEGIN: LeftSidebar -->
+<aside class="fixed top-0 bottom-0 left-0 w-64 bg-surface-container-low border-r border-surface-container flex flex-col justify-between z-40" data-purpose="sidebar-navigation">
+<div class="p-space-md flex flex-col gap-space-md overflow-y-auto">
+<!-- App Brand Header -->
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary font-headline-sm font-bold shadow-lg">
+            R
+          </div>
+<span class="text-on-surface font-headline-sm font-semibold tracking-tight">AI Visibility</span>
+</div>
+<button aria-label="Colapsar menú" class="text-outline hover:text-on-surface p-space-xs transition-colors rounded-lg" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+</div>
+<!-- Project Identifier -->
+<div class="flex flex-col gap-space-xs bg-surface-container p-space-sm rounded-lg">
+<div class="font-body-sm text-on-surface-variant flex items-center gap-1.5">
+<span>Proyecto:</span>
+<span class="text-on-surface font-medium">Contalia</span>
+<span class="text-outline">· contalia.com</span>
+</div>
+<div>
+<span class="inline-block px-2 py-0.5 font-label-sm text-[10px] text-amber-400 border border-amber-500/20 rounded-full bg-amber-500/10 font-medium">
+            Demo con datos ficticios
+          </span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-space-md mt-space-xs" data-active-classes="bg-surface-container text-primary font-medium shadow-sm border border-primary/20" data-purpose="sidebar-links">
+<!-- Group: Monitoreo -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Monitoreo</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="ai-visibility-dashboard-desktop" href="#">
+              Dashboard
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="competidores" href="#">
+              Competidores
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="fuentes" href="#">
+              Fuentes
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="sentimiento" href="#">
+              Sentimiento
+            </a>
+</div>
+</div>
+<!-- Group: Setup -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Setup</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="nuevo-proyecto" href="#">
+              Nuevo proyecto
+            </a>
+</div>
+</div>
+<!-- Group: Registro -->
+<div class="flex flex-col gap-space-xs">
+<div class="font-label-sm text-outline uppercase tracking-wider px-2">Registro</div>
+<div class="space-y-1">
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="prompts" href="#">
+              Prompts
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="ofertas" href="#">
+              Ofertas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="buyer-personas" href="#">
+              Buyer personas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="tipos-de-prompt" href="#">
+              Tipos de prompt
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="marcas" href="#">
+              Marcas
+            </a>
+<a class="block px-3 py-1.5 rounded-lg font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" data-path="proyecto" href="#">
+              Proyecto
+            </a>
+</div>
+</div>
+</nav>
+</div>
+<!-- Theme / Mode Controls Footer -->
+<div class="p-space-sm border-t border-surface-container bg-surface-container-low shrink-0">
+<div class="bg-surface-container p-1 rounded-xl flex items-center gap-1 font-body-sm">
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-outline hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">light_mode</span>
+<span>Claro</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface font-medium shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">dark_mode</span>
+<span>Oscuro</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- END: LeftSidebar -->
+<!-- BEGIN: TopBar Header (Filter Ribbon) -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface-container-low/95 backdrop-blur-md border-b border-surface-container z-30 flex items-center px-space-xl justify-between">
+<div class="flex items-center gap-space-sm overflow-x-auto py-1 scrollbar-none">
+<!-- Filter: IA -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">IA:</span>
+<span class="font-body-sm text-on-surface font-medium">Todas</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Buyer Persona -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Buyer Persona:</span>
+<span class="font-body-sm text-on-surface font-medium">Todos</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Oferta -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Oferta:</span>
+<span class="font-body-sm text-on-surface font-medium">Todas</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Tipo de prompt -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Tipo de prompt:</span>
+<span class="font-body-sm text-on-surface font-medium">Todos</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: País -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">País:</span>
+<span class="font-body-sm text-on-surface font-medium">Global</span>
+<span class="material-symbols-outlined text-[16px] text-outline">keyboard_arrow_down</span>
+</div>
+<!-- Filter: Período -->
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="font-label-sm text-outline">Período:</span>
+<span class="font-body-sm text-on-surface font-medium">Últimos 30 días</span>
+<span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span>
+</div>
+</div>
+<!-- Quick Status / Reset Action -->
+<div class="flex items-center gap-space-sm pl-space-md shrink-0">
+<button class="flex items-center gap-1 text-outline hover:text-on-surface font-body-sm px-2 py-1 rounded transition-colors" title="Restablecer filtros" type="button">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+<span class="hidden xl:inline">Limpiar</span>
+</button>
+<button class="bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 shadow-sm shadow-primary/20" type="button">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+<span>Actualizar</span>
+</button>
+</div>
+</header>
+<!-- END: TopBar Header -->
+<!-- BEGIN: MainContent -->
+<main class="pl-64 pt-16 min-h-screen bg-surface-container-lowest"><div class="flex flex-col w-full">
+<script>
+    (function highlightActiveNav() {
+      const links = document.querySelectorAll('aside nav a');
+      links.forEach(l => {
+        if (l.getAttribute('data-path') === 'ofertas') {
+          l.className = 'block px-3 py-1.5 rounded-lg font-body-md bg-surface-container text-primary font-medium shadow-sm';
+        }
+      });
+    })();
+  </script>
+<div class="p-space-xl flex flex-col gap-space-xl">
+<section class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-lg relative">
+<div class="flex flex-col gap-space-xs max-w-3xl">
+<div class="flex items-center gap-space-sm">
+<span class="font-label-sm text-primary uppercase tracking-wider bg-surface-container px-2 py-0.5 rounded-full">
+            Registro comercial · Motor de indexación GEO
+          </span>
+<span class="inline-flex items-center gap-1 font-label-sm text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+            Sync en vivo (GPT-4o / Claude 3.5 / Perplexity)
+          </span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">
+          Catálogo de Ofertas y Propuestas de Valor
+        </h1>
+<p class="font-body-lg text-headline-sm text-on-surface-variant">
+          Control de planes comerciales, módulos tarifarios y atributos de producto de Contalia rastreados en respuestas de recomendación y cotizaciones generadas por IA.
+        </p>
+</div>
+<div class="flex items-center flex-wrap gap-space-sm shrink-0">
+<button class="bg-surface-container hover:bg-surface-container-high text-on-surface font-headline-sm text-body-md px-space-md py-2.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">cloud_sync</span>
+<span>Sincronizar Catálogo Web</span>
+</button>
+<button class="bg-surface-container hover:bg-surface-container-high text-on-surface font-headline-sm text-body-md px-space-md py-2.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">fact_check</span>
+<span>Auditar Percepción</span>
+</button>
+<button class="bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-body-md px-space-lg py-2.5 rounded-lg transition-colors flex items-center gap-2 shadow-md shadow-primary-container/20" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Añadir Nueva Oferta</span>
+</button>
+</div>
+</section>
+<section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<div class="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between relative overflow-hidden shadow-sm">
+<div class="flex items-center justify-between pb-space-sm">
+<span class="font-label-sm text-on-surface-variant uppercase tracking-wider">Ofertas Monitorizadas</span>
+<span class="material-symbols-outlined text-primary text-[20px]">inventory_2</span>
+</div>
+<div class="flex items-baseline gap-space-sm my-space-xs">
+<span class="font-metric-display text-metric-display text-on-surface">6</span>
+<span class="font-body-sm text-on-surface-variant">planes y add-ons</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs font-body-sm">
+<span class="text-tertiary flex items-center gap-1 font-label-sm">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> 5 activos · 1 beta
+          </span>
+<span class="text-outline font-label-sm">100% catalogados</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between relative overflow-hidden shadow-sm">
+<div class="flex items-center justify-between pb-space-sm">
+<span class="font-label-sm text-on-surface-variant uppercase tracking-wider">Share of Voice Comercial</span>
+<span class="material-symbols-outlined text-tertiary text-[20px]">pie_chart</span>
+</div>
+<div class="flex items-baseline gap-space-sm my-space-xs">
+<span class="font-metric-display text-metric-display text-on-surface">74.8%</span>
+<span class="font-label-sm text-tertiary flex items-center">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> +4.6%
+          </span>
+</div>
+<div class="flex items-center justify-between pt-space-xs font-body-sm">
+<span class="text-on-surface-variant font-body-sm">Filtros de intención de compra</span>
+<span class="text-outline font-label-sm">Top 3 general</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between relative overflow-hidden shadow-sm">
+<div class="flex items-center justify-between pb-space-sm">
+<span class="font-label-sm text-on-surface-variant uppercase tracking-wider">Precisión de Precios en IA</span>
+<span class="material-symbols-outlined text-primary text-[20px]">price_check</span>
+</div>
+<div class="flex items-baseline gap-space-sm my-space-xs">
+<span class="font-metric-display text-metric-display text-on-surface">98.2%</span>
+<span class="font-label-sm text-tertiary flex items-center">
+<span class="material-symbols-outlined text-[14px]">verified</span> 0 alucinaciones
+          </span>
+</div>
+<div class="flex items-center justify-between pt-space-xs font-body-sm">
+<span class="text-on-surface-variant font-body-sm">TicketBAI sin costes ocultos</span>
+<span class="text-outline font-label-sm">Auditoría 24h</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between relative overflow-hidden shadow-sm">
+<div class="flex items-center justify-between pb-space-sm">
+<span class="font-label-sm text-on-surface-variant uppercase tracking-wider">Oferta Líder en IA</span>
+<span class="material-symbols-outlined text-secondary text-[20px]">stars</span>
+</div>
+<div class="flex flex-col gap-0.5 my-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Plan Autónomo TicketBAI</span>
+<span class="font-label-sm text-secondary font-medium">96% preferencia recomendada</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs font-body-sm">
+<span class="text-on-surface-variant font-body-sm">Benchmark frente a Holded</span>
+<span class="text-tertiary font-label-sm">+18 pts gap</span>
+</div>
+</div>
+</section>
+<section class="bg-surface-container-low rounded-xl overflow-hidden shadow-md flex flex-col">
+<div class="p-space-lg bg-surface-container flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-space-sm">
+<h2 class="font-headline-md text-headline-md text-on-surface">Matriz de Ofertas y Posicionamiento de Producto</h2>
+<span class="bg-surface-container-highest px-2 py-0.5 rounded-full font-label-sm text-primary">5 registros</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Rendimiento por menciones, fidelidad de precio declarado y respuesta competitiva directa.</p>
+</div>
+<div class="flex items-center gap-space-sm">
+<div class="flex items-center bg-surface-container-lowest px-3 py-1.5 rounded-lg text-on-surface-variant gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">search</span>
+<input class="bg-transparent text-on-surface font-body-sm focus:outline-none placeholder-outline w-44 lg:w-56" placeholder="Buscar oferta o módulo..." type="text"/>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-lowest px-2.5 py-1.5 rounded-lg text-on-surface font-body-sm cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px] text-outline">tune</span>
+<span class="font-label-sm">Ordenar por Share</span>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container-lowest text-outline font-label-sm uppercase tracking-wider">
+<th class="py-3 px-space-lg">Oferta / SKU</th>
+<th class="py-3 px-space-md">Precio Oficial</th>
+<th class="py-3 px-space-md">Posicionamiento Clave en LLMs</th>
+<th class="py-3 px-space-md text-center">Tasa Mención</th>
+<th class="py-3 px-space-md text-center">Sentimiento</th>
+<th class="py-3 px-space-md text-center">Precisión Pricing</th>
+<th class="py-3 px-space-md">Competidores Asociados</th>
+<th class="py-3 px-space-lg text-right">Acciones</th>
+</tr>
+</thead>
+<tbody class="divide-y-0 text-on-surface font-body-md">
+<tr class="hover:bg-surface-container transition-colors">
+<td class="py-4 px-space-lg">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+                    Plan Autónomo TicketBAI
+                    <span class="bg-primary-container/20 text-primary font-label-sm px-1.5 py-0.5 rounded-full">Top Seller</span>
+</span>
+<span class="font-body-sm text-on-surface-variant">Suscripción SaaS recurrente · País Vasco</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary font-semibold">15€ / mes</span>
+<span class="font-label-sm text-outline">Facturación anual</span>
+</div>
+</td>
+<td class="py-4 px-space-md max-w-xs">
+<div class="flex items-center gap-1.5 text-on-surface-variant font-body-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary shrink-0">verified</span>
+<span>Recomendación estrella para cumplimiento normativo fiscal en País Vasco sin recargo de emisión.</span>
+</div>
+</td>
+<td class="py-4 px-space-md text-center">
+<div class="inline-flex flex-col items-center">
+<span class="font-label-md text-label-md text-tertiary font-bold">92%</span>
+<span class="font-label-sm text-outline">1,240 prompts</span>
+</div>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="bg-surface-container-highest px-2 py-0.5 rounded-full font-label-sm text-tertiary">
+                  +0.91 Muy Favorable
+                </span>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="font-label-md text-label-md text-tertiary">100%</span>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="bg-surface-container px-2 py-0.5 rounded font-label-sm text-on-surface-variant">Holded</span>
+<span class="bg-surface-container px-2 py-0.5 rounded font-label-sm text-on-surface-variant">Quipu</span>
+</div>
+</td>
+<td class="py-4 px-space-lg text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1.5 text-outline hover:text-primary transition-colors rounded hover:bg-surface-container" title="Ver detalle de prompts" type="button">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+</button>
+<button class="p-1.5 text-outline hover:text-on-surface transition-colors rounded hover:bg-surface-container" title="Editar oferta" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container transition-colors">
+<td class="py-4 px-space-lg">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+                    Plan Gestoría &amp; Asesoría Pro
+                    <span class="bg-secondary-container/30 text-secondary font-label-sm px-1.5 py-0.5 rounded-full">B2B Pro</span>
+</span>
+<span class="font-body-sm text-on-surface-variant">Multicartera multi-empresa ilimitada</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary font-semibold">49€ / mes</span>
+<span class="font-label-sm text-outline">Base + volumen</span>
+</div>
+</td>
+<td class="py-4 px-space-md max-w-xs">
+<div class="flex items-center gap-1.5 text-on-surface-variant font-body-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary shrink-0">speed</span>
+<span>Eficiencia fiscal masiva, exportación foral por lotes y enlace directo con haciendas forales.</span>
+</div>
+</td>
+<td class="py-4 px-space-md text-center">
+<div class="inline-flex flex-col items-center">
+<span class="font-label-md text-label-md text-on-surface font-bold">88%</span>
+<span class="font-label-sm text-outline">890 prompts</span>
+</div>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="bg-surface-container-highest px-2 py-0.5 rounded-full font-label-sm text-tertiary">
+                  +0.87 Favorable
+                </span>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="font-label-md text-label-md text-on-surface">98%</span>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="bg-surface-container px-2 py-0.5 rounded font-label-sm text-on-surface-variant">A3Innuva</span>
+<span class="bg-surface-container px-2 py-0.5 rounded font-label-sm text-on-surface-variant">Anfix</span>
+</div>
+</td>
+<td class="py-4 px-space-lg text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1.5 text-outline hover:text-primary transition-colors rounded hover:bg-surface-container" title="Ver detalle" type="button">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+</button>
+<button class="p-1.5 text-outline hover:text-on-surface transition-colors rounded hover:bg-surface-container" title="Editar" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container transition-colors">
+<td class="py-4 px-space-lg">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Módulo Facturación Básica</span>
+<span class="font-body-sm text-on-surface-variant">Starter autónomos individuales</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary font-semibold">9€ / mes</span>
+<span class="font-label-sm text-outline">Sin permanencia</span>
+</div>
+</td>
+<td class="py-4 px-space-md max-w-xs">
+<div class="flex items-center gap-1.5 text-on-surface-variant font-body-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary shrink-0">check</span>
+<span>Solución económica sin complejidad técnica para emitir PDF con QR verifactu en menos de 2 minutos.</span>
+</div>
+</td>
+<td class="py-4 px-space-md text-center">
+<div class="inline-flex flex-col items-center">
+<span class="font-label-md text-label-md text-on-surface font-bold">76%</span>
+<span class="font-label-sm text-outline">612 prompts</span>
+</div>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="bg-surface-container-highest px-2 py-0.5 rounded-full font-label-sm text-tertiary">
+                  +0.82 Favorable
+                </span>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="font-label-md text-label-md text-on-surface">97%</span>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="bg-surface-container px-2 py-0.5 rounded font-label-sm text-on-surface-variant">Factusol</span>
+<span class="bg-surface-container px-2 py-0.5 rounded font-label-sm text-on-surface-variant">Debitoor</span>
+</div>
+</td>
+<td class="py-4 px-space-lg text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1.5 text-outline hover:text-primary transition-colors rounded hover:bg-surface-container" title="Ver detalle" type="button">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+</button>
+<button class="p-1.5 text-outline hover:text-on-surface transition-colors rounded hover:bg-surface-container" title="Editar" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container transition-colors">
+<td class="py-4 px-space-lg">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">API Sync ERP &amp; Conectores</span>
+<span class="font-body-sm text-on-surface-variant">Módulo de integración avanzada</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary font-semibold">29€ / mes</span>
+<span class="font-label-sm text-outline">Add-on mensual</span>
+</div>
+</td>
+<td class="py-4 px-space-md max-w-xs">
+<div class="flex items-center gap-1.5 text-on-surface-variant font-body-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary shrink-0">hub</span>
+<span>Alternativa ágil a conectores cerrados tipo Sage/SAP, citada como estándar para arquitectura headless.</span>
+</div>
+</td>
+<td class="py-4 px-space-md text-center">
+<div class="inline-flex flex-col items-center">
+<span class="font-label-md text-label-md text-on-surface font-bold">69%</span>
+<span class="font-label-sm text-outline">430 prompts</span>
+</div>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="bg-surface-container-highest px-2 py-0.5 rounded-full font-label-sm text-tertiary">
+                  +0.85 Favorable
+                </span>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="font-label-md text-label-md text-on-surface">95%</span>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="bg-surface-container px-2 py-0.5 rounded font-label-sm text-on-surface-variant">Sage 50</span>
+<span class="bg-surface-container px-2 py-0.5 rounded font-label-sm text-on-surface-variant">Holded API</span>
+</div>
+</td>
+<td class="py-4 px-space-lg text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1.5 text-outline hover:text-primary transition-colors rounded hover:bg-surface-container" title="Ver detalle" type="button">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+</button>
+<button class="p-1.5 text-outline hover:text-on-surface transition-colors rounded hover:bg-surface-container" title="Editar" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container transition-colors">
+<td class="py-4 px-space-lg">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+                    Módulo Nóminas &amp; RRHH
+                    <span class="bg-amber-500/10 text-amber-400 font-label-sm px-2 py-0.5 rounded-full">Beta Q3</span>
+</span>
+<span class="font-body-sm text-on-surface-variant">Próximo lanzamiento</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-outline">Por anunciar</span>
+<span class="font-label-sm text-outline">Pre-registro</span>
+</div>
+</td>
+<td class="py-4 px-space-md max-w-xs">
+<div class="flex items-center gap-1.5 text-on-surface-variant font-body-sm">
+<span class="material-symbols-outlined text-[16px] text-amber-400 shrink-0">visibility</span>
+<span>Monitoreo preventivo: rastreo de expectativas en LLMs ante consultas sobre gestión de personal laboral.</span>
+</div>
+</td>
+<td class="py-4 px-space-md text-center">
+<div class="inline-flex flex-col items-center">
+<span class="font-label-md text-label-md text-outline">18%</span>
+<span class="font-label-sm text-outline">Emergente</span>
+</div>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="bg-surface-container-highest px-2 py-0.5 rounded-full font-label-sm text-on-surface-variant">
+                  Neutro (Pre-launch)
+                </span>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="font-label-md text-label-md text-outline">N/A</span>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="bg-surface-container px-2 py-0.5 rounded font-label-sm text-on-surface-variant">Factorial</span>
+<span class="bg-surface-container px-2 py-0.5 rounded font-label-sm text-on-surface-variant">Sesame</span>
+</div>
+</td>
+<td class="py-4 px-space-lg text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1.5 text-outline hover:text-primary transition-colors rounded hover:bg-surface-container" title="Configurar rastreo beta" type="button">
+<span class="material-symbols-outlined text-[18px]">settings_suggest</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-space-lg">
+<div class="lg:col-span-2 bg-surface-container-low p-space-lg rounded-xl flex flex-col gap-space-md shadow-md">
+<div class="flex items-center justify-between">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">smart_toy</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">
+                Análisis de Discrepancias de Precios y Features en LLMs
+              </h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Auditoría multimodelo sobre la interpretación de planes, costes reales e integraciones de Contalia.
+            </p>
+</div>
+<span class="font-label-sm text-tertiary bg-surface-container px-2.5 py-1 rounded-full flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Coherencia 98.2%
+          </span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-sm pt-space-xs">
+<div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span> ChatGPT-4o
+              </span>
+<span class="material-symbols-outlined text-tertiary text-[18px]">check_circle</span>
+</div>
+<p class="font-body-sm text-on-surface-variant text-[11px] leading-relaxed">
+              Cita plan autónomo a 15€/mes exacto. Reconoce compatibilidad nativa con TicketBAI (Araba, Bizkaia, Gipuzkoa).
+            </p>
+<div class="mt-auto pt-2 flex items-center justify-between text-outline font-label-sm">
+<span>Error rate: 0.0%</span>
+<span class="text-tertiary">100% verificado</span>
+</div>
+</div>
+<div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span> Claude 3.5 Sonnet
+              </span>
+<span class="material-symbols-outlined text-tertiary text-[18px]">check_circle</span>
+</div>
+<p class="font-body-sm text-on-surface-variant text-[11px] leading-relaxed">
+              Atribuye correctamente multicartera en Plan Gestoría (49€/mes). Ningún falso positivo sobre módulos extra obligatorios.
+            </p>
+<div class="mt-auto pt-2 flex items-center justify-between text-outline font-label-sm">
+<span>Error rate: 0.4%</span>
+<span class="text-tertiary">Resuelto</span>
+</div>
+</div>
+<div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary"></span> Perplexity Pro
+              </span>
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+</div>
+<p class="font-body-sm text-on-surface-variant text-[11px] leading-relaxed">
+              Enlaces directos a contalia.com/precios. 0 menciones a comisiones de intermediación bancaria.
+            </p>
+<div class="mt-auto pt-2 flex items-center justify-between text-outline font-label-sm">
+<span>Error rate: 0.0%</span>
+<span class="text-primary">Fuente directa</span>
+</div>
+</div>
+<div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-amber-400"></span> Gemini 1.5 Pro
+              </span>
+<span class="material-symbols-outlined text-amber-400 text-[18px]">info</span>
+</div>
+<p class="font-body-sm text-on-surface-variant text-[11px] leading-relaxed">
+              Asociaba erróneamente coste de setup adicional en API Sync. Regla de mitigación inyectada hace 48h.
+            </p>
+<div class="mt-auto pt-2 flex items-center justify-between text-outline font-label-sm">
+<span>Error rate: 1.4%</span>
+<span class="text-amber-400">Normalizado</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between shadow-md">
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
+              Log de Auditoría Resuelta
+            </h3>
+<span class="font-label-sm text-outline">Últimos 7 días</span>
+</div>
+<div class="space-y-3 pt-space-xs font-body-sm">
+<div class="bg-surface-container p-2.5 rounded-lg flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">check</span> Discrepancia corregida
+                </span>
+<span class="font-label-sm text-outline">Ayer · 16:40</span>
+</div>
+<p class="text-on-surface font-body-sm text-xs">
+                Perplexity reportaba límite de 100 facturas en Plan Autónomo. Verificado sin límite tras update de schema FAQ.
+              </p>
+</div>
+<div class="bg-surface-container p-2.5 rounded-lg flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">check</span> Alucinación anulada
+                </span>
+<span class="font-label-sm text-outline">3 días atrás</span>
+</div>
+<p class="text-on-surface font-body-sm text-xs">
+                ChatGPT asociaba coste de 12€ a conector bancario PSD2. Aclarado como incluido en Plan Pro.
+              </p>
+</div>
+<div class="bg-surface-container p-2.5 rounded-lg flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">published_with_changes</span> Schema desplegado
+                </span>
+<span class="font-label-sm text-outline">5 días atrás</span>
+</div>
+<p class="text-on-surface font-body-sm text-xs">
+                Marcado JSON-LD Product &amp; Offer actualizado con badges oficiales TicketBAI y Batuz.
+              </p>
+</div>
+</div>
+</div>
+<button class="w-full bg-surface-container hover:bg-surface-container-high text-primary font-headline-sm text-body-sm py-2 rounded-lg transition-colors flex items-center justify-center gap-2 mt-4" type="button">
+<span class="material-symbols-outlined text-[16px]">history</span>
+<span>Historial Completo de Mitigaciones</span>
+</button>
+</div>
+</section>
+</div>
+</div></main>
+<!-- END: MainContent -->
+</body></html>
