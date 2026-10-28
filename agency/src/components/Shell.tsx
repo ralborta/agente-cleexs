@@ -38,6 +38,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     group: 'Registro',
     items: [
       { href: '/prompts', label: 'Prompts', icon: 'chat' },
+      { href: '/corridas', label: 'Corridas', icon: 'clock' },
       { href: '/ofertas', label: 'Ofertas', icon: 'tag' },
       { href: '/buyer-personas', label: 'Buyer personas', icon: 'user' },
       { href: '/tipos-prompt', label: 'Tipos de prompt', icon: 'list' },

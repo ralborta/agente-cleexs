@@ -30,6 +30,37 @@ export type ProyectoCfg = {
   frequency: 'Diaria' | 'Semanal' | 'Quincenal' | 'Mensual';
 };
 export type PromptTag = { buyerId?: string; ofertaId?: string };
+/** Prompts propios del proyecto (máx. 3). Se suman a los auditados por Cleexs. */
+export type CustomPrompt = {
+  id: string;
+  text: string;
+  name: string;
+  tipoId: string;
+  buyerId: string;
+  ofertaId: string;
+  country: string;
+  active: boolean;
+  updatedAt: string;
+};
+export const CUSTOM_PROMPTS_MAX = 3;
+
+/** Programación de corridas (hora + día / fecha). */
+export type RunScheduleCfg = {
+  enabled: boolean;
+  /** Diaria | Semanal | Mensual | Una vez (fecha) */
+  cadence: 'Diaria' | 'Semanal' | 'Mensual' | 'Una vez';
+  /** 0=domingo … 6=sábado (para Semanal) */
+  weekdays: number[];
+  /** Día del mes 1–28 (para Mensual) */
+  dayOfMonth: number;
+  /** HH:mm 24h */
+  time: string;
+  /** YYYY-MM-DD (para Una vez, y opcional inicio) */
+  date: string;
+  timezone: string;
+  notes: string;
+};
+
 export type Regla = {
   id: string;
   name: string;
@@ -48,6 +79,8 @@ export type ProjectConfig = {
   marcas: Marca[];
   proyecto: ProyectoCfg;
   promptTags: Record<string, PromptTag>;
+  customPrompts: CustomPrompt[];
+  schedule: RunScheduleCfg;
   reglas: Regla[];
 };
 
@@ -72,6 +105,17 @@ export const SEED_TIPOS: Tipo[] = [
   { id: 'tipo-comparativa', name: 'Comparativa', description: 'Comparación directa contra competidores.' },
 ];
 
+export const DEFAULT_SCHEDULE: RunScheduleCfg = {
+  enabled: false,
+  cadence: 'Semanal',
+  weekdays: [1], // lunes
+  dayOfMonth: 1,
+  time: '09:00',
+  date: '',
+  timezone: 'America/Argentina/Buenos_Aires',
+  notes: '',
+};
+
 export function emptyConfig(name = '', domain = ''): ProjectConfig {
   return {
     ofertas: [],
@@ -80,6 +124,8 @@ export function emptyConfig(name = '', domain = ''): ProjectConfig {
     marcas: [],
     proyecto: { name, domain, country: '', industry: '', description: '', frequency: 'Semanal' },
     promptTags: {},
+    customPrompts: [],
+    schedule: { ...DEFAULT_SCHEDULE },
     reglas: [],
   };
 }
@@ -259,14 +305,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const config = useMemo<ProjectConfig>(() => {
     const c = configs[activeProjectId];
-    return { ...emptyConfig(projectName, projectDomain), ...c };
+    const base = emptyConfig(projectName, projectDomain);
+    if (!c) return base;
+    return {
+      ...base,
+      ...c,
+      customPrompts: Array.isArray(c.customPrompts) ? c.customPrompts.slice(0, CUSTOM_PROMPTS_MAX) : [],
+      schedule: { ...DEFAULT_SCHEDULE, ...(c.schedule ?? {}) },
+      tipos: c.tipos?.length ? c.tipos : base.tipos,
+    };
   }, [configs, activeProjectId, projectName, projectDomain]);
 
   const updateConfig = useCallback(
     (patch: Partial<ProjectConfig>) =>
       setPersisted((p) => {
-        const base = p.configs[p.activeProjectId] ?? emptyConfig();
-        return { ...p, configs: { ...p.configs, [p.activeProjectId]: { ...base, ...patch } } };
+        const base = { ...emptyConfig(), ...(p.configs[p.activeProjectId] ?? {}) };
+        const next: ProjectConfig = { ...base, ...patch };
+        if (patch.customPrompts) {
+          next.customPrompts = patch.customPrompts.slice(0, CUSTOM_PROMPTS_MAX);
+        }
+        return { ...p, configs: { ...p.configs, [p.activeProjectId]: next } };
       }),
     [],
   );
