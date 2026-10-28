@@ -155,7 +155,7 @@ export default function Page() {
   return (
     <>
       <PageHeader
-        eyebrow="Registro · Corridas"
+        eyebrow="Setup · Corridas"
         title="Configuración de corridas"
         badge={<ConfigBadge label="Cleexs · hora · día · fecha" />}
         subtitle={`Definí cuándo Cleexs debe medir a ${projectName}. La frecuencia se guarda en Cleexs; hora/día orientan al especialista y al cron.`}

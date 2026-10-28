@@ -33,12 +33,17 @@ const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/geo/resultado', label: 'Resultado 48 h', icon: 'history' },
     ],
   },
-  { group: 'Setup', items: [{ href: '/nuevo-proyecto', label: 'Nuevo proyecto', icon: 'plus' }] },
+  {
+    group: 'Setup',
+    items: [
+      { href: '/nuevo-proyecto', label: 'Nuevo proyecto', icon: 'plus' },
+      { href: '/corridas', label: 'Corridas', icon: 'clock' },
+    ],
+  },
   {
     group: 'Registro',
     items: [
       { href: '/prompts', label: 'Prompts', icon: 'chat' },
-      { href: '/corridas', label: 'Corridas', icon: 'clock' },
       { href: '/ofertas', label: 'Ofertas', icon: 'tag' },
       { href: '/buyer-personas', label: 'Buyer personas', icon: 'user' },
       { href: '/tipos-prompt', label: 'Tipos de prompt', icon: 'list' },
