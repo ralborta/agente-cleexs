@@ -30,9 +30,13 @@ export type ProyectoCfg = {
   frequency: 'Diaria' | 'Semanal' | 'Quincenal' | 'Mensual';
 };
 export type PromptTag = { buyerId?: string; ofertaId?: string };
-/** Prompts propios del proyecto (máx. 3). Se suman a los auditados por Cleexs. */
+/** Prompts propios del proyecto (máx. 3). Persistidos en Cleexs (slots portal). */
 export type CustomPrompt = {
   id: string;
+  /** UUID Cleexs BrandPortalSavedPrompt (si ya está sincronizado) */
+  cleexsId?: string | null;
+  /** Slot Cleexs 0..2 */
+  slot?: number;
   text: string;
   name: string;
   tipoId: string;
@@ -41,14 +45,16 @@ export type CustomPrompt = {
   country: string;
   active: boolean;
   updatedAt: string;
+  lastExecutedAt?: string | null;
+  resultsCount?: number;
 };
 export const CUSTOM_PROMPTS_MAX = 3;
 
-/** Programación de corridas (hora + día / fecha). */
+/** Programación de corridas (hora + día / fecha). Frecuencia se sincroniza a Cleexs. */
 export type RunScheduleCfg = {
   enabled: boolean;
-  /** Diaria | Semanal | Mensual | Una vez (fecha) */
-  cadence: 'Diaria' | 'Semanal' | 'Mensual' | 'Una vez';
+  /** Diaria | Semanal | Quincenal | Mensual | Una vez (fecha) */
+  cadence: 'Diaria' | 'Semanal' | 'Quincenal' | 'Mensual' | 'Una vez';
   /** 0=domingo … 6=sábado (para Semanal) */
   weekdays: number[];
   /** Día del mes 1–28 (para Mensual) */

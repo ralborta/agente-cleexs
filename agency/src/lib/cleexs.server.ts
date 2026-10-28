@@ -225,3 +225,237 @@ export async function buildSnapshot(): Promise<AgencySnapshot> {
     warnings,
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Portal auth + prompts propios + schedule (resultados reales)        */
+/* ------------------------------------------------------------------ */
+
+type PortalTokenCache = { token: string; exp: number };
+let portalTokenCache: PortalTokenCache | null = null;
+
+async function cleexsFetch<T>(
+  path: string,
+  init: RequestInit & { headers?: Record<string, string> } = {},
+): Promise<T> {
+  const res = await fetch(`${cleexsApiUrl()}${path}`, {
+    ...init,
+    headers: { accept: 'application/json', ...(init.headers || {}) },
+    cache: 'no-store',
+  });
+  const text = await res.text();
+  let body: unknown = null;
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = { raw: text };
+  }
+  if (!res.ok) {
+    const errMsg =
+      body && typeof body === 'object' && body !== null && 'error' in body
+        ? String((body as { error: unknown }).error)
+        : `Cleexs API ${res.status} en ${path}`;
+    throw new Error(errMsg);
+  }
+  return body as T;
+}
+
+export async function getPortalToken(): Promise<string> {
+  const email = (process.env.CLEEXS_PORTAL_EMAIL || '').trim();
+  const password = (process.env.CLEEXS_PORTAL_PASSWORD || '').trim();
+  if (!email || !password) {
+    throw new Error(
+      'Faltan CLEEXS_PORTAL_EMAIL / CLEEXS_PORTAL_PASSWORD en el servicio agency (EasyPanel).',
+    );
+  }
+  const now = Date.now();
+  if (portalTokenCache && portalTokenCache.exp > now + 60_000) return portalTokenCache.token;
+
+  const data = await cleexsFetch<{ token: string; expiresInSeconds?: number }>('/api/auth/portal/login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!data.token) throw new Error('Login portal Cleexs sin token');
+  const ttlMs = Math.max(60, Number(data.expiresInSeconds || 3600) - 120) * 1000;
+  portalTokenCache = { token: data.token, exp: now + ttlMs };
+  return data.token;
+}
+
+export type CleexsSavedSlot = {
+  slot: number;
+  id: string | null;
+  title: string;
+  promptText: string;
+  updatedAt: string | null;
+  lastExecutedAt: string | null;
+  resultsCount: number;
+};
+
+export type CleexsWeeklyPrompts = {
+  brandId: string;
+  runSchedule: 'semanal' | 'quincenal' | 'mensual' | null;
+  selectedWeeklyPortalPromptId: string | null;
+  maxSlots: number;
+  slots: CleexsSavedSlot[];
+};
+
+export async function listWeeklyPrompts(): Promise<CleexsWeeklyPrompts> {
+  const token = await getPortalToken();
+  const brandId = cleexsBrandId();
+  return cleexsFetch(`/api/portal/brands/${brandId}/weekly-prompts`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function upsertWeeklyPrompt(slot: number, promptText: string) {
+  const token = await getPortalToken();
+  const brandId = cleexsBrandId();
+  return cleexsFetch<{ ok: boolean; slot: number; id: string; title: string; promptText: string }>(
+    `/api/portal/brands/${brandId}/weekly-prompts/${slot}`,
+    {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ promptText }),
+    },
+  );
+}
+
+export async function deleteWeeklyPrompt(slot: number) {
+  const token = await getPortalToken();
+  const brandId = cleexsBrandId();
+  const res = await fetch(`${cleexsApiUrl()}/api/portal/brands/${brandId}/weekly-prompts/${slot}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}`, accept: 'application/json' },
+    cache: 'no-store',
+  });
+  if (!res.ok && res.status !== 204) {
+    const t = await res.text();
+    throw new Error(t || `Cleexs DELETE ${res.status}`);
+  }
+}
+
+export async function selectWeeklyPrompt(savedPromptId: string | null) {
+  const token = await getPortalToken();
+  const brandId = cleexsBrandId();
+  return cleexsFetch(`/api/portal/brands/${brandId}/weekly-prompts/selection`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ savedPromptId }),
+  });
+}
+
+export type CleexsPromptExecution = {
+  ok?: boolean;
+  executionId?: string;
+  createdAt?: string;
+  responseText: string;
+  analysis: unknown;
+  totalTokens?: number;
+  savedPrompt?: { id: string; slot: number; title: string; promptText: string };
+  error?: string;
+};
+
+export async function executeWeeklyPrompt(savedPromptId: string): Promise<CleexsPromptExecution> {
+  const token = await getPortalToken();
+  const brandId = cleexsBrandId();
+  return cleexsFetch(`/api/portal/brands/${brandId}/weekly-prompts/${savedPromptId}/execute`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+}
+
+export async function listWeeklyPromptResults(savedPromptId?: string) {
+  const token = await getPortalToken();
+  const brandId = cleexsBrandId();
+  const path = savedPromptId
+    ? `/api/portal/brands/${brandId}/weekly-prompts/${savedPromptId}/results`
+    : `/api/portal/brands/${brandId}/weekly-prompts/results`;
+  return cleexsFetch(path, { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export type CleexsRunSchedule = 'semanal' | 'quincenal' | 'mensual' | null;
+
+export async function getBrandRunSchedule(): Promise<{
+  brandId: string;
+  name: string;
+  runSchedule: CleexsRunSchedule;
+}> {
+  const brandId = cleexsBrandId();
+  const brand = await cleexsFetch<any>(`/api/brands/${brandId}`);
+  return {
+    brandId: brand.id,
+    name: brand.name,
+    runSchedule: (brand.runSchedule as CleexsRunSchedule) ?? null,
+  };
+}
+
+export async function setBrandRunSchedule(runSchedule: CleexsRunSchedule): Promise<{
+  id: string;
+  name: string;
+  runSchedule: CleexsRunSchedule;
+}> {
+  const brandId = cleexsBrandId();
+  const brand = await cleexsFetch<{ id: string; name: string; runSchedule?: CleexsRunSchedule }>(
+    `/api/brands/${brandId}`,
+    {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ runSchedule }),
+    },
+  );
+  return { id: brand.id, name: brand.name, runSchedule: brand.runSchedule ?? null };
+}
+
+/** Dispara una corrida real Cleexs (crea Run + execute). */
+export async function triggerCleexsRun(opts?: {
+  runType?: string;
+  weeklyPortalSavedPromptId?: string | null;
+  promptVersionId?: string;
+}): Promise<{ runId: string; status: string; runType: string }> {
+  const brandId = cleexsBrandId();
+  const brand = await cleexsFetch<any>(`/api/brands/${brandId}`);
+  const tenantId = brand.tenantId as string;
+  const now = new Date();
+  const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+  const periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59)).toISOString();
+
+  const runType = opts?.runType || (opts?.weeklyPortalSavedPromptId ? 'weekly_portal' : 'monthly');
+  const run = await cleexsFetch<any>('/api/runs', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      tenantId,
+      brandId,
+      periodStart,
+      periodEnd,
+      runType,
+      ...(opts?.weeklyPortalSavedPromptId
+        ? { weeklyPortalSavedPromptId: opts.weeklyPortalSavedPromptId }
+        : {}),
+    }),
+  });
+
+  const execBody: Record<string, unknown> = { model: 'gpt-4o-mini', force: true };
+  if (opts?.promptVersionId) execBody.promptVersionId = opts.promptVersionId;
+
+  await cleexsFetch(`/api/runs/${run.id}/execute`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(execBody),
+  });
+
+  return { runId: run.id, status: 'executing', runType };
+}
+
+/** Mapea cadencia Agency → Cleexs runSchedule. */
+export function cadenceToCleexs(
+  cadence: string,
+  enabled: boolean,
+): CleexsRunSchedule {
+  if (!enabled) return null;
+  if (cadence === 'Mensual') return 'mensual';
+  if (cadence === 'Quincenal') return 'quincenal';
+  if (cadence === 'Semanal' || cadence === 'Diaria') return 'semanal';
+  return null; // Una vez → sin cron; usar Ejecutar ahora
+}

@@ -1,6 +1,20 @@
 'use client';
 
-import { Card, CardTitle, ConfigBadge, Field, Notice, PageHeader, Pill, Select, TextArea, TextInput, Btn, Icon } from '@/components/ui';
+import { useEffect, useState } from 'react';
+import {
+  Card,
+  CardTitle,
+  ConfigBadge,
+  Field,
+  Notice,
+  PageHeader,
+  Pill,
+  Select,
+  TextArea,
+  TextInput,
+  Btn,
+  Icon,
+} from '@/components/ui';
 import { useStore, type RunScheduleCfg } from '@/lib/store';
 
 const WEEKDAYS: { value: number; label: string; short: string }[] = [
@@ -23,23 +37,62 @@ const TIMEZONES = [
   'UTC',
 ];
 
+const CADENCES: RunScheduleCfg['cadence'][] = ['Diaria', 'Semanal', 'Quincenal', 'Mensual', 'Una vez'];
+
 function summarize(s: RunScheduleCfg): string {
-  if (!s.enabled) return 'Programación pausada';
+  if (!s.enabled) return 'Programación pausada en Cleexs';
   const hora = s.time || '—';
-  if (s.cadence === 'Diaria') return `Todos los días a las ${hora} (${s.timezone})`;
+  if (s.cadence === 'Diaria') return `Preferencia diaria a las ${hora} (${s.timezone}) · Cleexs cron: semanal`;
   if (s.cadence === 'Semanal') {
     const days = WEEKDAYS.filter((d) => s.weekdays.includes(d.value)).map((d) => d.label);
-    return `${days.join(', ') || 'sin días'} a las ${hora} (${s.timezone})`;
+    return `${days.join(', ') || 'sin días'} a las ${hora} (${s.timezone}) · Cleexs: semanal`;
   }
-  if (s.cadence === 'Mensual') return `Día ${s.dayOfMonth} de cada mes a las ${hora} (${s.timezone})`;
-  return s.date ? `Una vez el ${s.date} a las ${hora} (${s.timezone})` : `Una vez · falta fecha · ${hora}`;
+  if (s.cadence === 'Quincenal') return `Cada 15 días a las ${hora} (${s.timezone}) · Cleexs: quincenal`;
+  if (s.cadence === 'Mensual') return `Día ${s.dayOfMonth} de cada mes a las ${hora} (${s.timezone}) · Cleexs: mensual`;
+  return s.date ? `Una vez el ${s.date} a las ${hora} · sin cron Cleexs (usar Ejecutar ahora)` : `Una vez · falta fecha`;
 }
 
+type RunNowResult = {
+  mode: string;
+  results?: Array<{
+    title?: string;
+    responseText?: string;
+    analysis?: unknown;
+    executionId?: string;
+  }>;
+  runId?: string;
+};
+
 export default function Page() {
-  const { config, updateConfig, projectName, config: cfg } = useStore();
+  const { config, updateConfig, projectName } = useStore();
   const s = config.schedule;
   const set = (patch: Partial<RunScheduleCfg>) => updateConfig({ schedule: { ...s, ...patch } });
-  const customActive = (cfg.customPrompts ?? []).filter((p) => p.active).length;
+  const customActive = (config.customPrompts ?? []).filter((p) => p.active && p.text.trim()).length;
+
+  const [cleexsSchedule, setCleexsSchedule] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [okMsg, setOkMsg] = useState<string | null>(null);
+  const [runResult, setRunResult] = useState<RunNowResult | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/cleexs/schedule', { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.error);
+        setCleexsSchedule(data.runSchedule);
+        if (data.runSchedule === 'mensual') set({ enabled: true, cadence: 'Mensual' });
+        else if (data.runSchedule === 'quincenal') set({ enabled: true, cadence: 'Quincenal' });
+        else if (data.runSchedule === 'semanal') set({ enabled: true, cadence: 'Semanal' });
+        else if (data.runSchedule == null) set({ enabled: false });
+      } catch (e) {
+        setError((e as Error).message);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleDay = (day: number) => {
     const has = s.weekdays.includes(day);
@@ -47,18 +100,80 @@ export default function Page() {
     set({ weekdays });
   };
 
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    setOkMsg(null);
+    try {
+      updateConfig({ schedule: { ...s } });
+      const res = await fetch('/api/cleexs/schedule', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ enabled: s.enabled, cadence: s.cadence }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || data.error || 'Error al guardar');
+      setCleexsSchedule(data.runSchedule);
+      setOkMsg(
+        data.runSchedule
+          ? `Guardado en Cleexs: ${data.runSchedule}`
+          : 'Programación Cleexs pausada (sin cron).',
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const runNow = async () => {
+    setRunning(true);
+    setError(null);
+    setOkMsg(null);
+    setRunResult(null);
+    try {
+      const res = await fetch('/api/cleexs/run-now', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ customOnly: customActive > 0 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || data.error || 'Error al ejecutar');
+      setRunResult(data);
+      setOkMsg(
+        data.mode === 'custom'
+          ? `Medidos ${data.count} prompts propios en Cleexs (IA real).`
+          : `Corrida Cleexs disparada (${data.mode}${data.runId ? ` · ${data.runId}` : ''}).`,
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRunning(false);
+    }
+  };
+
   return (
     <>
       <PageHeader
         eyebrow="Registro · Corridas"
         title="Configuración de corridas"
-        badge={<ConfigBadge label="hora · día · fecha" />}
-        subtitle={`Definí cuándo Cleexs Agency debe medir a ${projectName}: por hora, día de la semana, día del mes o una fecha puntual.`}
+        badge={<ConfigBadge label="Cleexs · hora · día · fecha" />}
+        subtitle={`Definí cuándo Cleexs debe medir a ${projectName}. La frecuencia se guarda en Cleexs; hora/día orientan al especialista y al cron.`}
       />
+
+      {error && <Notice tone="red">{error}</Notice>}
+      {okMsg && <Notice tone="cyan">{okMsg}</Notice>}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
         <Card className="lg:col-span-2">
-          <CardTitle right={<Pill tone={s.enabled ? 'green' : 'slate'}>{s.enabled ? 'Activa' : 'Pausada'}</Pill>}>
+          <CardTitle
+            right={
+              <Pill tone={s.enabled ? 'green' : 'slate'}>
+                {s.enabled ? 'Activa' : 'Pausada'}
+                {cleexsSchedule ? ` · Cleexs:${cleexsSchedule}` : ''}
+              </Pill>
+            }
+          >
             Programación
           </CardTitle>
 
@@ -69,7 +184,7 @@ export default function Page() {
               onChange={(e) => set({ enabled: e.target.checked })}
               className="h-4 w-4 rounded border-line accent-cyan-500"
             />
-            <span className="text-sm text-fg">Activar corridas programadas</span>
+            <span className="text-sm text-fg">Activar corridas programadas en Cleexs</span>
           </label>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -79,7 +194,7 @@ export default function Page() {
                 onChange={(e) => set({ cadence: e.target.value as RunScheduleCfg['cadence'] })}
                 disabled={!s.enabled}
               >
-                {(['Diaria', 'Semanal', 'Mensual', 'Una vez'] as const).map((c) => (
+                {CADENCES.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
@@ -87,7 +202,7 @@ export default function Page() {
               </Select>
             </Field>
 
-            <Field label="Hora" hint="Formato 24 h">
+            <Field label="Hora" hint="Formato 24 h (referencia operativa)">
               <TextInput
                 type="time"
                 value={s.time}
@@ -164,11 +279,15 @@ export default function Page() {
             </Field>
           </div>
 
-          <div className="mt-4 flex items-center gap-2">
-            <Btn type="button" onClick={() => updateConfig({ schedule: { ...s } })}>
-              <Icon name="check" className="w-3.5 h-3.5" /> Guardar programación
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Btn type="button" onClick={save} disabled={saving || running}>
+              <Icon name="check" className="w-3.5 h-3.5" />
+              {saving ? 'Guardando…' : 'Guardar en Cleexs'}
             </Btn>
-            <span className="text-[11px] text-dim">Se guarda en este navegador / proyecto</span>
+            <Btn type="button" onClick={runNow} disabled={running || saving}>
+              <Icon name="sparkle" className="w-3.5 h-3.5" />
+              {running ? 'Midiendo…' : 'Ejecutar ahora'}
+            </Btn>
           </div>
         </Card>
 
@@ -178,11 +297,11 @@ export default function Page() {
             <p className="text-sm text-fg leading-relaxed">{summarize(s)}</p>
             <div className="mt-4 space-y-2 text-xs">
               <div className="flex justify-between border-b border-line/70 py-2">
-                <span className="text-dim">Estado</span>
-                <span className="text-fg">{s.enabled ? 'Activa' : 'Pausada'}</span>
+                <span className="text-dim">Cleexs runSchedule</span>
+                <span className="text-fg">{cleexsSchedule ?? '—'}</span>
               </div>
               <div className="flex justify-between border-b border-line/70 py-2">
-                <span className="text-dim">Cadencia</span>
+                <span className="text-dim">Cadencia UI</span>
                 <span className="text-fg">{s.cadence}</span>
               </div>
               <div className="flex justify-between border-b border-line/70 py-2">
@@ -197,11 +316,33 @@ export default function Page() {
           </Card>
 
           <Notice tone="cyan">
-            Esta pantalla define cuándo medir. Los prompts propios (hasta 3) se cargan en Prompts. La ejecución
-            automática en Cleexs se conecta con esta programación en el siguiente paso operativo.
+            Guardar escribe la frecuencia en Cleexs (semanal / quincenal / mensual). Ejecutar ahora mide con IA real los
+            prompts propios (o dispara una corrida Cleexs si no hay propios).
           </Notice>
         </div>
       </div>
+
+      {runResult?.results && runResult.results.length > 0 && (
+        <div className="space-y-4 mb-8">
+          <h3 className="text-sm font-semibold text-fg">Resultados de esta ejecución</h3>
+          {runResult.results.map((r, i) => (
+            <Card key={r.executionId || i} className="p-4">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-accent-teal mb-2">
+                {r.title || `Prompt ${i + 1}`}
+              </div>
+              {typeof r.analysis === 'object' &&
+              r.analysis !== null &&
+              'resumen' in r.analysis &&
+              typeof (r.analysis as { resumen?: unknown }).resumen === 'string' ? (
+                <p className="text-sm text-fg mb-2">{(r.analysis as { resumen: string }).resumen}</p>
+              ) : null}
+              <div className="text-xs text-muted whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+                {r.responseText}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </>
   );
 }

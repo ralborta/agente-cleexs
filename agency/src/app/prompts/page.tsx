@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   Btn,
   Card,
@@ -31,8 +31,18 @@ import {
 
 type View = 'todos' | 'dentro' | 'fuera';
 
-function blankCustom(): Omit<CustomPrompt, 'id' | 'updatedAt'> {
+type MeasureResult = {
+  savedPromptId: string;
+  responseText: string;
+  analysis: unknown;
+  executionId?: string;
+};
+
+function blankCustom(slot: number): CustomPrompt {
   return {
+    id: uid('cprompt'),
+    cleexsId: null,
+    slot,
     text: '',
     name: '',
     tipoId: '',
@@ -40,7 +50,16 @@ function blankCustom(): Omit<CustomPrompt, 'id' | 'updatedAt'> {
     ofertaId: '',
     country: '',
     active: true,
+    updatedAt: new Date().toISOString(),
   };
+}
+
+function analysisSummary(analysis: unknown): string {
+  if (!analysis || typeof analysis !== 'object') return '';
+  const a = analysis as Record<string, unknown>;
+  if (typeof a.resumen === 'string') return a.resumen;
+  if (typeof a.summary === 'string') return a.summary;
+  return '';
 }
 
 function CustomPromptsPanel() {
@@ -48,20 +67,107 @@ function CustomPromptsPanel() {
   const items = config.customPrompts ?? [];
   const [editing, setEditing] = useState<CustomPrompt | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [measuringId, setMeasuringId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [lastResult, setLastResult] = useState<MeasureResult | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const canAdd = items.length < CUSTOM_PROMPTS_MAX;
+
+  const mergeFromCleexs = (prompts: Array<{
+    slot: number;
+    id: string | null;
+    title: string;
+    promptText: string;
+    updatedAt: string | null;
+    lastExecutedAt: string | null;
+    resultsCount: number;
+  }>) => {
+    const prev = config.customPrompts ?? [];
+    const next: CustomPrompt[] = prompts.map((p) => {
+      const old = prev.find((x) => x.cleexsId === p.id || x.slot === p.slot);
+      return {
+        id: old?.id || uid('cprompt'),
+        cleexsId: p.id,
+        slot: p.slot,
+        text: p.promptText,
+        name: old?.name || p.title || p.promptText.slice(0, 60),
+        tipoId: old?.tipoId || '',
+        buyerId: old?.buyerId || '',
+        ofertaId: old?.ofertaId || '',
+        country: old?.country || '',
+        active: old?.active ?? true,
+        updatedAt: p.updatedAt || new Date().toISOString(),
+        lastExecutedAt: p.lastExecutedAt,
+        resultsCount: p.resultsCount,
+      };
+    });
+    updateConfig({ customPrompts: next.slice(0, CUSTOM_PROMPTS_MAX) });
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/cleexs/custom-prompts', { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.error || 'Error al cargar');
+        if (!cancelled) {
+          mergeFromCleexs(data.prompts || []);
+          setLoaded(true);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError((e as Error).message);
+          setLoaded(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const persistAll = async (next: CustomPrompt[]) => {
+    setSyncing(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/cleexs/custom-prompts', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          prompts: next.map((p, i) => ({
+            slot: typeof p.slot === 'number' ? p.slot : i,
+            promptText: p.active ? p.text : '',
+            select: i === 0,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || data.error || 'Error al guardar');
+      mergeFromCleexs(data.prompts || []);
+    } catch (e) {
+      setError((e as Error).message);
+      throw e;
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const startNew = () => {
     if (!canAdd) return;
+    const used = new Set(items.map((x) => x.slot).filter((s) => typeof s === 'number'));
+    let slot = 0;
+    while (used.has(slot) && slot < CUSTOM_PROMPTS_MAX) slot += 1;
     setEditing({
-      ...blankCustom(),
-      id: uid('cprompt'),
-      updatedAt: new Date().toISOString(),
+      ...blankCustom(slot),
       tipoId: config.tipos[0]?.id ?? '',
     });
     setIsNew(true);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!editing) return;
     const text = editing.text.trim();
     if (!text) return;
@@ -73,16 +179,59 @@ function CustomPromptsPanel() {
     };
     const next = isNew ? [...items, row] : items.map((x) => (x.id === row.id ? row : x));
     updateConfig({ customPrompts: next.slice(0, CUSTOM_PROMPTS_MAX) });
-    setEditing(null);
-    setIsNew(false);
+    try {
+      await persistAll(next.slice(0, CUSTOM_PROMPTS_MAX));
+      setEditing(null);
+      setIsNew(false);
+    } catch {
+      /* error ya seteado */
+    }
   };
 
-  const remove = (id: string) => {
-    if (!confirm('¿Eliminar este prompt?')) return;
-    updateConfig({ customPrompts: items.filter((x) => x.id !== id) });
+  const remove = async (id: string) => {
+    if (!confirm('¿Eliminar este prompt de Cleexs?')) return;
+    const next = items.filter((x) => x.id !== id);
+    updateConfig({ customPrompts: next });
+    try {
+      await persistAll(next);
+    } catch {
+      /* error ya seteado */
+    }
     if (editing?.id === id) {
       setEditing(null);
       setIsNew(false);
+    }
+  };
+
+  const measure = async (p: CustomPrompt) => {
+    setMeasuringId(p.id);
+    setError(null);
+    setLastResult(null);
+    try {
+      const res = await fetch('/api/cleexs/custom-prompts/execute', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(
+          p.cleexsId
+            ? { savedPromptId: p.cleexsId }
+            : { slot: p.slot ?? 0, promptText: p.text },
+        ),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || data.error || 'Error al medir');
+      setLastResult({
+        savedPromptId: data.savedPromptId,
+        responseText: data.responseText,
+        analysis: data.analysis,
+        executionId: data.executionId,
+      });
+      const refreshed = await fetch('/api/cleexs/custom-prompts', { cache: 'no-store' });
+      const list = await refreshed.json();
+      if (refreshed.ok) mergeFromCleexs(list.prompts || []);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setMeasuringId(null);
     }
   };
 
@@ -94,17 +243,21 @@ function CustomPromptsPanel() {
         <div>
           <h3 className="text-fg font-semibold text-sm flex items-center gap-2">
             Prompts propios
-            <ConfigBadge label={`máx. ${CUSTOM_PROMPTS_MAX}`} />
+            <ConfigBadge label={`máx. ${CUSTOM_PROMPTS_MAX} · Cleexs`} />
           </h3>
           <p className="text-xs text-muted mt-1 max-w-2xl">
-            Podés sumar hasta {CUSTOM_PROMPTS_MAX} prompts adicionales y editarlos. Se usan para armar las próximas corridas junto a los prompts que Cleexs ya midió.
+            Hasta {CUSTOM_PROMPTS_MAX} prompts editables, guardados en Cleexs. Podés medirlos ya: la IA responde y el análisis queda en el historial real.
           </p>
         </div>
-        <Btn type="button" onClick={startNew} disabled={!canAdd || !!editing}>
+        <Btn type="button" onClick={startNew} disabled={!canAdd || !!editing || syncing}>
           <Icon name="plus" className="w-3.5 h-3.5" />
           Agregar prompt ({items.length}/{CUSTOM_PROMPTS_MAX})
         </Btn>
       </div>
+
+      {error && <Notice tone="red">{error}</Notice>}
+      {!loaded && <p className="text-xs text-dim mb-3">Sincronizando con Cleexs…</p>}
+      {syncing && <p className="text-xs text-accent-cyan mb-3">Guardando en Cleexs…</p>}
 
       {!canAdd && !editing && (
         <Notice tone="amber">
@@ -181,8 +334,8 @@ function CustomPromptsPanel() {
             Activo para próximas corridas
           </label>
           <div className="flex gap-2">
-            <Btn type="button" onClick={save} disabled={!editing.text.trim()}>
-              <Icon name="check" className="w-3.5 h-3.5" /> Guardar
+            <Btn type="button" onClick={save} disabled={!editing.text.trim() || syncing}>
+              <Icon name="check" className="w-3.5 h-3.5" /> Guardar en Cleexs
             </Btn>
             <GhostBtn
               type="button"
@@ -201,7 +354,7 @@ function CustomPromptsPanel() {
         <EmptyState
           icon="chat"
           title="Todavía no hay prompts propios"
-          body={`Podés agregar hasta ${CUSTOM_PROMPTS_MAX}. Los de Cleexs siguen en la tabla de abajo.`}
+          body={`Podés agregar hasta ${CUSTOM_PROMPTS_MAX}. Se guardan y miden en Cleexs (resultados reales).`}
         />
       ) : (
         <Table head={['Prompt', 'Tipo', 'Buyer · Oferta', 'Estado', '']}>
@@ -210,7 +363,11 @@ function CustomPromptsPanel() {
               <td className="py-3 pr-4 max-w-md">
                 <div className="text-fg font-medium">{p.name || 'Sin nombre'}</div>
                 <div className="text-[11px] text-dim mt-1 line-clamp-2 whitespace-pre-wrap">{p.text}</div>
-                <div className="text-[10px] text-dim mt-1">Actualizado {fmtDate(p.updatedAt, true)}</div>
+                <div className="text-[10px] text-dim mt-1">
+                  Slot {(p.slot ?? 0) + 1}
+                  {p.lastExecutedAt ? ` · medido ${fmtDate(p.lastExecutedAt, true)}` : ''}
+                  {typeof p.resultsCount === 'number' ? ` · ${p.resultsCount} resultados` : ''}
+                </div>
               </td>
               <td className="py-3 pr-3">
                 <Pill tone="purple">{tipoName(p.tipoId)}</Pill>
@@ -221,22 +378,30 @@ function CustomPromptsPanel() {
                 <div>{config.ofertas.find((o) => o.id === p.ofertaId)?.name ?? '—'}</div>
               </td>
               <td className="py-3 pr-3">
-                {p.active ? <Pill tone="green">Activo</Pill> : <Pill tone="slate">Pausado</Pill>}
+                {p.cleexsId ? <Pill tone="green">En Cleexs</Pill> : <Pill tone="amber">Local</Pill>}
               </td>
               <td className="py-3 whitespace-nowrap">
                 <div className="flex gap-1">
+                  <GhostBtn
+                    type="button"
+                    onClick={() => measure(p)}
+                    disabled={!!measuringId || !!editing || !p.text.trim()}
+                    title="Medir ahora (IA real)"
+                  >
+                    <Icon name={measuringId === p.id ? 'clock' : 'sparkle'} className="w-3.5 h-3.5" />
+                  </GhostBtn>
                   <GhostBtn
                     type="button"
                     onClick={() => {
                       setEditing(p);
                       setIsNew(false);
                     }}
-                    disabled={!!editing}
+                    disabled={!!editing || !!measuringId}
                     title="Editar"
                   >
                     <Icon name="edit" className="w-3.5 h-3.5" />
                   </GhostBtn>
-                  <GhostBtn type="button" onClick={() => remove(p.id)} title="Eliminar">
+                  <GhostBtn type="button" onClick={() => remove(p.id)} disabled={!!measuringId} title="Eliminar">
                     <Icon name="trash" className="w-3.5 h-3.5" />
                   </GhostBtn>
                 </div>
@@ -244,6 +409,22 @@ function CustomPromptsPanel() {
             </tr>
           ))}
         </Table>
+      )}
+
+      {measuringId && (
+        <Notice tone="cyan">Midiendo en Cleexs con IA real… puede tardar unos segundos.</Notice>
+      )}
+
+      {lastResult && (
+        <div className="mt-4 rounded-xl border border-line bg-surface2/60 p-4 space-y-2">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-accent-teal">Resultado real Cleexs</div>
+          {analysisSummary(lastResult.analysis) && (
+            <p className="text-sm text-fg leading-relaxed">{analysisSummary(lastResult.analysis)}</p>
+          )}
+          <div className="text-xs text-muted whitespace-pre-wrap leading-relaxed max-h-56 overflow-y-auto">
+            {lastResult.responseText}
+          </div>
+        </div>
       )}
     </Card>
   );
