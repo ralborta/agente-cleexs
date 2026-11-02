@@ -436,6 +436,9 @@ function AuditedPrompts({ d }: { d: FilteredData }) {
   const [view, setView] = useState<View>('todos');
   const [q, setQ] = useState('');
   const [open, setOpen] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ promptId: string; text: string; name: string } | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
   const modelLabel = (m: string | null) => snap.llms.find((l) => l.model === m)?.label ?? m ?? '—';
   const list = useMemo(
@@ -459,6 +462,67 @@ function AuditedPrompts({ d }: { d: FilteredData }) {
   const setTag = (promptId: string, patch: { buyerId?: string; ofertaId?: string }) =>
     updateConfig({ promptTags: { ...config.promptTags, [promptId]: { ...config.promptTags[promptId], ...patch } } });
 
+  const setOverride = (promptId: string, patch: { text?: string; name?: string; hidden?: boolean }) => {
+    updateConfig({
+      promptOverrides: {
+        ...config.promptOverrides,
+        [promptId]: {
+          ...config.promptOverrides[promptId],
+          ...patch,
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    const text = editing.text.trim();
+    if (!text) return;
+    setBusyId(editing.promptId);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/cleexs/prompts/${editing.promptId}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          promptText: text,
+          name: editing.name.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || data.error || 'Error al guardar');
+      setOverride(editing.promptId, { text, name: editing.name.trim() || undefined });
+      setEditing(null);
+    } catch (e) {
+      // Igual aplicamos override local para que el listado se actualice ya
+      setOverride(editing.promptId, { text, name: editing.name.trim() || undefined });
+      setErr(`${(e as Error).message} · cambio aplicado en Agency; Cleexs puede requerir redeploy.`);
+      setEditing(null);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const removePrompt = async (promptId: string) => {
+    if (!confirm('¿Quitar este prompt del listado? Se desactiva en Cleexs para próximas corridas (el historial se conserva).')) {
+      return;
+    }
+    setBusyId(promptId);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/cleexs/prompts/${promptId}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || data.error || 'Error al borrar');
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setOverride(promptId, { hidden: true });
+      setBusyId(null);
+      if (editing?.promptId === promptId) setEditing(null);
+    }
+  };
+
   return (
     <>
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -468,11 +532,15 @@ function AuditedPrompts({ d }: { d: FilteredData }) {
         <StatCard label="Fuera del Top 3" value={prompts.length - inTop3} tone="amber" sub="Oportunidades de mejora" />
       </section>
 
+      {err && <Notice tone="amber">{err}</Notice>}
+
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <h3 className="text-fg font-semibold text-sm">Prompts auditados por Cleexs</h3>
-            <p className="text-xs text-muted mt-0.5">Corrida {fmtDate(latest.createdAt, true)} · solo lectura (resultados reales)</p>
+            <h3 className="text-fg font-semibold text-sm">Prompts corridos (auditados Cleexs)</h3>
+            <p className="text-xs text-muted mt-0.5">
+              Corrida {fmtDate(latest.createdAt, true)} · editable: cambiar texto, editar o borrar del listado
+            </p>
           </div>
           <Tabs<View>
             tabs={[
@@ -489,6 +557,26 @@ function AuditedPrompts({ d }: { d: FilteredData }) {
           <TextInput className="pl-8" placeholder="Buscar por texto o tipo…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
 
+        {editing && (
+          <div className="rounded-xl border border-accent-cyan/30 bg-accent-cyan/5 p-4 mb-4 space-y-3">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-accent-cyan">Editar prompt corrido</div>
+            <Field label="Nombre corto">
+              <TextInput value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+            </Field>
+            <Field label="Texto del prompt">
+              <TextArea rows={6} value={editing.text} onChange={(e) => setEditing({ ...editing, text: e.target.value })} />
+            </Field>
+            <div className="flex gap-2">
+              <Btn type="button" onClick={saveEdit} disabled={!editing.text.trim() || busyId === editing.promptId}>
+                <Icon name="check" className="w-3.5 h-3.5" /> Guardar cambios
+              </Btn>
+              <GhostBtn type="button" onClick={() => setEditing(null)}>
+                Cancelar
+              </GhostBtn>
+            </div>
+          </div>
+        )}
+
         {list.length === 0 ? (
           <EmptyState title="Ningún prompt coincide" body="Cambiá la vista o la búsqueda." />
         ) : (
@@ -502,18 +590,23 @@ function AuditedPrompts({ d }: { d: FilteredData }) {
               <span key="t" className="inline-flex items-center gap-1.5">
                 Buyer · Oferta <ConfigBadge label="local" />
               </span>,
+              '',
             ]}
           >
             {list.map((p) => {
               const rivals = p.top3.filter((e) => e.type !== 'brand');
               const tag = config.promptTags[p.promptId] ?? {};
               const isOpen = open === p.id;
+              const edited = !!config.promptOverrides[p.promptId]?.text;
               return (
                 <Fragment key={p.id}>
                   <tr className="align-top">
                     <td className="py-3 pr-4 max-w-md">
                       <button type="button" className="text-left" onClick={() => setOpen(isOpen ? null : p.id)}>
-                        <div className="text-fg font-medium line-clamp-2">{p.text.split('\n')[1] || p.text.split('\n')[0] || p.name}</div>
+                        <div className="text-fg font-medium line-clamp-2 flex items-start gap-1.5">
+                          {p.text.split('\n')[1] || p.text.split('\n')[0] || p.name}
+                          {edited && <Pill tone="amber">editado</Pill>}
+                        </div>
                         <div className="text-[11px] text-dim mt-1">
                           {p.intent ?? p.name} · {isOpen ? 'ocultar detalle' : 'ver detalle'}
                         </div>
@@ -564,10 +657,36 @@ function AuditedPrompts({ d }: { d: FilteredData }) {
                         </Select>
                       </div>
                     </td>
+                    <td className="py-3 whitespace-nowrap">
+                      <div className="flex gap-1">
+                        <GhostBtn
+                          type="button"
+                          title="Editar / cambiar"
+                          disabled={!!busyId || !!editing}
+                          onClick={() =>
+                            setEditing({
+                              promptId: p.promptId,
+                              text: p.text,
+                              name: p.name || '',
+                            })
+                          }
+                        >
+                          <Icon name="edit" className="w-3.5 h-3.5" />
+                        </GhostBtn>
+                        <GhostBtn
+                          type="button"
+                          title="Borrar del listado"
+                          disabled={!!busyId || !!editing}
+                          onClick={() => removePrompt(p.promptId)}
+                        >
+                          <Icon name="trash" className="w-3.5 h-3.5" />
+                        </GhostBtn>
+                      </div>
+                    </td>
                   </tr>
                   {isOpen && (
                     <tr>
-                      <td colSpan={6} className="pb-4">
+                      <td colSpan={7} className="pb-4">
                         <div className="rounded-xl bg-surface2 border border-line p-4 space-y-3">
                           <div>
                             <div className="text-[10px] font-bold uppercase tracking-wider text-muted mb-1">Prompt ejecutado</div>

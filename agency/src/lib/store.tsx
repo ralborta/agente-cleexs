@@ -30,7 +30,14 @@ export type ProyectoCfg = {
   frequency: 'Diaria' | 'Semanal' | 'Quincenal' | 'Mensual';
 };
 export type PromptTag = { buyerId?: string; ofertaId?: string };
-/** Prompts propios del proyecto (máx. 3). Persistidos en Cleexs (slots portal). */
+/** Overrides locales sobre prompts auditados (editar texto / ocultar borrados). */
+export type PromptOverride = {
+  text?: string;
+  name?: string;
+  hidden?: boolean;
+  updatedAt?: string;
+};
+/** Prompts propios del proyecto (máx. 40). Persistidos en Cleexs (slots portal). */
 export type CustomPrompt = {
   id: string;
   /** UUID Cleexs BrandPortalSavedPrompt (si ya está sincronizado) */
@@ -48,7 +55,7 @@ export type CustomPrompt = {
   lastExecutedAt?: string | null;
   resultsCount?: number;
 };
-export const CUSTOM_PROMPTS_MAX = 3;
+export const CUSTOM_PROMPTS_MAX = 40;
 
 /** Programación de corridas (hora + día / fecha). Frecuencia se sincroniza a Cleexs. */
 export type RunScheduleCfg = {
@@ -85,6 +92,8 @@ export type ProjectConfig = {
   marcas: Marca[];
   proyecto: ProyectoCfg;
   promptTags: Record<string, PromptTag>;
+  /** Edits/borrados sobre prompts auditados de Cleexs */
+  promptOverrides: Record<string, PromptOverride>;
   customPrompts: CustomPrompt[];
   schedule: RunScheduleCfg;
   reglas: Regla[];
@@ -130,6 +139,7 @@ export function emptyConfig(name = '', domain = ''): ProjectConfig {
     marcas: [],
     proyecto: { name, domain, country: '', industry: '', description: '', frequency: 'Semanal' },
     promptTags: {},
+    promptOverrides: {},
     customPrompts: [],
     schedule: { ...DEFAULT_SCHEDULE },
     reglas: [],
@@ -316,6 +326,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return {
       ...base,
       ...c,
+      promptOverrides: c.promptOverrides && typeof c.promptOverrides === 'object' ? c.promptOverrides : {},
       customPrompts: Array.isArray(c.customPrompts) ? c.customPrompts.slice(0, CUSTOM_PROMPTS_MAX) : [],
       schedule: { ...DEFAULT_SCHEDULE, ...(c.schedule ?? {}) },
       tipos: c.tipos?.length ? c.tipos : base.tipos,
@@ -366,14 +377,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const snap = snapshot.data;
     if (!snap || !isDefaultProject) return null;
     const tags = config.promptTags;
+    const overrides = config.promptOverrides ?? {};
     const iaSet = new Set(filters.ia);
 
     const keepPrompt = (p: PromptRow) => {
+      if (overrides[p.promptId]?.hidden) return false;
       if (filters.tipo && p.type && stem(p.type) !== stem(filters.tipo)) return false;
       if (filters.tipo && !p.type) return false;
       if (filters.buyer && tags[p.promptId]?.buyerId !== filters.buyer) return false;
       if (filters.oferta && tags[p.promptId]?.ofertaId !== filters.oferta) return false;
       return true;
+    };
+
+    const applyOverride = (p: PromptRow): PromptRow => {
+      const o = overrides[p.promptId];
+      if (!o) return p;
+      return {
+        ...p,
+        text: o.text?.trim() ? o.text : p.text,
+        name: o.name?.trim() ? o.name : p.name,
+      };
     };
 
     let runs = runsInPeriod(snap.history, filters.periodo);
@@ -382,10 +405,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const labelOf = (m: string | null) => snap.llms.find((l) => l.model === m)?.label ?? m ?? '';
       runs = runs.filter((r) => iaSet.has(labelOf(r.model)));
     }
-    const filteredRuns: RunSummary[] = runs.map((r, i) => {
-      const prompts = r.prompts.filter(keepPrompt);
-      // Mantener el excerpt solo si existe
-      void i;
+    const filteredRuns: RunSummary[] = runs.map((r) => {
+      const prompts = r.prompts.filter(keepPrompt).map(applyOverride);
       return {
         ...r,
         prompts,
@@ -397,7 +418,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
     const latest = filteredRuns[filteredRuns.length - 1] ?? null;
     return { snapshot: snap, runs: filteredRuns, latest, prompts: latest?.prompts ?? [] };
-  }, [snapshot.data, isDefaultProject, filters, config.promptTags]);
+  }, [snapshot.data, isDefaultProject, filters, config.promptTags, config.promptOverrides]);
 
   const value: Ctx = {
     hydrated,

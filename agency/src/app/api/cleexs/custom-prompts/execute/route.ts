@@ -22,8 +22,8 @@ export async function POST(req: Request) {
       if (!text) {
         return NextResponse.json({ error: 'Falta savedPromptId o promptText' }, { status: 400 });
       }
-      if (slot < 0 || slot > 2) {
-        return NextResponse.json({ error: 'slot debe ser 0, 1 o 2' }, { status: 400 });
+      if (slot < 0 || slot > 39) {
+        return NextResponse.json({ error: 'slot debe ser 0..39' }, { status: 400 });
       }
       const saved = await upsertWeeklyPrompt(slot, text);
       savedPromptId = saved.id;

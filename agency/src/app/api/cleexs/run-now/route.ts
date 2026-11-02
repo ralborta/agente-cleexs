@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     }
 
     const weekly = await listWeeklyPrompts();
-    const own = weekly.slots.filter((s) => s.slot < 3 && s.id && s.promptText.trim());
+    const own = weekly.slots.filter((s) => s.slot < 40 && s.id && s.promptText.trim());
 
     if (own.length > 0 || body.customOnly) {
       if (!own.length) {
