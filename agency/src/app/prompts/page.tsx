@@ -74,17 +74,20 @@ function CustomPromptsPanel() {
   const [loaded, setLoaded] = useState(false);
   const canAdd = items.length < CUSTOM_PROMPTS_MAX;
 
-  const mergeFromCleexs = (prompts: Array<{
-    slot: number;
-    id: string | null;
-    title: string;
-    promptText: string;
-    updatedAt: string | null;
-    lastExecutedAt: string | null;
-    resultsCount: number;
-  }>) => {
+  const mergeFromCleexs = (
+    prompts: Array<{
+      slot: number;
+      id: string | null;
+      title: string;
+      promptText: string;
+      updatedAt: string | null;
+      lastExecutedAt: string | null;
+      resultsCount: number;
+    }>,
+    liveSlots = 5,
+  ) => {
     const prev = config.customPrompts ?? [];
-    const next: CustomPrompt[] = prompts.map((p) => {
+    const fromCleexs: CustomPrompt[] = prompts.map((p) => {
       const old = prev.find((x) => x.cleexsId === p.id || x.slot === p.slot);
       return {
         id: old?.id || uid('cprompt'),
@@ -102,6 +105,12 @@ function CustomPromptsPanel() {
         resultsCount: p.resultsCount,
       };
     });
+    // Conservar prompts Agency en slots fuera del sync Cleexs live (p. ej. 5..39)
+    const syncedSlots = new Set(fromCleexs.map((p) => p.slot));
+    const localExtra = prev.filter(
+      (p) => typeof p.slot === 'number' && p.slot >= liveSlots && !syncedSlots.has(p.slot) && p.text.trim(),
+    );
+    const next = [...fromCleexs, ...localExtra].sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0));
     updateConfig({ customPrompts: next.slice(0, CUSTOM_PROMPTS_MAX) });
   };
 
@@ -113,7 +122,7 @@ function CustomPromptsPanel() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || data.error || 'Error al cargar');
         if (!cancelled) {
-          mergeFromCleexs(data.prompts || []);
+          mergeFromCleexs(data.prompts || [], Number(data.cleexsLiveSlots) || 5);
           setLoaded(true);
         }
       } catch (e) {
@@ -146,7 +155,10 @@ function CustomPromptsPanel() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || data.error || 'Error al guardar');
-      mergeFromCleexs(data.prompts || []);
+      mergeFromCleexs(data.prompts || [], Number(data.cleexsLiveSlots) || 5);
+      if (Array.isArray(data.warnings) && data.warnings.length) {
+        setError(data.warnings.join(' · '));
+      }
     } catch (e) {
       setError((e as Error).message);
       throw e;
@@ -227,7 +239,7 @@ function CustomPromptsPanel() {
       });
       const refreshed = await fetch('/api/cleexs/custom-prompts', { cache: 'no-store' });
       const list = await refreshed.json();
-      if (refreshed.ok) mergeFromCleexs(list.prompts || []);
+      if (refreshed.ok) mergeFromCleexs(list.prompts || [], Number(list.cleexsLiveSlots) || 5);
     } catch (e) {
       setError((e as Error).message);
     } finally {

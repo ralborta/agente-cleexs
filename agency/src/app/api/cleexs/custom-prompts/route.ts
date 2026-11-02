@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import {
+  cleexsLiveSlotCount,
   deleteWeeklyPrompt,
   listWeeklyPrompts,
   selectWeeklyPrompt,
@@ -9,7 +10,7 @@ import {
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
-/** Agency: máx. 40 prompts propios → slots Cleexs 0..39 */
+/** Tope Agency (EasyPanel): 40 prompts propios. */
 const AGENCY_SLOTS = 40;
 
 function mapSlot(s: {
@@ -34,16 +35,22 @@ function mapSlot(s: {
 
 export async function GET() {
   try {
+    const liveMax = await cleexsLiveSlotCount();
     const data = await listWeeklyPrompts();
     const slots = data.slots
-      .filter((s) => s.slot < AGENCY_SLOTS && s.promptText.trim())
+      .filter((s) => s.slot < Math.min(AGENCY_SLOTS, liveMax) && s.promptText.trim())
       .map(mapSlot);
     return NextResponse.json({
       brandId: data.brandId,
       runSchedule: data.runSchedule,
       selectedWeeklyPortalPromptId: data.selectedWeeklyPortalPromptId,
       max: AGENCY_SLOTS,
+      cleexsLiveSlots: liveMax,
       prompts: slots,
+      note:
+        liveMax < AGENCY_SLOTS
+          ? `Cleexs sincroniza ${liveMax} slots; Agency permite ${AGENCY_SLOTS} (el resto se guarda en el proyecto y se mide con IA igual).`
+          : undefined,
     });
   } catch (e) {
     return NextResponse.json(
@@ -54,14 +61,18 @@ export async function GET() {
 }
 
 type PutBody = {
-  /** Lista de prompts (máx 40). Solo toca slots presentes o previamente ocupados. */
   prompts: Array<{ slot?: number; promptText: string; select?: boolean }>;
 };
 
+/**
+ * Guarda en Cleexs solo los slots que la API live acepta.
+ * El resto (hasta 40) vive en el proyecto Agency (localStorage) y se mide vía prompt-try.
+ */
 export async function PUT(req: Request) {
   try {
     const body = (await req.json()) as PutBody;
     const items = Array.isArray(body.prompts) ? body.prompts.slice(0, AGENCY_SLOTS) : [];
+    const liveMax = await cleexsLiveSlotCount();
 
     const bySlot = new Map<number, { promptText: string; select?: boolean }>();
     items.forEach((p, i) => {
@@ -72,21 +83,35 @@ export async function PUT(req: Request) {
 
     const current = await listWeeklyPrompts();
     const occupied = new Set(
-      current.slots.filter((s) => s.slot < AGENCY_SLOTS && s.promptText.trim()).map((s) => s.slot),
+      current.slots.filter((s) => s.slot < liveMax && s.promptText.trim()).map((s) => s.slot),
     );
-    const touch = new Set([...bySlot.keys(), ...occupied]);
+    const touch = new Set(
+      [...bySlot.keys()].filter((s) => s < liveMax).concat([...occupied]),
+    );
 
     const saved: Array<{ slot: number; id: string; title: string; promptText: string }> = [];
+    const warnings: string[] = [];
 
     for (const slot of [...touch].sort((a, b) => a - b)) {
       const item = bySlot.get(slot);
       const text = item?.promptText?.trim() || '';
-      if (!text) {
-        await deleteWeeklyPrompt(slot);
-        continue;
+      try {
+        if (!text) {
+          await deleteWeeklyPrompt(slot);
+          continue;
+        }
+        const row = await upsertWeeklyPrompt(slot, text);
+        saved.push(row);
+      } catch (e) {
+        warnings.push(`slot ${slot}: ${(e as Error).message}`);
       }
-      const row = await upsertWeeklyPrompt(slot, text);
-      saved.push(row);
+    }
+
+    const beyond = [...bySlot.entries()].filter(([slot, v]) => slot >= liveMax && v.promptText.trim());
+    if (beyond.length) {
+      warnings.push(
+        `${beyond.length} prompt(s) en slots ≥ ${liveMax} quedan en Agency (se miden con IA; sync Cleexs pendiente de ampliar slots).`,
+      );
     }
 
     const selectWant = items.find((p) => p.select && p.promptText?.trim())?.promptText?.trim();
@@ -98,15 +123,18 @@ export async function PUT(req: Request) {
       try {
         await selectWeeklyPrompt(selectId);
       } catch {
-        /* selección opcional */
+        /* opcional */
       }
     }
 
     const data = await listWeeklyPrompts();
     return NextResponse.json({
       ok: true,
-      prompts: data.slots.filter((s) => s.slot < AGENCY_SLOTS && s.promptText.trim()).map(mapSlot),
+      max: AGENCY_SLOTS,
+      cleexsLiveSlots: liveMax,
+      prompts: data.slots.filter((s) => s.slot < liveMax && s.promptText.trim()).map(mapSlot),
       selectedWeeklyPortalPromptId: data.selectedWeeklyPortalPromptId,
+      warnings,
     });
   } catch (e) {
     return NextResponse.json(

@@ -365,6 +365,37 @@ export async function executeWeeklyPrompt(savedPromptId: string): Promise<Cleexs
   });
 }
 
+/** Medición puntual con IA real (no requiere slot portal). Ideal para prompts 6..40. */
+export async function tryPrompt(promptText: string): Promise<CleexsPromptExecution> {
+  const token = await getPortalToken();
+  const brandId = cleexsBrandId();
+  const out = await cleexsFetch<{
+    responseText: string;
+    analysis: unknown;
+    totalTokens?: number;
+  }>(`/api/portal/brands/${brandId}/prompt-try`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ promptText: promptText.trim() }),
+  });
+  return {
+    ok: true,
+    responseText: out.responseText,
+    analysis: out.analysis,
+    totalTokens: out.totalTokens,
+  };
+}
+
+/** Slots que la API Cleexs en producción acepta hoy (0..maxSlots-1). */
+export async function cleexsLiveSlotCount(): Promise<number> {
+  try {
+    const data = await listWeeklyPrompts();
+    return Math.max(1, Number(data.maxSlots) || 5);
+  } catch {
+    return 5;
+  }
+}
+
 export async function listWeeklyPromptResults(savedPromptId?: string) {
   const token = await getPortalToken();
   const brandId = cleexsBrandId();
