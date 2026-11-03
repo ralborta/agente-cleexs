@@ -127,6 +127,12 @@ export default function Page() {
   };
 
   const runNow = async () => {
+    const ok = confirm(
+      customActive > 0
+        ? `¿Medir ahora ${customActive} prompt(s) propios con IA real? Nada se publica al cliente: solo queda en Cleexs/Agency.`
+        : '¿Disparar una corrida Cleexs ahora? Revisá el resultado después; nada se publica solo.',
+    );
+    if (!ok) return;
     setRunning(true);
     setError(null);
     setOkMsg(null);
@@ -158,8 +164,12 @@ export default function Page() {
         eyebrow="Setup · Corridas"
         title="Configuración de corridas"
         badge={<ConfigBadge label="Cleexs · hora · día · fecha" />}
-        subtitle={`Definí cuándo Cleexs debe medir a ${projectName}. La frecuencia se guarda en Cleexs; hora/día orientan al especialista y al cron.`}
+        subtitle={`Definí cuándo Cleexs debe medir a ${projectName}. Guardar solo agenda; Ejecutar ahora pide confirmación y no publica nada al cliente.`}
       />
+
+      <Notice tone="cyan">
+        Flujo corto: 1) activá cadencia · 2) Guardar · 3) Ejecutar ahora si querés medir ya. Podés pausar la programación cuando quieras.
+      </Notice>
 
       {error && <Notice tone="red">{error}</Notice>}
       {okMsg && <Notice tone="cyan">{okMsg}</Notice>}
@@ -316,8 +326,8 @@ export default function Page() {
           </Card>
 
           <Notice tone="cyan">
-            Guardar escribe la frecuencia en Cleexs (semanal / quincenal / mensual). Ejecutar ahora mide con IA real los
-            prompts propios (o dispara una corrida Cleexs si no hay propios).
+            Guardar escribe la frecuencia en Cleexs. Ejecutar ahora mide con IA real (pide OK antes). Nada se publica sin
+            tu confirmación.
           </Notice>
         </div>
       </div>

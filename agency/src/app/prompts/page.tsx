@@ -258,7 +258,8 @@ function CustomPromptsPanel() {
             <ConfigBadge label={`máx. ${CUSTOM_PROMPTS_MAX} · Cleexs`} />
           </h3>
           <p className="text-xs text-muted mt-1 max-w-2xl">
-            Hasta {CUSTOM_PROMPTS_MAX} prompts editables, guardados en Cleexs. Podés medirlos ya: la IA responde y el análisis queda en el historial real.
+            Hasta {CUSTOM_PROMPTS_MAX} prompts. Editá el texto antes de medir; podés saltear o borrar cuando quieras. La
+            medición con IA queda en Cleexs/Agency — nada se publica al cliente sin tu OK.
           </p>
         </div>
         <Btn type="button" onClick={startNew} disabled={!canAdd || !!editing || syncing}>
@@ -734,7 +735,7 @@ function PromptsBody({ d }: { d: FilteredData }) {
         eyebrow="Registro"
         title="Prompts"
         badge={<Pill tone="slate">Hasta {CUSTOM_PROMPTS_MAX} propios + auditados Cleexs</Pill>}
-        subtitle={`Agregá y editá hasta ${CUSTOM_PROMPTS_MAX} prompts propios. Abajo ves los que Cleexs ya midió para ${d.snapshot.brand.name}.`}
+        subtitle={`Agregá y editá hasta ${CUSTOM_PROMPTS_MAX} propios (corregí nombres/números antes de medir). Abajo: prompts ya corridos de ${d.snapshot.brand.name}, también editables.`}
       />
       <CustomPromptsPanel />
       <AuditedPrompts d={d} />
