@@ -298,7 +298,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSnapshot((s) => ({ ...s, loading: true, error: null }));
     fetch('/api/cleexs/snapshot', { cache: 'no-store' })
       .then(async (r) => {
-        const j = await r.json();
+        const text = await r.text();
+        const looksHtml = text.trimStart().startsWith('<') || text.includes('<!DOCTYPE');
+        let j: { detail?: string; error?: string } & Partial<AgencySnapshot> = {};
+        if (!looksHtml) {
+          try {
+            j = JSON.parse(text) as typeof j;
+          } catch {
+            throw new Error(`Respuesta no JSON de /api/cleexs/snapshot (HTTP ${r.status})`);
+          }
+        }
+        if (looksHtml) {
+          throw new Error(
+            `El servidor de Agencias devolvió HTML en vez de datos (HTTP ${r.status}). Suele ser 404/502 del proxy o CLEEXS_API_URL mal apuntada.`,
+          );
+        }
         if (!r.ok) throw new Error(j?.detail || j?.error || `HTTP ${r.status}`);
         return j as AgencySnapshot;
       })

@@ -11,19 +11,50 @@ export const DEFAULT_BRAND_ID = 'c1a58b9e-dc6d-479b-8930-70208e6f813e';
 const MAX_RUNS = 12;
 
 export function cleexsApiUrl(): string {
-  return (process.env.CLEEXS_API_URL || 'https://cleexsapi-production.up.railway.app').replace(/\/+$/, '');
+  let raw = (process.env.CLEEXS_API_URL || 'https://cleexsapi-production.up.railway.app').trim();
+  // EasyPanel a veces guarda el host sin esquema (p.ej. copiado de Railway) → fetch falla con
+  // "The string did not match the expected pattern" / Invalid URL.
+  if (raw && !/^https?:\/\//i.test(raw)) raw = `https://${raw}`;
+  const base = raw.replace(/\/+$/, '');
+  try {
+    // Valida que sea URL absoluta http(s)
+    const u = new URL(base);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+      throw new Error(`protocolo inválido: ${u.protocol}`);
+    }
+    return `${u.protocol}//${u.host}`;
+  } catch (e) {
+    throw new Error(
+      `CLEEXS_API_URL inválida (${JSON.stringify(process.env.CLEEXS_API_URL || '')}). Usá https://cleexsapi-production.up.railway.app — ${(e as Error).message}`,
+    );
+  }
 }
 export function cleexsBrandId(): string {
   return (process.env.CLEEXS_BRAND_ID || DEFAULT_BRAND_ID).trim();
 }
 
 async function getJson<T>(path: string, headers?: Record<string, string>): Promise<T> {
-  const res = await fetch(`${cleexsApiUrl()}${path}`, {
+  const url = `${cleexsApiUrl()}${path}`;
+  const res = await fetch(url, {
     headers: { accept: 'application/json', ...headers },
     cache: 'no-store',
   });
-  if (!res.ok) throw new Error(`Cleexs API ${res.status} en ${path}`);
-  return (await res.json()) as T;
+  const ct = (res.headers.get('content-type') || '').toLowerCase();
+  const text = await res.text();
+  if (!res.ok) {
+    const hint = text.slice(0, 160).replace(/\s+/g, ' ');
+    throw new Error(`Cleexs API ${res.status} en ${path}${hint ? `: ${hint}` : ''}`);
+  }
+  if (!ct.includes('application/json') || text.trimStart().startsWith('<')) {
+    throw new Error(
+      `Cleexs API devolvió HTML/no-JSON en ${path} (¿CLEEXS_API_URL apunta a la web en vez de la API?). URL base: ${cleexsApiUrl()}`,
+    );
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(`Cleexs API: JSON inválido en ${path}`);
+  }
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
