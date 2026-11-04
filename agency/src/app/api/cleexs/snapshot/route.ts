@@ -8,9 +8,10 @@ export async function GET() {
     const snap = await buildSnapshot();
     return NextResponse.json(snap);
   } catch (e) {
+    // No usar 502: Traefik/EasyPanel lo reemplaza por HTML "Service is not reachable".
     return NextResponse.json(
       { error: 'No se pudo obtener datos de Cleexs', detail: (e as Error).message },
-      { status: 502 },
+      { status: 503 },
     );
   }
 }

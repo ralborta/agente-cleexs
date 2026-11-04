@@ -15,7 +15,7 @@ export async function GET() {
   } catch (e) {
     return NextResponse.json(
       { error: 'No se pudo leer programación Cleexs', detail: (e as Error).message },
-      { status: 502 },
+      { status: 503 },
     );
   }
 }
@@ -50,7 +50,7 @@ export async function PUT(req: Request) {
   } catch (e) {
     return NextResponse.json(
       { error: 'No se pudo guardar programación en Cleexs', detail: (e as Error).message },
-      { status: 502 },
+      { status: 503 },
     );
   }
 }

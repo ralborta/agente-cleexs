@@ -49,7 +49,7 @@ export async function GET() {
         networkHint:
           'Desde este VPS EasyPanel no hay ruta TCP a *.up.railway.app. Usar dominio con proxy Cloudflare u otro edge alcanzable.',
       },
-      { status: 502 },
+      { status: 503 },
     );
   } finally {
     clearTimeout(timer);

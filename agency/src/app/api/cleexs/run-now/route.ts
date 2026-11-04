@@ -79,7 +79,7 @@ export async function POST(req: Request) {
   } catch (e) {
     return NextResponse.json(
       { error: 'No se pudo disparar la corrida Cleexs', detail: (e as Error).message },
-      { status: 502 },
+      { status: 503 },
     );
   }
 }

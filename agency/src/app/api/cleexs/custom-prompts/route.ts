@@ -55,7 +55,7 @@ export async function GET() {
   } catch (e) {
     return NextResponse.json(
       { error: 'No se pudieron leer prompts Cleexs', detail: (e as Error).message },
-      { status: 502 },
+      { status: 503 },
     );
   }
 }
@@ -139,7 +139,7 @@ export async function PUT(req: Request) {
   } catch (e) {
     return NextResponse.json(
       { error: 'No se pudieron guardar prompts en Cleexs', detail: (e as Error).message },
-      { status: 502 },
+      { status: 503 },
     );
   }
 }

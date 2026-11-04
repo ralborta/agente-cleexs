@@ -12,6 +12,6 @@ export async function GET() {
       weakPrompts: s.weakPrompts,
     });
   } catch (e) {
-    return NextResponse.json({ error: 'No se pudo obtener datos de Cleexs', detail: (e as Error).message }, { status: 502 });
+    return NextResponse.json({ error: 'No se pudo obtener datos de Cleexs', detail: (e as Error).message }, { status: 503 });
   }
 }

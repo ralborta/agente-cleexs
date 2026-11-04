@@ -66,7 +66,7 @@ export async function POST(req: Request) {
   } catch (e) {
     return NextResponse.json(
       { error: 'No se pudo medir el prompt en Cleexs', detail: (e as Error).message },
-      { status: 502 },
+      { status: 503 },
     );
   }
 }
