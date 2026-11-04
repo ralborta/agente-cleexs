@@ -8,10 +8,13 @@ export async function GET() {
   const api = cleexsApiUrl();
   const brandId = cleexsBrandId();
   const path = `/api/brands/${brandId}`;
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 10_000);
   try {
     const res = await fetch(`${api}${path}`, {
       headers: { accept: 'application/json' },
       cache: 'no-store',
+      signal: ac.signal,
     });
     const ct = res.headers.get('content-type') || '';
     const text = await res.text();
@@ -34,14 +37,21 @@ export async function GET() {
       looksLikeHtml: text.trimStart().startsWith('<'),
     });
   } catch (e) {
+    const aborted = (e as Error).name === 'AbortError';
     return NextResponse.json(
       {
         ok: false,
         cleexsApiUrl: api,
         brandId,
-        error: (e as Error).message,
+        error: aborted
+          ? 'timeout alcanzando Cleexs API (EasyPanel→Railway bloqueado)'
+          : (e as Error).message,
+        networkHint:
+          'Desde este VPS EasyPanel no hay ruta TCP a *.up.railway.app. Usar dominio con proxy Cloudflare u otro edge alcanzable.',
       },
       { status: 502 },
     );
+  } finally {
+    clearTimeout(timer);
   }
 }

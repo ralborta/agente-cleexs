@@ -35,10 +35,23 @@ export function cleexsBrandId(): string {
 
 async function getJson<T>(path: string, headers?: Record<string, string>): Promise<T> {
   const url = `${cleexsApiUrl()}${path}`;
-  const res = await fetch(url, {
-    headers: { accept: 'application/json', ...headers },
-    cache: 'no-store',
-  });
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 12_000);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: { accept: 'application/json', ...headers },
+      cache: 'no-store',
+      signal: ac.signal,
+    });
+  } catch (e) {
+    const msg = (e as Error).name === 'AbortError' ? 'timeout 12s' : (e as Error).message;
+    throw new Error(
+      `No se alcanza Cleexs API (${cleexsApiUrl()}) desde EasyPanel: ${msg}. El VPS no tiene ruta TCP a Railway; hace falta un dominio proxy (p.ej. Cloudflare → API).`,
+    );
+  } finally {
+    clearTimeout(timer);
+  }
   const ct = (res.headers.get('content-type') || '').toLowerCase();
   const text = await res.text();
   if (!res.ok) {
