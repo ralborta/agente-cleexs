@@ -36,7 +36,8 @@ export function cleexsBrandId(): string {
 async function getJson<T>(path: string, headers?: Record<string, string>): Promise<T> {
   const url = `${cleexsApiUrl()}${path}`;
   const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), 12_000);
+  // Traefik en EasyPanel corta ~10s; fallar antes para devolver JSON (no HTML 502).
+  const timer = setTimeout(() => ac.abort(), 5_000);
   let res: Response;
   try {
     res = await fetch(url, {
@@ -45,7 +46,7 @@ async function getJson<T>(path: string, headers?: Record<string, string>): Promi
       signal: ac.signal,
     });
   } catch (e) {
-    const msg = (e as Error).name === 'AbortError' ? 'timeout 12s' : (e as Error).message;
+    const msg = (e as Error).name === 'AbortError' ? 'timeout 5s' : (e as Error).message;
     throw new Error(
       `No se alcanza Cleexs API (${cleexsApiUrl()}) desde EasyPanel: ${msg}. El VPS no tiene ruta TCP a Railway; hace falta un dominio proxy (p.ej. Cloudflare → API).`,
     );

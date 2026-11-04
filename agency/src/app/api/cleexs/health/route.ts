@@ -9,7 +9,7 @@ export async function GET() {
   const brandId = cleexsBrandId();
   const path = `/api/brands/${brandId}`;
   const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), 10_000);
+  const timer = setTimeout(() => ac.abort(), 4_000);
   try {
     const res = await fetch(`${api}${path}`, {
       headers: { accept: 'application/json' },
