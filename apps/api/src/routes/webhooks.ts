@@ -13,7 +13,9 @@ async function forwardDiagnosticUrlToCleexs(params: {
   phone: string;
   message: string;
 }): Promise<CleexsWaUrlResponse | null> {
-  const base = (process.env.CLEEXS_API_URL || '').trim().replace(/\/$/, '');
+  let base = (process.env.CLEEXS_API_URL || '').trim();
+  if (base && !/^https?:\/\//i.test(base)) base = `https://${base}`;
+  base = base.replace(/\/+$/, '');
   const channelKey = (process.env.WHATSAPP_CHANNEL_API_KEY || '').trim();
   if (!base || !channelKey) return null;
 

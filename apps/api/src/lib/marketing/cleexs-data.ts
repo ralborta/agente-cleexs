@@ -61,7 +61,11 @@ async function workspaceDomain(workspaceId: string): Promise<string | null> {
 }
 
 function baseUrl(): string {
-  return (process.env.CLEEXS_API_URL || '').trim().replace(/\/$/, '');
+  let raw = (process.env.CLEEXS_API_URL || '').trim();
+  if (!raw) return '';
+  // Normaliza protocolo si falta
+  if (!/^https?:\/\//i.test(raw)) raw = `https://${raw}`;
+  return raw.replace(/\/+$/, '');
 }
 
 async function fetchSnapshotEndpoint(domain: string): Promise<CleexsDataResult | null> {

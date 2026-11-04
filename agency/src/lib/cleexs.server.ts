@@ -22,7 +22,9 @@ export function cleexsApiUrl(): string {
     if (u.protocol !== 'http:' && u.protocol !== 'https:') {
       throw new Error(`protocolo inválido: ${u.protocol}`);
     }
-    return `${u.protocol}//${u.host}`;
+    // Preserva pathname para soportar prefijos como /proxy-api
+    const path = u.pathname !== '/' ? u.pathname : '';
+    return `${u.protocol}//${u.host}${path}`;
   } catch (e) {
     throw new Error(
       `CLEEXS_API_URL inválida (${JSON.stringify(process.env.CLEEXS_API_URL || '')}). Usá https://cleexsapi-production.up.railway.app — ${(e as Error).message}`,
