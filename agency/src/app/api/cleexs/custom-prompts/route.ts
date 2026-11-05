@@ -65,8 +65,8 @@ type PutBody = {
 };
 
 /**
- * Guarda en Cleexs solo los slots que la API live acepta.
- * El resto (hasta 40) vive en el proyecto Agency (localStorage) y se mide vía prompt-try.
+ * Persiste en Cleexs todos los slots que la API live acepta (hasta 40).
+ * Si prod aún reporta menos de 40, devolvemos warning duro: no hay backup en navegador.
  */
 export async function PUT(req: Request) {
   try {
@@ -110,7 +110,12 @@ export async function PUT(req: Request) {
     const beyond = [...bySlot.entries()].filter(([slot, v]) => slot >= liveMax && v.promptText.trim());
     if (beyond.length) {
       warnings.push(
-        `${beyond.length} prompt(s) en slots ≥ ${liveMax} quedan en Agency (se miden con IA; sync Cleexs pendiente de ampliar slots).`,
+        `CRITICAL: Cleexs API solo acepta ${liveMax} slots; ${beyond.length} prompt(s) NO se guardaron en servidor. Redeploy API con MAX_SLOT=39.`,
+      );
+    }
+    if (liveMax < AGENCY_SLOTS) {
+      warnings.push(
+        `Cleexs live maxSlots=${liveMax} (esperado ${AGENCY_SLOTS}). Los prompts extra no son durables hasta actualizar la API.`,
       );
     }
 
