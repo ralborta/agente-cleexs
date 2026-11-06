@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "tsx --test src/lib/csv-prompts.test.ts"
   },
   "dependencies": {
     "next": "14.0.4",
@@ -19,6 +20,7 @@
     "autoprefixer": "^10.6.2",
     "postcss": "^8.5.32",
     "tailwindcss": "^3.4.19",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   },
   "engines": {

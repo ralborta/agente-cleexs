@@ -66,18 +66,24 @@ type PutBody = {
 
 /**
  * Persiste en Cleexs todos los slots que la API live acepta (hasta 40).
+ * Brand/agencia: siempre CLEEXS_BRAND_ID + portal login (sin brandId del cliente).
  * Si prod aún reporta menos de 40, devolvemos warning duro: no hay backup en navegador.
  */
 export async function PUT(req: Request) {
   try {
     const body = (await req.json()) as PutBody;
+    // Ignorar cualquier brandId/projectId del body: aislamiento server-side por env.
     const items = Array.isArray(body.prompts) ? body.prompts.slice(0, AGENCY_SLOTS) : [];
     const liveMax = await cleexsLiveSlotCount();
 
     const bySlot = new Map<number, { promptText: string; select?: boolean }>();
+    const rejectedSlots: number[] = [];
     items.forEach((p, i) => {
       const slot = typeof p.slot === 'number' ? p.slot : i;
-      if (slot < 0 || slot >= AGENCY_SLOTS) return;
+      if (slot < 0 || slot >= AGENCY_SLOTS) {
+        rejectedSlots.push(slot);
+        return;
+      }
       bySlot.set(slot, { promptText: p.promptText || '', select: p.select });
     });
 
@@ -90,7 +96,11 @@ export async function PUT(req: Request) {
     );
 
     const saved: Array<{ slot: number; id: string; title: string; promptText: string }> = [];
+    const failed: Array<{ slot: number; error: string }> = [];
     const warnings: string[] = [];
+    if (rejectedSlots.length) {
+      warnings.push(`Slots fuera de rango 0..${AGENCY_SLOTS - 1}: ${rejectedSlots.join(', ')}`);
+    }
 
     for (const slot of [...touch].sort((a, b) => a - b)) {
       const item = bySlot.get(slot);
@@ -103,14 +113,22 @@ export async function PUT(req: Request) {
         const row = await upsertWeeklyPrompt(slot, text);
         saved.push(row);
       } catch (e) {
-        warnings.push(`slot ${slot}: ${(e as Error).message}`);
+        const msg = (e as Error).message;
+        warnings.push(`slot ${slot}: ${msg}`);
+        failed.push({ slot, error: msg });
       }
     }
 
     const beyond = [...bySlot.entries()].filter(([slot, v]) => slot >= liveMax && v.promptText.trim());
     if (beyond.length) {
+      for (const [slot] of beyond) {
+        failed.push({
+          slot,
+          error: `Cleexs live maxSlots=${liveMax}; slot no durable`,
+        });
+      }
       warnings.push(
-        `CRITICAL: Cleexs API solo acepta ${liveMax} slots; ${beyond.length} prompt(s) NO se guardaron en servidor. Redeploy API con MAX_SLOT=39.`,
+        `CRITICAL: Cleexs API solo acepta ${liveMax} slots (0..${liveMax - 1}); ${beyond.length} prompt(s) NO se guardaron en servidor. Upstream ralborta/cleexs weekly-prompts debe exponer maxSlots=${AGENCY_SLOTS} (p.ej. MAX_SLOT=${AGENCY_SLOTS - 1}) y migrar/redeploy — sin tocar ese repo desde Agency.`,
       );
     }
     if (liveMax < AGENCY_SLOTS) {
@@ -133,12 +151,16 @@ export async function PUT(req: Request) {
     }
 
     const data = await listWeeklyPrompts();
+    const ok = failed.length === 0 && beyond.length === 0;
     return NextResponse.json({
-      ok: true,
+      ok,
       max: AGENCY_SLOTS,
       cleexsLiveSlots: liveMax,
+      brandId: data.brandId,
       prompts: data.slots.filter((s) => s.slot < liveMax && s.promptText.trim()).map(mapSlot),
       selectedWeeklyPortalPromptId: data.selectedWeeklyPortalPromptId,
+      savedCount: saved.length,
+      failed,
       warnings,
     });
   } catch (e) {

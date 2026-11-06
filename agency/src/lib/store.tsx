@@ -42,7 +42,7 @@ export type CustomPrompt = {
   id: string;
   /** UUID Cleexs BrandPortalSavedPrompt (si ya está sincronizado) */
   cleexsId?: string | null;
-  /** Slot Cleexs 0..2 */
+  /** Slot Cleexs 0..39 (tope Agency); la API live puede aceptar menos */
   slot?: number;
   text: string;
   name: string;
