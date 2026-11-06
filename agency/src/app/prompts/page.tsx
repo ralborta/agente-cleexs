@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Btn,
   Card,
@@ -20,6 +20,13 @@ import {
   TextArea,
   TextInput,
 } from '@/components/ui';
+import {
+  csvTemplateContent,
+  parsePromptCsv,
+  planCsvImport,
+  type ImportPlan,
+  type ImportSkipped,
+} from '@/lib/csv-prompts';
 import { displayName, fmtDate, fmtPct, pct } from '@/lib/metrics';
 import {
   CUSTOM_PROMPTS_MAX,
@@ -62,8 +69,14 @@ function analysisSummary(analysis: unknown): string {
   return '';
 }
 
+function skipTone(reason: ImportSkipped['reason']): 'amber' | 'red' | 'slate' | 'purple' {
+  if (reason === 'malformed' || reason === 'overflow' || reason === 'not_durable') return 'red';
+  if (reason === 'empty') return 'slate';
+  return 'amber';
+}
+
 function CustomPromptsPanel() {
-  const { config, updateConfig } = useStore();
+  const { config, updateConfig, isDefaultProject, activeProjectId } = useStore();
   const items = config.customPrompts ?? [];
   const [editing, setEditing] = useState<CustomPrompt | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -72,6 +85,13 @@ function CustomPromptsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<MeasureResult | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [liveSlots, setLiveSlots] = useState(5);
+  const [csvPlan, setCsvPlan] = useState<ImportPlan | null>(null);
+  const [csvFileName, setCsvFileName] = useState<string | null>(null);
+  const [csvParseErrors, setCsvParseErrors] = useState<string[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [importReport, setImportReport] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const canAdd = items.length < CUSTOM_PROMPTS_MAX;
 
   const mergeFromCleexs = (
@@ -84,7 +104,7 @@ function CustomPromptsPanel() {
       lastExecutedAt: string | null;
       resultsCount: number;
     }>,
-    liveSlots = 5,
+    live = 5,
   ) => {
     const prev = config.customPrompts ?? [];
     const fromCleexs: CustomPrompt[] = prompts.map((p) => {
@@ -105,18 +125,25 @@ function CustomPromptsPanel() {
         resultsCount: p.resultsCount,
       };
     });
-    // Conservar prompts Agency en slots fuera del sync Cleexs live (p. ej. 5..39)
+    // No inventar durabilidad: solo conservamos extras locales si el live ya los tenía listados
+    // en una sesión previa; el PUT solo confirma slots < liveMax.
     const syncedSlots = new Set(fromCleexs.map((p) => p.slot));
     const localExtra = prev.filter(
-      (p) => typeof p.slot === 'number' && p.slot >= liveSlots && !syncedSlots.has(p.slot) && p.text.trim(),
+      (p) => typeof p.slot === 'number' && p.slot >= live && !syncedSlots.has(p.slot) && p.text.trim(),
     );
     const next = [...fromCleexs, ...localExtra].sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0));
     updateConfig({ customPrompts: next.slice(0, CUSTOM_PROMPTS_MAX) });
+    setLiveSlots(live);
   };
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Aislamiento: solo el proyecto Cleexs (default) lee/escribe weekly-prompts del brand env.
+      if (!isDefaultProject) {
+        if (!cancelled) setLoaded(true);
+        return;
+      }
       try {
         const res = await fetch('/api/cleexs/custom-prompts', { cache: 'no-store' });
         const data = await res.json();
@@ -136,9 +163,26 @@ function CustomPromptsPanel() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isDefaultProject, activeProjectId]);
 
-  const persistAll = async (next: CustomPrompt[]) => {
+  const persistAll = async (next: CustomPrompt[], opts?: { requireCleexs?: boolean }) => {
+    const requireCleexs = opts?.requireCleexs ?? false;
+    if (!isDefaultProject) {
+      updateConfig({ customPrompts: next.slice(0, CUSTOM_PROMPTS_MAX) });
+      if (requireCleexs) {
+        throw new Error(
+          'Este proyecto local no está vinculado a una marca Cleexs: no hay persistencia de servidor. Usá el proyecto Cleexs para importar/guardar prompts durables.',
+        );
+      }
+      return {
+        prompts: [] as Array<{ slot: number; promptText: string; id: string | null }>,
+        warnings: [
+          'Proyecto local: cambios solo en este navegador (sin Cleexs). No se tocó la marca/agencia del servidor.',
+        ],
+        cleexsLiveSlots: 0,
+        localOnly: true as const,
+      };
+    }
     setSyncing(true);
     setError(null);
     try {
@@ -155,15 +199,132 @@ function CustomPromptsPanel() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || data.error || 'Error al guardar');
-      mergeFromCleexs(data.prompts || [], Number(data.cleexsLiveSlots) || 5);
+      const live = Number(data.cleexsLiveSlots) || 5;
+      mergeFromCleexs(data.prompts || [], live);
       if (Array.isArray(data.warnings) && data.warnings.length) {
         setError(data.warnings.join(' · '));
       }
+      return {
+        ...(data as {
+          prompts: Array<{ slot: number; promptText: string; id: string | null }>;
+          warnings?: string[];
+          cleexsLiveSlots?: number;
+        }),
+        localOnly: false as const,
+      };
     } catch (e) {
       setError((e as Error).message);
       throw e;
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const blob = new Blob([csvTemplateContent()], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'cleexs-agency-prompts-plantilla.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const onPickCsv = async (file: File | null) => {
+    setImportReport(null);
+    setCsvPlan(null);
+    setCsvParseErrors([]);
+    setCsvFileName(file?.name ?? null);
+    if (!file) return;
+    const text = await file.text();
+    const parsed = parsePromptCsv(text);
+    const hard = parsed.issues.filter((i) => i.rowNumber <= 1);
+    if (hard.length && !parsed.rows.length) {
+      setCsvParseErrors(hard.map((i) => i.message));
+      return;
+    }
+    const plan = planCsvImport({
+      rows: parsed.rows,
+      parseIssues: parsed.issues,
+      existing: items,
+      max: CUSTOM_PROMPTS_MAX,
+      // Preview de slots locales siempre hasta 40; la durabilidad real la decide Cleexs en confirm.
+      liveMax: isDefaultProject ? liveSlots : CUSTOM_PROMPTS_MAX,
+    });
+    if (hard.length) setCsvParseErrors(hard.map((i) => i.message));
+    setCsvPlan(plan);
+  };
+
+  const confirmCsvImport = async () => {
+    if (!csvPlan?.toAdd.length) return;
+    if (!isDefaultProject) {
+      setError(
+        'Importación CSV durable solo en el proyecto Cleexs vinculado. No se escribió nada en servidor ni en otro proyecto.',
+      );
+      return;
+    }
+    setImporting(true);
+    setImportReport(null);
+    setError(null);
+    const additions: CustomPrompt[] = csvPlan.toAdd.map((row) => ({
+      ...blankCustom(row.slot),
+      text: row.text,
+      name: row.name || row.text.slice(0, 60),
+      tipoId: config.tipos[0]?.id ?? '',
+    }));
+    const next = [...items, ...additions]
+      .sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0))
+      .slice(0, CUSTOM_PROMPTS_MAX);
+    // Optimistic solo en UI local; el éxito real exige respuesta OK del PUT + relectura.
+    updateConfig({ customPrompts: next });
+    try {
+      const data = await persistAll(next, { requireCleexs: true });
+      if (data.localOnly) {
+        throw new Error('Importación CSV requiere confirmación Cleexs; no se marcó como éxito.');
+      }
+      const savedTexts = new Set(
+        (data.prompts || []).map((p) => p.promptText.trim().toLowerCase()),
+      );
+      const confirmed = additions.filter((a) => savedTexts.has(a.text.trim().toLowerCase()));
+      const missing = additions.filter((a) => !savedTexts.has(a.text.trim().toLowerCase()));
+      // Releer GET para demostrar durabilidad de servidor (no localStorage).
+      const refreshed = await fetch('/api/cleexs/custom-prompts', { cache: 'no-store' });
+      const list = await refreshed.json();
+      if (refreshed.ok) mergeFromCleexs(list.prompts || [], Number(list.cleexsLiveSlots) || liveSlots);
+
+      const parts = [
+        `Confirmados en servidor: ${confirmed.length}/${additions.length}.`,
+        csvPlan.skipped.length ? `Omitidos/avisados en preview: ${csvPlan.skipped.length}.` : '',
+        missing.length
+          ? `Sin confirmación durable: ${missing.length} (revisá warnings Cleexs maxSlots=${data.cleexsLiveSlots ?? liveSlots}).`
+          : '',
+      ].filter(Boolean);
+      setImportReport(parts.join(' '));
+      if (missing.length || (data.warnings && data.warnings.length)) {
+        setError(
+          [
+            missing.length ? `${missing.length} fila(s) no quedaron en Cleexs.` : '',
+            ...(data.warnings || []),
+          ]
+            .filter(Boolean)
+            .join(' · '),
+        );
+      } else {
+        setCsvPlan(null);
+        setCsvFileName(null);
+        if (fileRef.current) fileRef.current.value = '';
+      }
+    } catch {
+      /* error ya seteado; revertir a GET */
+      try {
+        const refreshed = await fetch('/api/cleexs/custom-prompts', { cache: 'no-store' });
+        const list = await refreshed.json();
+        if (refreshed.ok) mergeFromCleexs(list.prompts || [], Number(list.cleexsLiveSlots) || liveSlots);
+      } catch {
+        /* keep error */
+      }
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -216,6 +377,10 @@ function CustomPromptsPanel() {
   };
 
   const measure = async (p: CustomPrompt) => {
+    if (!isDefaultProject) {
+      setError('Medir con IA solo está disponible en el proyecto Cleexs vinculado (aislamiento por marca).');
+      return;
+    }
     setMeasuringId(p.id);
     setError(null);
     setLastResult(null);
@@ -255,22 +420,135 @@ function CustomPromptsPanel() {
         <div>
           <h3 className="text-fg font-semibold text-sm flex items-center gap-2">
             Prompts propios
-            <ConfigBadge label={`máx. ${CUSTOM_PROMPTS_MAX} · Cleexs`} />
+            <ConfigBadge
+              label={
+                isDefaultProject
+                  ? `máx. ${CUSTOM_PROMPTS_MAX} · Cleexs live ${liveSlots}`
+                  : `máx. ${CUSTOM_PROMPTS_MAX} · proyecto local`
+              }
+            />
           </h3>
           <p className="text-xs text-muted mt-1 max-w-2xl">
             Hasta {CUSTOM_PROMPTS_MAX} prompts. Editá el texto antes de medir; podés saltear o borrar cuando quieras. La
             medición con IA queda en Cleexs/Agency — nada se publica al cliente sin tu OK.
           </p>
         </div>
-        <Btn type="button" onClick={startNew} disabled={!canAdd || !!editing || syncing}>
-          <Icon name="plus" className="w-3.5 h-3.5" />
-          Agregar prompt ({items.length}/{CUSTOM_PROMPTS_MAX})
-        </Btn>
+        <div className="flex flex-wrap items-center gap-2">
+          <GhostBtn type="button" onClick={downloadTemplate} disabled={syncing || importing} title="Descargar plantilla CSV UTF-8">
+            <Icon name="download" className="w-3.5 h-3.5" />
+            Plantilla CSV
+          </GhostBtn>
+          <GhostBtn
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={!!editing || syncing || importing || !canAdd}
+            title="Importar lote CSV"
+          >
+            <Icon name="upload" className="w-3.5 h-3.5" />
+            Importar lote CSV
+          </GhostBtn>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            className="hidden"
+            onChange={(e) => onPickCsv(e.target.files?.[0] ?? null)}
+          />
+          <Btn type="button" onClick={startNew} disabled={!canAdd || !!editing || syncing || importing}>
+            <Icon name="plus" className="w-3.5 h-3.5" />
+            Agregar prompt ({items.length}/{CUSTOM_PROMPTS_MAX})
+          </Btn>
+        </div>
       </div>
 
       {error && <Notice tone="red">{error}</Notice>}
-      {!loaded && <p className="text-xs text-dim mb-3">Sincronizando con Cleexs…</p>}
+      {importReport && <Notice tone="cyan">{importReport}</Notice>}
+      {!isDefaultProject && (
+        <Notice tone="amber">
+          Proyecto local aislado: no se lee ni escribe la API Cleexs de otra marca/agencia. La importación CSV durable
+          requiere el proyecto Cleexs vinculado.
+        </Notice>
+      )}
+      {!loaded && isDefaultProject && <p className="text-xs text-dim mb-3">Sincronizando con Cleexs…</p>}
       {syncing && <p className="text-xs text-accent-cyan mb-3">Guardando en Cleexs…</p>}
+
+      {(csvPlan || csvParseErrors.length > 0) && (
+        <div className="rounded-xl border border-line bg-surface2/60 p-4 mb-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-accent-cyan">
+              Vista previa CSV{csvFileName ? ` · ${csvFileName}` : ''}
+            </div>
+            <GhostBtn
+              type="button"
+              onClick={() => {
+                setCsvPlan(null);
+                setCsvParseErrors([]);
+                setCsvFileName(null);
+                if (fileRef.current) fileRef.current.value = '';
+              }}
+            >
+              Cerrar
+            </GhostBtn>
+          </div>
+          {csvParseErrors.map((msg) => (
+            <Notice key={msg} tone="red">
+              {msg}
+            </Notice>
+          ))}
+          {csvPlan && (
+            <>
+              <p className="text-xs text-muted">
+                A agregar en slots libres: <span className="text-fg font-medium">{csvPlan.toAdd.length}</span>
+                {' · '}
+                Slots durables libres antes: {csvPlan.freeDurableSlotsBefore}/{csvPlan.liveMax}
+                {' · '}
+                Avisos: {csvPlan.skipped.length}
+                {!isDefaultProject ? ' · confirmación bloqueada (proyecto local)' : ''}
+              </p>
+              {csvPlan.toAdd.length > 0 && (
+                <Table head={['Fila CSV', 'Slot', 'Prompt']}>
+                  {csvPlan.toAdd.map((row) => (
+                    <tr key={`add-${row.rowNumber}`}>
+                      <td className="py-2 pr-3 text-xs text-muted">{row.rowNumber}</td>
+                      <td className="py-2 pr-3 text-xs">{row.slot + 1}</td>
+                      <td className="py-2 text-xs text-fg line-clamp-2 whitespace-pre-wrap">{row.text}</td>
+                    </tr>
+                  ))}
+                </Table>
+              )}
+              {csvPlan.skipped.length > 0 && (
+                <Table head={['Fila', 'Motivo', 'Detalle']}>
+                  {csvPlan.skipped.map((row) => (
+                    <tr key={`skip-${row.rowNumber}-${row.reason}`}>
+                      <td className="py-2 pr-3 text-xs text-muted">{row.rowNumber}</td>
+                      <td className="py-2 pr-3">
+                        <Pill tone={skipTone(row.reason)}>{row.reason}</Pill>
+                      </td>
+                      <td className="py-2 text-xs text-muted">
+                        {row.message}
+                        {row.text ? ` · ${row.text.slice(0, 80)}` : ''}
+                      </td>
+                    </tr>
+                  ))}
+                </Table>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Btn
+                  type="button"
+                  onClick={confirmCsvImport}
+                  disabled={!csvPlan.toAdd.length || importing || syncing || !isDefaultProject}
+                >
+                  <Icon name="check" className="w-3.5 h-3.5" />
+                  {importing ? 'Importando…' : `Confirmar importación (${csvPlan.toAdd.length})`}
+                </Btn>
+                <GhostBtn type="button" onClick={() => fileRef.current?.click()} disabled={importing}>
+                  Elegir otro archivo
+                </GhostBtn>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {!canAdd && !editing && (
         <Notice tone="amber">
