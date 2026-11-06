@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 180;
 
 type Body = {
-  /** Si true, mide cada prompt propio activo (slots 0..2) vía portal execute */
+  /** Si true, mide cada prompt propio activo (slots 0..39 durables en Cleexs) vía portal execute */
   customOnly?: boolean;
   /** Si se pasa, mide solo ese savedPromptId */
   savedPromptId?: string;
@@ -17,7 +17,7 @@ type Body = {
 
 /**
  * Dispara medición real en Cleexs.
- * Por defecto: ejecuta todos los prompts propios guardados (máx 3).
+ * Por defecto: ejecuta todos los prompts propios guardados (tope Agency 40; live = maxSlots Cleexs).
  * Si no hay propios, dispara una corrida monthly estándar.
  */
 export async function POST(req: Request) {
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     if (own.length > 0 || body.customOnly) {
       if (!own.length) {
         return NextResponse.json(
-          { error: 'No hay prompts propios guardados para medir. Agregá hasta 3 en Prompts.' },
+          { error: 'No hay prompts propios guardados para medir. Agregá hasta 40 en Prompts.' },
           { status: 400 },
         );
       }

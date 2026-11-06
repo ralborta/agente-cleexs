@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { executeWeeklyPrompt, tryPrompt, upsertWeeklyPrompt } from '@/lib/cleexs.server';
+import {
+  cleexsLiveSlotCount,
+  executeWeeklyPrompt,
+  tryPrompt,
+  upsertWeeklyPrompt,
+} from '@/lib/cleexs.server';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -13,7 +18,7 @@ type Body = {
 /**
  * Mide un prompt con IA real en Cleexs.
  * - Con savedPromptId → execute del prompt guardado
- * - Sin id / slot alto → prompt-try (misma IA, sin depender del cupo de slots)
+ * - Sin id / slot fuera del live maxSlots → prompt-try (misma IA, sin cupo durable)
  */
 export async function POST(req: Request) {
   try {
@@ -21,8 +26,9 @@ export async function POST(req: Request) {
     let savedPromptId = body.savedPromptId?.trim() || '';
     const text = body.promptText?.trim() || '';
     const slot = typeof body.slot === 'number' ? body.slot : 0;
+    const liveMax = await cleexsLiveSlotCount();
 
-    if (!savedPromptId && text && slot >= 0 && slot <= 4) {
+    if (!savedPromptId && text && slot >= 0 && slot < liveMax) {
       try {
         const saved = await upsertWeeklyPrompt(slot, text);
         savedPromptId = saved.id;
