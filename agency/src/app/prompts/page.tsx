@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Btn,
   Card,
@@ -20,6 +20,7 @@ import {
   TextArea,
   TextInput,
 } from '@/components/ui';
+import { parsePromptsCsv, type CsvPromptRow } from '@/lib/csv-prompts';
 import { displayName, fmtDate, fmtPct, pct } from '@/lib/metrics';
 import {
   CUSTOM_PROMPTS_MAX,
@@ -72,6 +73,9 @@ function CustomPromptsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<MeasureResult | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [csvPending, setCsvPending] = useState<CsvPromptRow[] | null>(null);
+  const [importing, setImporting] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const canAdd = items.length < CUSTOM_PROMPTS_MAX;
 
   const mergeFromCleexs = (
@@ -215,6 +219,106 @@ function CustomPromptsPanel() {
     }
   };
 
+  const resolveMetaId = (
+    value: string | undefined,
+    list: Array<{ id: string; name: string }>,
+  ): string => {
+    if (!value?.trim()) return '';
+    const v = value.trim().toLowerCase();
+    const byId = list.find((x) => x.id === value.trim());
+    if (byId) return byId.id;
+    const byName = list.find((x) => x.name.toLowerCase() === v);
+    return byName?.id ?? '';
+  };
+
+  const onPickCsv = async (file: File | null) => {
+    if (!file) return;
+    setError(null);
+    try {
+      const raw = await file.text();
+      const rows = parsePromptsCsv(raw);
+      if (!rows.length) {
+        setError('El CSV no tiene prompts válidos. Usá una columna "prompt" o "texto".');
+        setCsvPending(null);
+        return;
+      }
+      setCsvPending(rows.slice(0, CUSTOM_PROMPTS_MAX));
+    } catch (e) {
+      setError((e as Error).message || 'No se pudo leer el CSV');
+      setCsvPending(null);
+    } finally {
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const applyCsv = async (mode: 'append' | 'replace') => {
+    if (!csvPending?.length) return;
+    setImporting(true);
+    setError(null);
+    try {
+      const base: CustomPrompt[] =
+        mode === 'replace'
+          ? []
+          : items
+              .filter((p) => p.text.trim())
+              .map((p) => ({ ...p }));
+
+      const usedSlots = new Set(
+        base.map((p) => p.slot).filter((s): s is number => typeof s === 'number'),
+      );
+      const nextFree = () => {
+        for (let s = 0; s < CUSTOM_PROMPTS_MAX; s += 1) {
+          if (!usedSlots.has(s)) return s;
+        }
+        return null;
+      };
+
+      const next = [...base];
+      let added = 0;
+      for (const row of csvPending) {
+        if (next.length >= CUSTOM_PROMPTS_MAX) break;
+        let slot =
+          typeof row.slot === 'number' && row.slot >= 0 && row.slot < CUSTOM_PROMPTS_MAX
+            ? row.slot
+            : null;
+        if (slot != null && usedSlots.has(slot)) slot = null;
+        if (slot == null) slot = nextFree();
+        if (slot == null) break;
+
+        const existingIdx = next.findIndex((p) => p.slot === slot);
+        const rowData: CustomPrompt = {
+          id: existingIdx >= 0 ? next[existingIdx].id : uid('cprompt'),
+          cleexsId: existingIdx >= 0 ? next[existingIdx].cleexsId : null,
+          slot,
+          text: row.text,
+          name: row.name?.trim() || row.text.slice(0, 60),
+          tipoId: resolveMetaId(row.tipo, config.tipos),
+          buyerId: resolveMetaId(row.buyer, config.buyers),
+          ofertaId: resolveMetaId(row.oferta, config.ofertas),
+          country: row.country?.trim() || '',
+          active: true,
+          updatedAt: new Date().toISOString(),
+        };
+        usedSlots.add(slot);
+        if (existingIdx >= 0) next[existingIdx] = rowData;
+        else next.push(rowData);
+        added += 1;
+      }
+
+      next.sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0));
+      updateConfig({ customPrompts: next.slice(0, CUSTOM_PROMPTS_MAX) });
+      await persistAll(next.slice(0, CUSTOM_PROMPTS_MAX));
+      setCsvPending(null);
+      if (!added) {
+        setError('No quedaban slots libres para importar (máx. 40).');
+      }
+    } catch {
+      /* error ya seteado en persistAll */
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const measure = async (p: CustomPrompt) => {
     setMeasuringId(p.id);
     setError(null);
@@ -262,15 +366,63 @@ function CustomPromptsPanel() {
             medición con IA queda en Cleexs/Agency — nada se publica al cliente sin tu OK.
           </p>
         </div>
-        <Btn type="button" onClick={startNew} disabled={!canAdd || !!editing || syncing}>
-          <Icon name="plus" className="w-3.5 h-3.5" />
-          Agregar prompt ({items.length}/{CUSTOM_PROMPTS_MAX})
-        </Btn>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            className="hidden"
+            onChange={(e) => void onPickCsv(e.target.files?.[0] ?? null)}
+          />
+          <GhostBtn
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={!!editing || syncing || importing}
+            title="Columnas: prompt (obligatoria). Opcionales: name, slot, tipo, buyer, oferta, country"
+          >
+            <Icon name="doc" className="w-3.5 h-3.5" />
+            Importar CSV
+          </GhostBtn>
+          <Btn type="button" onClick={startNew} disabled={!canAdd || !!editing || syncing || importing}>
+            <Icon name="plus" className="w-3.5 h-3.5" />
+            Agregar prompt ({items.length}/{CUSTOM_PROMPTS_MAX})
+          </Btn>
+        </div>
       </div>
 
       {error && <Notice tone="red">{error}</Notice>}
+      {csvPending && (
+        <Notice tone="amber">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>
+              CSV listo: <strong>{csvPending.length}</strong> prompts. Hoy tenés {items.length}/
+              {CUSTOM_PROMPTS_MAX} en Cleexs.
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <GhostBtn type="button" onClick={() => setCsvPending(null)} disabled={importing}>
+                Cancelar
+              </GhostBtn>
+              <GhostBtn
+                type="button"
+                onClick={() => void applyCsv('append')}
+                disabled={importing || !canAdd}
+                title="Conserva los actuales y completa slots libres"
+              >
+                Agregar a existentes
+              </GhostBtn>
+              <Btn type="button" onClick={() => void applyCsv('replace')} disabled={importing}>
+                {importing ? 'Importando…' : 'Reemplazar todos'}
+              </Btn>
+            </div>
+          </div>
+        </Notice>
+      )}
       {!loaded && <p className="text-xs text-dim mb-3">Sincronizando con Cleexs…</p>}
-      {syncing && <p className="text-xs text-accent-cyan mb-3">Guardando en Cleexs…</p>}
+      {(syncing || importing) && (
+        <p className="text-xs text-accent-cyan mb-3">
+          {importing ? 'Importando y guardando en Cleexs…' : 'Guardando en Cleexs…'}
+        </p>
+      )}
 
       {!canAdd && !editing && (
         <Notice tone="amber">
